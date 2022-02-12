@@ -1,0 +1,48 @@
+name: Build Image
+
+on:
+  repository_dispatch:
+  push:
+  schedule: 
+    - cron: '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
+
+    - name: Checkout PiGen
+      uses: actions/checkout@v2
+      with:
+        repository: 'RPi-Distro/pi-gen'
+        path: PiGen
+
+    # TODO:  Whatever we need to change in PiGen,
+    #        this is where we would copy custom files or instructions into
+    #        stage0-stage5 files that now exist in PiGen/.
+    #        Probably just CronJob and Bluetooth related?
+    #        Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
+
+    # See README at https://github.com/RPi-Distro/pi-gen
+    - name: Create Config File
+      id: config
+      run: |
+        cd PiGen
+        NOW=$(date +"%Y-%m-%d-%H%M")
+        IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
+        echo IMG_NAME=$IMAGE > config
+
+    - name: Build Image
+      run: |
+        cd PiGen
+        sudo ./build.sh
+
+    # The image now exists in deploy/.  Let's save it somewhere.
+    - uses: actions/upload-artifact@v1
+      with:
+        name: PiGen/deploy/${{ steps.config.outputs.image }}
+        path: PiGen/deploy/${{ steps.config.outputs.image }}.img
