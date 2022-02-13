@@ -52,8 +52,18 @@ jobs:
         cd PiGen
         sudo ./build.sh
 
+    # Pi-Gen does weird things with the image file name, so let's make sure we have it right.
+    - name: Get Image Name
+      id: imagefile
+      run: |
+        cd PiGen
+        cd deploy
+        ls
+        IMAGE_FILE=$(ls *.img)
+        echo "::set-output name=imagefile::$IMAGE_FILE"
+
     # The image now exists in deploy/.  Let's save it somewhere.
     - uses: actions/upload-artifact@v1
       with:
         name: ${{ steps.config.outputs.image }}
-        path: PiGen/Deploy/${{ steps.config.outputs.image }}.img
+        path: PiGen/deploy/${{ steps.imagename.outputs.imagefile }}
