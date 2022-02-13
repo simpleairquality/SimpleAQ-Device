@@ -45,6 +45,7 @@ jobs:
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=$IMAGE > config
+        echo "::set-output name=image::$IMAGE"
 
     - name: Build Image
       run: |
@@ -54,5 +55,5 @@ jobs:
     # The image now exists in deploy/.  Let's save it somewhere.
     - uses: actions/upload-artifact@v1
       with:
-        name: PiGen/deploy/${{ steps.config.outputs.image }}
-        path: PiGen/deploy/${{ steps.config.outputs.image }}.img
+        name: ${{ steps.config.outputs.image }}
+        path: PiGen/Deploy/${{ steps.config.outputs.image }}.img
