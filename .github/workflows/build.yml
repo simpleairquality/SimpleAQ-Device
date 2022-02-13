@@ -47,6 +47,14 @@ jobs:
         echo IMG_NAME=$IMAGE > config
         echo "::set-output name=image::$IMAGE"
 
+    # Greatly speed up our build because we don't need a desktop
+    # or anything more advanced for our little IoT devices.
+    - name: Disable Non-Lite Builds
+      run: |
+        cd PiGen
+        touch ./stage3/SKIP ./stage4/SKIP ./stage5/SKIP
+        touch ./stage4/SKIP_IMAGES ./stage5/SKIP_IMAGES
+
     - name: Build Image
       run: |
         cd PiGen
@@ -59,11 +67,12 @@ jobs:
         cd PiGen
         cd deploy
         ls
-        IMAGE_FILE=$(ls *.img)
+        IMAGE_FILE=$(ls *.zip)
         echo "::set-output name=imagefile::$IMAGE_FILE"
 
     # The image now exists in deploy/.  Let's save it somewhere.
     - uses: actions/upload-artifact@v1
       with:
         name: ${{ steps.config.outputs.image }}
-        path: PiGen/deploy/${{ steps.imagename.outputs.imagefile }}
+        path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
+
