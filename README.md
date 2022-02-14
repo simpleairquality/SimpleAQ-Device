@@ -45,7 +45,7 @@ In any event, if your device is mounted, the following step will not work.
 
 Now we will write your image with
 ```bash
-cat your_image_file.img | sudo dd bs=4M of=/dev/sdx 
+sudo dd bs=4M of=/dev/sdx if=your_image_file.img 
 ```
 where `x` is your device's letter that you found with `fdisk` above.
 This step may take a while.
