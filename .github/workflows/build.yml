@@ -45,6 +45,7 @@ jobs:
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=$IMAGE > config
+        echo DEPLOY_ZIP=0 >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -67,7 +68,7 @@ jobs:
         cd PiGen
         cd deploy
         ls
-        IMAGE_FILE=$(ls *.zip)
+        IMAGE_FILE=$(ls *.img)
         echo "::set-output name=imagefile::$IMAGE_FILE"
 
     # The image now exists in deploy/.  Let's save it somewhere.
