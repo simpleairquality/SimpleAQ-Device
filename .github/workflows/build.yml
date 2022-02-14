@@ -1,0 +1,78 @@
+name: Build Image
+
+on:
+  repository_dispatch:
+  push:
+  schedule: 
+    - cron: '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 512
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
+
+    - name: Checkout PiGen
+      uses: actions/checkout@v2
+      with:
+        repository: 'RPi-Distro/pi-gen'
+        path: PiGen
+        fetch-depth: 1
+
+    # TODO:  Whatever we need to change in PiGen,
+    #        this is where we would copy custom files or instructions into
+    #        stage0-stage5 files that now exist in PiGen/.
+    #        Probably just CronJob and Bluetooth related?
+    #        Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
+
+    # See README at https://github.com/RPi-Distro/pi-gen
+    - name: Create Config File
+      id: config
+      run: |
+        cd PiGen
+        NOW=$(date +"%Y-%m-%d-%H%M")
+        IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
+        echo IMG_NAME=$IMAGE > config
+        echo "::set-output name=image::$IMAGE"
+
+    # Greatly speed up our build because we don't need a desktop
+    # or anything more advanced for our little IoT devices.
+    - name: Disable Non-Lite Builds
+      run: |
+        cd PiGen
+        touch ./stage3/SKIP ./stage4/SKIP ./stage5/SKIP
+        touch ./stage4/SKIP_IMAGES ./stage5/SKIP_IMAGES
+
+    - name: Build Image
+      run: |
+        cd PiGen
+        sudo ./build.sh
+
+    # Pi-Gen does weird things with the image file name, so let's make sure we have it right.
+    - name: Get Image Name
+      id: imagefile
+      run: |
+        cd PiGen
+        cd deploy
+        ls
+        IMAGE_FILE=$(ls *.zip)
+        echo "::set-output name=imagefile::$IMAGE_FILE"
+
+    # The image now exists in deploy/.  Let's save it somewhere.
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ${{ steps.config.outputs.image }}
+        path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
+
