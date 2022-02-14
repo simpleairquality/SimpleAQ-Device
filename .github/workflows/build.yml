@@ -21,7 +21,7 @@ jobs:
 
     - name: List Available Space
       run: |
-        echo: "Free space:"
+        echo "Free space:"
         df -h
 
     - name: Install Dependencies
