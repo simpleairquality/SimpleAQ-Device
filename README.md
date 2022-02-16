@@ -15,7 +15,7 @@ Click the artifact to download it.
 
 You can unzip your image with
 ```bash
-unzip
+unzip your_downloaded_image_file.zip
 ```
 
 Once you have the contained `.img` file, you can write it to your MicroSD card.
@@ -50,9 +50,8 @@ sudo dd bs=4M of=/dev/sdx if=your_image_file.img
 where `x` is your device's letter that you found with `fdisk` above.
 This step may take a while.
 
-TODO:  I don't understand why I'm unable to mount the (ostesnbily ext4) Linux partition now...
+You should now be able to mount the `ext4` Linux partition of your written image to inspect the written files.
 
+## Manual Configuration
 
-# TODOs
-
-TODO:  Manual configuration of an image for the frontend.
+TODO:  How to manually configure the partition using the output from the frontend.
