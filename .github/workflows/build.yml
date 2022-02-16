@@ -10,14 +10,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Maximize build space
+    - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
       with:
-        root-reserve-mb: 512
+        root-reserve-mb: 10240 
         swap-size-mb: 1024
         remove-dotnet: 'true'
         remove-android: 'true'
         remove-haskell: 'true'
+
+    - name: List Available Space
+      run: |
+        echo "Free space:"
+        df -h
 
     - name: Install Dependencies
       run: |
@@ -45,6 +50,7 @@ jobs:
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=$IMAGE > config
+        echo DEPLOY_ZIP=0 >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -58,7 +64,7 @@ jobs:
     - name: Build Image
       run: |
         cd PiGen
-        sudo ./build.sh
+        ./build-docker.sh
 
     # Pi-Gen does weird things with the image file name, so let's make sure we have it right.
     - name: Get Image Name
@@ -67,7 +73,7 @@ jobs:
         cd PiGen
         cd deploy
         ls
-        IMAGE_FILE=$(ls *.zip)
+        IMAGE_FILE=$(ls *.img)
         echo "::set-output name=imagefile::$IMAGE_FILE"
 
     # The image now exists in deploy/.  Let's save it somewhere.
