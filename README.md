@@ -55,3 +55,19 @@ You should now be able to mount the `ext4` Linux partition of your written image
 ## Manual Configuration
 
 TODO:  How to manually configure the partition using the output from the frontend.
+
+# Dev Quickstart
+
+## First Time
+
+You can install needed dependencies in `virtualenv` with:
+```bash
+virtualenv venv -p python3
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+When you return to your work later, you can simply use:
+```bash
+source venv/bin/activate
+```
