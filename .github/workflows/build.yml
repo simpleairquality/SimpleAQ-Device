@@ -43,9 +43,14 @@ jobs:
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
-    - name: Install Custom Pigen
+    - name: Install Custom PiGen Files
       run: |
-        cd SimpleAQ-Device/custom_pigen
+        cd PiGen
+        mkdir SimpleAQ-Device
+        cd ..
+        cd SimpleAQ-Device
+        cp -R * ../PiGen/SimpleAQ-Device/
+        cd custom_pigen
         cp -R * ../../PiGen/
 
     # See README at https://github.com/RPi-Distro/pi-gen

@@ -12,6 +12,6 @@ RUN apt-get -y update && \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . /pi-gen/
-COPY ../SimpleAQ-Device/ /simpleaq/
+COPY ./SimpleAQ-Device/ /simpleaq/
 
 VOLUME [ "/pi-gen/work", "/pi-gen/deploy"]
