@@ -40,6 +40,7 @@ jobs:
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
     - name: Install Custom Pigen
       run: |
+        ls
         cd custom_pigen
         cp -R * ../PiGen/
 
