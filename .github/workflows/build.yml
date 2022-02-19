@@ -46,7 +46,7 @@ jobs:
     - name: Install Custom Pigen
       run: |
         cd SimpleAQ-Device/custom_pigen
-        cp -R * ../PiGen/
+        cp -R * ../../PiGen/
 
     # See README at https://github.com/RPi-Distro/pi-gen
     - name: Create Config File
