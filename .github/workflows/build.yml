@@ -36,11 +36,12 @@ jobs:
         path: PiGen
         fetch-depth: 1
 
-    # TODO:  Whatever we need to change in PiGen,
-    #        this is where we would copy custom files or instructions into
-    #        stage0-stage5 files that now exist in PiGen/.
-    #        Probably just CronJob and Bluetooth related?
-    #        Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
+    # This is where we install all of our PiGen extras.
+    # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
+    - name: Install Custom Pigen
+      run: |
+        cd custom_pigen
+        cp -R * ../PiGen/
 
     # See README at https://github.com/RPi-Distro/pi-gen
     - name: Create Config File
