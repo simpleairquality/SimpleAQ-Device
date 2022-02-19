@@ -29,6 +29,11 @@ jobs:
         sudo apt update
         sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
 
+    - name: Checkout SimpleAQ-Device
+      uses: actions/checkout@v2
+      with:
+        path: SimpleAQ-Device
+
     - name: Checkout PiGen
       uses: actions/checkout@v2
       with:
@@ -40,8 +45,7 @@ jobs:
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
     - name: Install Custom Pigen
       run: |
-        ls
-        cd custom_pigen
+        cd SimpleAQ-Device/custom_pigen
         cp -R * ../PiGen/
 
     # See README at https://github.com/RPi-Distro/pi-gen
