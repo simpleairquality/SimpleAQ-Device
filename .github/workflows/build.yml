@@ -29,6 +29,11 @@ jobs:
         sudo apt update
         sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
 
+    - name: Checkout SimpleAQ-Device
+      uses: actions/checkout@v2
+      with:
+        path: SimpleAQ-Device
+
     - name: Checkout PiGen
       uses: actions/checkout@v2
       with:
@@ -36,11 +41,17 @@ jobs:
         path: PiGen
         fetch-depth: 1
 
-    # TODO:  Whatever we need to change in PiGen,
-    #        this is where we would copy custom files or instructions into
-    #        stage0-stage5 files that now exist in PiGen/.
-    #        Probably just CronJob and Bluetooth related?
-    #        Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
+    # This is where we install all of our PiGen extras.
+    # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
+    - name: Install Custom PiGen Files
+      run: |
+        cd PiGen
+        mkdir SimpleAQ-Device
+        cd ..
+        cd SimpleAQ-Device
+        cp -R * ../PiGen/SimpleAQ-Device/
+        cd custom_pigen
+        cp -R * ../../PiGen/
 
     # See README at https://github.com/RPi-Distro/pi-gen
     - name: Create Config File
