@@ -3,6 +3,6 @@
 # TODO:  Remove the ls here.
 on_chroot << EOF
         pwd
-        ls /simpleaq/  
+        ls 
         pip install -r /simpleaq/requirements.txt
 EOF
