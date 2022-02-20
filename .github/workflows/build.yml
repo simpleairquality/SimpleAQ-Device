@@ -50,7 +50,6 @@ jobs:
         cd ..
         cd SimpleAQ-Device
         cp -R * ../PiGen/SimpleAQ-Device/
-        ls ../PiGen/SimpleAQ-Device/  # Debugging, remove this.
         cd custom_pigen
         cp -R * ../../PiGen/
 
