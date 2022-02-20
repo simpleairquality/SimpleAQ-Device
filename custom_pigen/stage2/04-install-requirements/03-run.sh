@@ -1,8 +1,7 @@
 #!/bin/bash -e
 
-# TODO:  Remove the ls here.
+cp -R /simpleaq "${ROOTFS_DIR}"
+
 on_chroot << EOF
-        pwd
-        ls 
         pip install -r /simpleaq/requirements.txt
 EOF
