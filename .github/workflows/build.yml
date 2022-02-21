@@ -93,3 +93,90 @@ jobs:
         name: ${{ steps.config.outputs.image }}
         path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
 
+  build_debug:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Maximize Build Space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 10240
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+
+    - name: List Available Space
+      run: |
+        echo "Free space:"
+        df -h
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
+
+    - name: Checkout SimpleAQ-Device
+      uses: actions/checkout@v2
+      with:
+        path: SimpleAQ-Device
+
+    - name: Checkout PiGen
+      uses: actions/checkout@v2
+      with:
+        repository: 'RPi-Distro/pi-gen'
+        path: PiGen
+        fetch-depth: 1
+
+    # This is where we install all of our PiGen extras.
+    # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
+    - name: Install Custom PiGen Files
+      run: |
+        cd PiGen
+        mkdir SimpleAQ-Device
+        cd ..
+        cd SimpleAQ-Device
+        cp -R * ../PiGen/SimpleAQ-Device/
+        cd custom_pigen
+        cp -R * ../../PiGen/
+
+    # See README at https://github.com/RPi-Distro/pi-gen
+    - name: Create Config File
+      id: config
+      run: |
+        cd PiGen
+        NOW=$(date +"%Y-%m-%d-%H%M")
+        IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
+        echo IMG_NAME=INSECURE-DEBUG-$IMAGE > config
+        echo DEPLOY_ZIP=0 >> config
+        echo ENABLE_SSH=1 >> config
+        echo "::set-output name=image::$IMAGE"
+
+    # Greatly speed up our build because we don't need a desktop
+    # or anything more advanced for our little IoT devices.
+    - name: Disable Non-Lite Builds
+      run: |
+        cd PiGen
+        touch ./stage3/SKIP ./stage4/SKIP ./stage5/SKIP
+        touch ./stage4/SKIP_IMAGES ./stage5/SKIP_IMAGES
+
+    - name: Build Image
+      run: |
+        cd PiGen
+        ./build-docker.sh
+
+    # Pi-Gen does weird things with the image file name, so let's make sure we have it right.
+    - name: Get Image Name
+      id: imagefile
+      run: |
+        cd PiGen
+        cd deploy
+        ls
+        IMAGE_FILE=$(ls *.img)
+        echo "::set-output name=imagefile::$IMAGE_FILE"
+
+    # The image now exists in deploy/.  Let's save it somewhere.
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ${{ steps.config.outputs.image }}
+        path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
+
