@@ -141,7 +141,7 @@ jobs:
 
     # See README at https://github.com/RPi-Distro/pi-gen
     - name: Create Config File
-      id: config
+      id: debugconfig
       run: |
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
@@ -166,7 +166,7 @@ jobs:
 
     # Pi-Gen does weird things with the image file name, so let's make sure we have it right.
     - name: Get Image Name
-      id: imagefile
+      id: debugimagefile
       run: |
         cd PiGen
         cd deploy
@@ -177,6 +177,6 @@ jobs:
     # The image now exists in deploy/.  Let's save it somewhere.
     - uses: actions/upload-artifact@v1
       with:
-        name: ${{ steps.config.outputs.image }}
-        path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
+        name: ${{ steps.debugconfig.outputs.image }}
+        path: PiGen/deploy/${{ steps.debugimagefile.outputs.imagefile }}
 
