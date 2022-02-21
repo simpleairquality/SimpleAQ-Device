@@ -17,10 +17,10 @@ cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
-on_chroot << EOF
-        cat /etc/environment
-        cat /simpleaq/example.env >> /etc/environment
-EOF
+# Is this somehow overwriting /etc/environment?
+# on_chroot << EOF
+#         cat /simpleaq/example.env >> /etc/environment
+# EOF
 
 # Make sure our service has the right permissions and that it starts on boot.
 on_chroot << EOF
