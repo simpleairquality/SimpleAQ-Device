@@ -145,7 +145,7 @@ jobs:
       run: |
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
-        IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
+        IMAGE=INSECURE-DEBUG-SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=INSECURE-DEBUG-$IMAGE > config
         echo DEPLOY_ZIP=0 >> config
         echo ENABLE_SSH=1 >> config
