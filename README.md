@@ -55,6 +55,7 @@ You should now be able to mount the `ext4` Linux partition of your written image
 ## Manual Configuration
 
 TODO:  How to manually configure the partition using the output from the frontend.
+NOTE:  Environment variables live in `/etc/environment` on the Raspbian.
 
 # Dev Quickstart
 
@@ -71,3 +72,29 @@ When you return to your work later, you can simply use:
 ```bash
 source venv/bin/activate
 ```
+## SSH Into your SimpleAQ Device For Testing
+
+Our build process automatically creates Raspbian images appropriate for both a production environment and for development.
+In order to SSH into your SimpleAQ device, you will need to select a development image labeled INSECURE-DEBUG.
+These devices use the default username `pi` and the default password `raspberry` and would be compromised immediately if placed on the public internet.
+
+After imaging your device with the desired INSECURE-DEBUG image, you will need to connect your device to your PC using the **data/peripherals** USB port.
+On a Raspberry Pi Zero W, this is the USB port closest to the center of the device.
+You may need to wait a minute for the device to boot.
+
+On Windows or Mac, you should now be able to connect to the device using
+```
+ssh pi@raspberrypi.local
+```
+using the default password `raspberry`.
+
+On Ubuntu, while the device appears in the networking menu as "Ethernet Network (Netchip Linux-USB Gadget)", it may be necessary to first mark the connection as "Link-Local" only in `nm-connection-editor`:
+1. Run `nm-connection-editor` from the Host OS.
+2. Select the appropriate "Wired connection #" under Ethernet, then click the gear. (The device name will be something like enxbed891078ed1)
+3. Select "IPv4 Settings", then Method: "Link-Local Only".
+4. Run `ssh pi@raspberrypi.local`, using the default password `raspberry`.
+
+Be warned about the following pitfalls:
+- If you later re-image your device and connect it again, you will receive a warning that the `ssh` key changed.
+- I am unable to connect to the device via USB while connected to Ethernet on the same machine.  Wireless seems to be OK.
+- Ubuntu will create a new Wired connection for each re-image of the device, as each new image is recognized as a different device.

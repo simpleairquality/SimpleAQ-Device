@@ -1,0 +1,10 @@
+[Unit]
+Description=SimpleAQ Recorder
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=on-failure
+ExecStart=python /simpleaq/recorder.py
+
