@@ -55,8 +55,7 @@ You should now be able to mount the `ext4` Linux partition of your written image
 ## Manual Configuration
 
 TODO:  How to manually configure the partition using the output from the frontend.
-
-NOTE:  Environment variables live in `/etc/environment/` in 
+NOTE:  Environment variables live in `/etc/environment` on the Raspbian.
 
 # Dev Quickstart
 
@@ -99,5 +98,3 @@ Be warned about the following pitfalls:
 - If you later re-image your device and connect it again, you will receive a warning that the `ssh` key changed.
 - I am unable to connect to the device via USB while connected to Ethernet on the same machine.  Wireless seems to be OK.
 - Ubuntu will create a new Wired connection for each re-image of the device, as each new image is recognized as a different device.
-
-Further, Ubuntu crea
