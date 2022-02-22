@@ -1,3 +1,4 @@
+absl-py
 adafruit-python-shell
 adafruit-circuitpython-gps
 adafruit-circuitpython-pm25
