@@ -94,3 +94,10 @@ On Ubuntu, while the device appears in the networking menu as "Ethernet Network 
 2. Select the appropriate "Wired connection #" under Ethernet, then click the gear. (The device name will be something like enxbed891078ed1)
 3. Select "IPv4 Settings", then Method: "Link-Local Only".
 4. Run `ssh pi@raspberrypi.local`, using the default password `raspberry`.
+
+Be warned about the following pitfalls:
+- If you later re-image your device and connect it again, you will receive a warning that the `ssh` key changed.
+- I am unable to connect to the device via USB while connected to Ethernet on the same machine.  Wireless seems to be OK.
+- Ubuntu will create a new Wired connection for each re-image of the device, as each new image is recognized as a different device.
+
+Further, Ubuntu crea
