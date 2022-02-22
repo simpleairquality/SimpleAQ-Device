@@ -6,5 +6,5 @@ WantedBy=default.target
 
 [Service]
 Restart=on-failure
-ExecStart=/usr/bin/python /simpleaq/recorder.py
+ExecStart=python /simpleaq/recorder.py
 
