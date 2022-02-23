@@ -52,11 +52,6 @@ This step may take a while.
 
 You should now be able to mount the `ext4` Linux partition of your written image to inspect the written files.
 
-## Manual Configuration
-
-TODO:  How to manually configure the partition using the output from the frontend.
-NOTE:  Environment variables live in `/etc/environment` on the Raspbian.
-
 # Dev Quickstart
 
 ## First Time
@@ -98,3 +93,31 @@ Be warned about the following pitfalls:
 - If you later re-image your device and connect it again, you will receive a warning that the `ssh` key changed.
 - I am unable to connect to the device via USB while connected to Ethernet on the same machine.  Wireless seems to be OK.
 - Ubuntu will create a new Wired connection for each re-image of the device, as each new image is recognized as a different device.
+
+## Manually Configuring Your Device To Connect to Wifi
+
+## Manually Configuring Your Device To Write Data to InfluxDB
+
+First, you'll need an instance of [InfluxDB](https://github.com/influxdata/influxdb) to write into!
+If you need a temporary instance for testing purposes, you can create one using:
+```bash
+docker run -p 8086:8086 \
+           -e DOCKER_INFLUXDB_INIT_USERNAME=influx_dev_user \
+           -e DOCKER_INFLUXDB_INIT_PASSWORD=influx_not_secure \
+           -e DOCKER_INFLUXDB_INIT_ORG=my_org \
+           -e DOCKER_INFLUXDB_INIT_BUCKET=my_bucket \
+           -e DOCKER_INFLUXDB_INIT_MODE=setup \
+           -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=not_secure_admin_token \
+           influxdb:latest
+```
+
+The InfluxDB instance will now be running on port 8086 on the host machine.
+You will also need to find the IP address of the host machine so that the device can write into it.
+One way to find the local IP address is using `ifconfig`.
+
+In order to connect the device, you will need a valid org, bucket and token.
+If you used the example above, you can use `my_org`, `my_bucket` and `not_secure_admin_token`.
+
+
+
+
