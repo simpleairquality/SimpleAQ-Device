@@ -98,7 +98,11 @@ Be warned about the following pitfalls:
 
 ## Manually Configuring Your Device To Write Data to InfluxDB
 
+### Create a Temporary InfluxDB Instance For Testing
+
 First, you'll need an instance of [InfluxDB](https://github.com/influxdata/influxdb) to write into!
+If you already have one, you can skip this step.
+
 If you need a temporary instance for testing purposes, you can create one using:
 ```bash
 docker run -p 8086:8086 \
@@ -108,16 +112,22 @@ docker run -p 8086:8086 \
            -e DOCKER_INFLUXDB_INIT_BUCKET=my_bucket \
            -e DOCKER_INFLUXDB_INIT_MODE=setup \
            -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=not_secure_admin_token \
+           --network host \
            influxdb:latest
 ```
 
 The InfluxDB instance will now be running on port 8086 on the host machine.
 You will also need to find the IP address of the host machine so that the device can write into it.
 One way to find the local IP address is using `ifconfig`.
+It may be helpful to confirm that you can connect to http://HOST.IP.ADDRESS.HERE:8086/ from a web browser on a machine on the same network as your device.
+If InfluxDB is set up properly and accessible, you will see a login page for InfluxDB.
+
+### Configuring Your Device
 
 In order to connect the device, you will need a valid org, bucket and token.
-If you used the example above, you can use `my_org`, `my_bucket` and `not_secure_admin_token`.
+If you used the example above, you can use "my\_org", "my\_bucket" and "not\_secure\_admin\_token".
 
+TODO:  Configuring the device.
 
 
 
