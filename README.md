@@ -99,7 +99,7 @@ Be warned about the following pitfalls:
 ## Manually Configuring Your Device To Connect to Wifi
 
 You can configure Wifi on your device without using `ssh`.
-Insert the MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
+Insert the imaged MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
 At the end of the file, add:
 
 ```
@@ -138,7 +138,7 @@ docker run -p 8086:8086 \
 The InfluxDB instance will now be running on port 8086 on the host machine.
 You will also need to find the IP address of the host machine so that the device can write into it.
 One way to find the local IP address is using `ifconfig`.
-It may be helpful to confirm that you can connect to http://HOST.IP.ADDRESS.HERE:8086/ from a web browser on a machine on the same network as your device.
+It may be helpful to confirm that you can connect to http://HOST.IP.ADDRESS.HERE:8086 from a web browser on a machine on the same network as your device.
 If InfluxDB is set up properly and accessible, you will see a login page for InfluxDB.
 
 ### Configuring Your Device
@@ -146,7 +146,16 @@ If InfluxDB is set up properly and accessible, you will see a login page for Inf
 In order to connect the device, you will need a valid org, bucket and token.
 If you used the example above, you can use "my\_org", "my\_bucket" and "not\_secure\_admin\_token".
 
-TODO:  Configuring the device.
+You do not need `ssh` to configure your device.
+First, put your imaged MicroSD card into a card reader.
+Edit `/etc/environment` in the root filesystem "rootfs".
+If you're following the example above, the relevant fields would then be:
+```
+influx_org=my_org
+influx_bucket=my_bucket
+influx_token=not_secure_admin_token
+influx_server=http://HOST.IP.ADDRESS.HERE:8086
+```
 
-
+TODO:  But it doesn't actually work on my device...
 
