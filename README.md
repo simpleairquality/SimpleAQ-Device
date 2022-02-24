@@ -82,6 +82,7 @@ On Windows or Mac, you should now be able to connect to the device using
 ssh pi@raspberrypi.local
 ```
 using the default password `raspberry`.
+**If you intend on connecting your device to the public internet, please change your password using `passwd`!**
 
 On Ubuntu, while the device appears in the networking menu as "Ethernet Network (Netchip Linux-USB Gadget)", it may be necessary to first mark the connection as "Link-Local" only in `nm-connection-editor`:
 1. Run `nm-connection-editor` from the Host OS.
@@ -90,11 +91,29 @@ On Ubuntu, while the device appears in the networking menu as "Ethernet Network 
 4. Run `ssh pi@raspberrypi.local`, using the default password `raspberry`.
 
 Be warned about the following pitfalls:
-- If you later re-image your device and connect it again, you will receive a warning that the `ssh` key changed.
+- If you disconnect your device and connect it again, you will receive a warning that the `ssh` key changed.
 - I am unable to connect to the device via USB while connected to Ethernet on the same machine.  Wireless seems to be OK.
-- Ubuntu will create a new Wired connection for each re-image of the device, as each new image is recognized as a different device.
+- Ubuntu will create a new Wired connection for the device every time you plug it in, so you will need to repeat the procedure every time.
+- This is flaky and occasionally I must reboot my computer in order for the device to be detected as raspberrypi.local.
 
 ## Manually Configuring Your Device To Connect to Wifi
+
+You can configure Wifi on your device without using `ssh`.
+Insert the MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
+At the end of the file, add:
+
+```
+network={
+    ssid="Your Wireless Network ID Here!"
+    psk="Your Wireless Network Password Here!"
+}
+```
+
+Note that if you are concerned about the security of storing your key in plain-text, you can run:
+```bash
+wpa_passphrase YourWirelessNetworkID YourWirelessNetworkPassword
+```
+and get a hash that you can use in the PSK field instead.
 
 ## Manually Configuring Your Device To Write Data to InfluxDB
 
