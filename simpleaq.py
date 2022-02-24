@@ -19,8 +19,8 @@ import influxdb_client
 
 import dotenv
 
-dotenv.load_dotenv()
 FLAGS = flags.FLAGS
+flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
 
 
 class Sensor(object):
@@ -126,8 +126,10 @@ def connect_to_influx():
 
 
 def main(args):
-  if len(args) != 1:
-    sys.exit(f'Usage: {args[0]}')
+  if (FLAGS.env):
+    dotenv.load_dotenv(FLAGS.env)
+  else:
+    dotenv.load_dotenv()
 
   interval = int(os.getenv('simpleaq_interval'))
 
