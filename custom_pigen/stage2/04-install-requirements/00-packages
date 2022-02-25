@@ -1,4 +1,5 @@
 python3-pip
 i2c-tools
+i2c-dev
 libgpiod-dev
 bootlogd
