@@ -33,3 +33,8 @@ on_chroot << EOF
         rm -rf /simpleaq/custom_pigen
 EOF
 
+# Enable necessary interfaces in raspi-config.
+on_chroot << EOF
+        raspi-config nonint do_i2c 0
+        raspi-config nonint do_spi 0
+EOF
