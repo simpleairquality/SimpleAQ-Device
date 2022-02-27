@@ -99,8 +99,7 @@ Be warned about the following pitfalls:
 ## Manually Configuring Your Device To Connect to Wifi
 
 You can configure Wifi on your device without using `ssh`.
-Before configuring the device's Wifi, you will first need to insert your imaged MicroSD card into your Raspberry Pi device and boot at least once.
-Afterwards, insert the imaged MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
+First, insert the imaged MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
 At the end of the file, add:
 
 ```
@@ -144,12 +143,11 @@ If InfluxDB is set up properly and accessible, you will see a login page for Inf
 
 ### Configuring Your Device
 
-In order to connect the device, you will need a valid org, bucket and token.
+In order to connect the device to the backend, you will need a valid org, bucket and token.
 If you used the example above, you can use "my\_org", "my\_bucket" and "not\_secure\_admin\_token".
 
 You do not need `ssh` to configure your device.
-Before proceeding, you will first need to insert your imaged MicroSD card into your Raspberry Pi device and boot at least once.
-Afterwards, put your imaged MicroSD card into a card reader.
+First, put your imaged MicroSD card into a card reader.
 Edit `/etc/environment` in the root filesystem "rootfs".
 If you're following the example above, the relevant fields would then be:
 ```
@@ -159,18 +157,7 @@ influx_token=not_secure_admin_token
 influx_server=http://HOST.IP.ADDRESS.HERE:8086
 ```
 
-TODO:  But it doesn't actually work on my device...
-TODO:  Am I missing one or more of the raspi-config commands from `wget https://raw.githubusercontent.com/adafruit/Raspberry-Pi-Installer-Scripts/master/raspi-blinka.py`?
-TODO:  Note that, in the build logs, we see errors like:
-```
-mount: /config/device-tree: mount point does not exist.
-* Failed to mount configfs - 2
-modprobe: FATAL: Module i2c-dev not found in directory /lib/modules/5.11.0-1028-azure
-mount: /config/device-tree: mount point does not exist.
-* Failed to mount configfs - 2
-```
-I wonder if these are tied to the `raspi-config` calls in `custom_pigen/stage2/04-install-requirements/03-run.sh` and in fact this needs to happen on first boot.
-If so, we can use [one of these solutions](https://serverfault.com/questions/148341/linux-schedule-command-to-run-once-after-reboot-runonce-equivalent).
+If everything is configured correctly and the device has network connectivity, your device should be auto-configured on boot and automatically start sending readings to InfluxDB.
 
 # Troubleshooting
 
@@ -182,3 +169,13 @@ Therefore, if booting fails for any reason, you can insert the MicroSD card into
 ```bash
 sed 's/\^\[/\o33/g;s/\[1G\[/\[27G\[/' var/log/boot
 ```
+
+## Service
+
+If there is an issue with the service, you can `ssh` into the device using the instructions above, then run
+
+```bash
+sudo service simpleaq status
+```
+
+to explore the issue.
