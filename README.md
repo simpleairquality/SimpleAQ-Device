@@ -176,8 +176,6 @@ If so, we can use [one of these solutions](https://serverfault.com/questions/148
 
 ## Boot
 
-**bootlogd temporarily removed for troubleshooting.**
-
 `bootlogd` is installed in our images.
 Therefore, if booting fails for any reason, you can insert the MicroSD card into a standard reader, then check the root file system "rootfs" for boot errors using
 
