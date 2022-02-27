@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
 
-try:
-  import calendar
-  import os
-  import sys
-  import threading
-  import time
-  from pprint import pprint
+import calendar
+import os
+import sys
+import threading
+import time
+from pprint import pprint
 
-  from absl import app, flags, logging
+from absl import app, flags, logging
 
-  import board
-  import busio
-  from adafruit_pm25.i2c import PM25_I2C
-  import adafruit_bme680
-  import adafruit_gps
+import board
+import busio
+from adafruit_pm25.i2c import PM25_I2C
+import adafruit_bme680
+import adafruit_gps
 
-  import influxdb_client
-
-  import dotenv
-except Exception as e:
-  print(str(e), file=sys.stderr)
-  exit(1)
+import influxdb_client
+import dotenv
 
 
 FLAGS = flags.FLAGS

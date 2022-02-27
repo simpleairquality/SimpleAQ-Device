@@ -5,6 +5,6 @@ Description=SimpleAQ Recorder
 WantedBy=default.target
 
 [Service]
-Restart=on-abnormal
+Restart=on-failure
 ExecStart=python /simpleaq/simpleaq.py --env /etc/environment
 
