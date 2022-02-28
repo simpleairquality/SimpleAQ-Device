@@ -41,19 +41,19 @@ class Bme688(Sensor):
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'temperature', self.sensor.temperature))
+            'temperature_C', self.sensor.temperature))
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'gas', self.sensor.gas))
+            'voc_ohms', self.sensor.gas))
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'humidity', self.sensor.humidity))
+            'relative_humidity_pct', self.sensor.humidity))
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'pressure', self.sensor.pressure))
+            'pressure_hPa', self.sensor.pressure))
 
 
 class Pm25(Sensor):
