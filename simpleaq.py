@@ -2,6 +2,7 @@
 
 import calendar
 import os
+import psutil
 import sys
 import threading
 import time
@@ -17,7 +18,6 @@ import adafruit_gps
 
 import influxdb_client
 import dotenv
-
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
@@ -117,6 +117,23 @@ class Gps(Sensor):
         logging.warning('GPS has no fix')
 
 
+class System(Sensor):
+  def __init__(self, influx):
+    super().__init__(influx)
+    self.start_time = time.time()
+
+  def publish(self):
+    logging.info('Publishing system stats')
+    with self.influx.write_api() as client:
+      client.write(self.bucket,
+                   self.org,
+                   influxdb_client.Point('System').field(
+                     'device_uptime_sec', time.time() - psutil.boot_time()))
+      client.write(self.bucket,
+                   self.org,
+                   influxdb_client.Point('System').field(
+                     'service_uptime_sec', self.start_time - psutil.boot_time()))
+
 
 def connect_to_influx():
   url = os.getenv('influx_server')
@@ -138,6 +155,7 @@ def main(args):
     sensors.append(Bme688(influx))
     sensors.append(Pm25(influx))
     sensors.append(Gps(influx))
+    sensors.append(System(influx))
     while True:
       for sensor in sensors:
         sensor.publish()
