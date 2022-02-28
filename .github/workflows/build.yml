@@ -6,6 +6,8 @@ on:
   schedule: 
     - cron: '0 0 * * *'
 
+# TODO:  These jobs are so similar except for just ssh.
+#        I'd love to find a way to not have so much repetition between these configurations.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,12 +36,15 @@ jobs:
       with:
         path: SimpleAQ-Device
 
+    # We will periodically have to update PiGen to a newer version.
+    # Because we've been broken by them in the past, we pin the version to prevent us from being broken by them.
     - name: Checkout PiGen
       uses: actions/checkout@v2
       with:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
+        ref: c5a906b676647c2334ddb595435ebbbe869bff15
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -120,12 +125,15 @@ jobs:
       with:
         path: SimpleAQ-Device
 
+    # We will periodically have to update PiGen to a newer version.
+    # Because we've been broken by them in the past, we pin the version to prevent us from being broken by them.
     - name: Checkout PiGen
       uses: actions/checkout@v2
       with:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
+        ref: c5a906b676647c2334ddb595435ebbbe869bff15
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
