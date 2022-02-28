@@ -52,11 +52,6 @@ This step may take a while.
 
 You should now be able to mount the `ext4` Linux partition of your written image to inspect the written files.
 
-## Manual Configuration
-
-TODO:  How to manually configure the partition using the output from the frontend.
-NOTE:  Environment variables live in `/etc/environment` on the Raspbian.
-
 # Dev Quickstart
 
 ## First Time
@@ -87,6 +82,7 @@ On Windows or Mac, you should now be able to connect to the device using
 ssh pi@raspberrypi.local
 ```
 using the default password `raspberry`.
+**If you intend on connecting your device to the public internet, please change your password using `passwd`!**
 
 On Ubuntu, while the device appears in the networking menu as "Ethernet Network (Netchip Linux-USB Gadget)", it may be necessary to first mark the connection as "Link-Local" only in `nm-connection-editor`:
 1. Run `nm-connection-editor` from the Host OS.
@@ -95,6 +91,91 @@ On Ubuntu, while the device appears in the networking menu as "Ethernet Network 
 4. Run `ssh pi@raspberrypi.local`, using the default password `raspberry`.
 
 Be warned about the following pitfalls:
-- If you later re-image your device and connect it again, you will receive a warning that the `ssh` key changed.
+- If you disconnect your device and connect it again, you will receive a warning that the `ssh` key changed.
 - I am unable to connect to the device via USB while connected to Ethernet on the same machine.  Wireless seems to be OK.
-- Ubuntu will create a new Wired connection for each re-image of the device, as each new image is recognized as a different device.
+- Ubuntu will create a new Wired connection for the device every time you plug it in, so you will need to repeat the procedure every time.
+- This is flaky and occasionally I must reboot my computer in order for the device to be detected as raspberrypi.local.
+
+## Manually Configuring Your Device To Connect to Wifi
+
+You can configure Wifi on your device without using `ssh`.
+First, insert the imaged MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
+At the end of the file, add:
+
+```
+network={
+    ssid="Your Wireless Network ID Here!"
+    psk="Your Wireless Network Password Here!"
+}
+```
+
+Note that if you are concerned about the security of storing your key in plain-text, you can run:
+```bash
+wpa_passphrase YourWirelessNetworkID YourWirelessNetworkPassword
+```
+and get a hash that you can use in the PSK field instead.
+
+## Manually Configuring Your Device To Write Data to InfluxDB
+
+### Create a Temporary InfluxDB Instance For Testing
+
+First, you'll need an instance of [InfluxDB](https://github.com/influxdata/influxdb) to write into!
+If you already have one, you can skip this step.
+
+If you need a temporary instance for testing purposes, you can create one using:
+```bash
+docker run -p 8086:8086 \
+           -e DOCKER_INFLUXDB_INIT_USERNAME=influx_dev_user \
+           -e DOCKER_INFLUXDB_INIT_PASSWORD=influx_not_secure \
+           -e DOCKER_INFLUXDB_INIT_ORG=my_org \
+           -e DOCKER_INFLUXDB_INIT_BUCKET=my_bucket \
+           -e DOCKER_INFLUXDB_INIT_MODE=setup \
+           -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=not_secure_admin_token \
+           --network host \
+           influxdb:latest
+```
+
+The InfluxDB instance will now be running on port 8086 on the host machine.
+You will also need to find the IP address of the host machine so that the device can write into it.
+One way to find the local IP address is using `ifconfig`.
+It may be helpful to confirm that you can connect to http://HOST.IP.ADDRESS.HERE:8086 from a web browser on a machine on the same network as your device.
+If InfluxDB is set up properly and accessible, you will see a login page for InfluxDB.
+
+### Configuring Your Device
+
+In order to connect the device to the backend, you will need a valid org, bucket and token.
+If you used the example above, you can use "my\_org", "my\_bucket" and "not\_secure\_admin\_token".
+
+You do not need `ssh` to configure your device.
+First, put your imaged MicroSD card into a card reader.
+Edit `/etc/environment` in the root filesystem "rootfs".
+If you're following the example above, the relevant fields would then be:
+```
+influx_org=my_org
+influx_bucket=my_bucket
+influx_token=not_secure_admin_token
+influx_server=http://HOST.IP.ADDRESS.HERE:8086
+```
+
+If everything is configured correctly and the device has network connectivity, your device should be auto-configured on boot and automatically start sending readings to InfluxDB.
+
+# Troubleshooting
+
+## Boot
+
+`bootlogd` is installed in our images.
+Therefore, if booting fails for any reason, you can insert the MicroSD card into a standard reader, then check the root file system "rootfs" for boot errors using
+
+```bash
+sed 's/\^\[/\o33/g;s/\[1G\[/\[27G\[/' var/log/boot
+```
+
+## Service
+
+If there is an issue with the service, you can `ssh` into the device using the instructions above, then run
+
+```bash
+sudo service simpleaq status
+```
+
+to explore the issue.

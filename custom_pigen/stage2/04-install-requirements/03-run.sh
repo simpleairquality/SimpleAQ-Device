@@ -33,3 +33,8 @@ on_chroot << EOF
         rm -rf /simpleaq/custom_pigen
 EOF
 
+# Set up i2c and spi, required for our scripts.
+on_chroot << EOF
+	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
+        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
+EOF
