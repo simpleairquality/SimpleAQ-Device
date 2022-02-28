@@ -132,7 +132,7 @@ class System(Sensor):
       client.write(self.bucket,
                    self.org,
                    influxdb_client.Point('System').field(
-                     'service_uptime_sec', self.start_time - psutil.boot_time()))
+                     'service_uptime_sec', time.time() - self.start_time))
 
 
 def connect_to_influx():
