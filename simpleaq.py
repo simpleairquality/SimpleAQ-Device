@@ -77,9 +77,16 @@ class Pm25(Sensor):
       aqdata = self.read()
 
       for key, val in aqdata.items():
+        influx_key = key
+        if influx_key.startswith('particles'):
+          influx_key += " per dL"
+        if influx_key.endswith('env'):
+          influx_key += " ug per m3"
+        if influx_key.endswith('standard'):
+          influx_key += " ug per m3"
         client.write(self.bucket, self.org,
             influxdb_client.Point('PM25').field(
-              key, val))
+              influx_key, val))
 
 
 class Gps(Sensor):
