@@ -116,10 +116,10 @@ class Gps(Sensor):
       if self.gps.has_fix:
         client.write(self.bucket, self.org,
                      influxdb_client.Point('GPS').field(
-                       'latitude', self.gps.latitude))
+                       'latitude_degrees', self.gps.latitude))
         client.write(self.bucket, self.org,
                      influxdb_client.Point('GPS').field(
-                       'longitude', self.gps.longitude))
+                       'longitude_degrees', self.gps.longitude))
       else:
         logging.warning('GPS has no fix')
 
