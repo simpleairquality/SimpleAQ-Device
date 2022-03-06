@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import calendar
+import datetime
 import os
 import psutil
 import sys
@@ -41,19 +42,19 @@ class Bme688(Sensor):
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'temperature_C', self.sensor.temperature))
+            'temperature_C', self.sensor.temperature).time(datetime.datetime.now()))
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'voc_ohms', self.sensor.gas))
+            'voc_ohms', self.sensor.gas).time(datetime.datetime.now()))
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'relative_humidity_pct', self.sensor.humidity))
+            'relative_humidity_pct', self.sensor.humidity).time(datetime.datetime.now()))
       client.write(
           self.bucket, self.org,
           influxdb_client.Point('BME688').field(
-            'pressure_hPa', self.sensor.pressure))
+            'pressure_hPa', self.sensor.pressure).time(datetime.datetime.now()))
 
 
 class Pm25(Sensor):
@@ -86,7 +87,7 @@ class Pm25(Sensor):
           influx_key += " ug per m3"
         client.write(self.bucket, self.org,
             influxdb_client.Point('PM25').field(
-              influx_key, val))
+              influx_key, val).time(datetime.datetime.now()))
 
 
 class Gps(Sensor):
@@ -122,17 +123,17 @@ class Gps(Sensor):
         epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
         client.write(self.bucket, self.org,
                      influxdb_client.Point('GPS').field(
-                       'timestamp_utc', epoch_seconds))
+                       'timestamp_utc', epoch_seconds).time(datetime.datetime.now()))
       else:
         logging.warning('GPS has no timestamp data')
 
       if self.gps.has_fix:
         client.write(self.bucket, self.org,
                      influxdb_client.Point('GPS').field(
-                       'latitude_degrees', self.gps.latitude))
+                       'latitude_degrees', self.gps.latitude).time(datetime.datetime.now()))
         client.write(self.bucket, self.org,
                      influxdb_client.Point('GPS').field(
-                       'longitude_degrees', self.gps.longitude))
+                       'longitude_degrees', self.gps.longitude).time(datetime.datetime.now()))
       else:
         logging.warning('GPS has no fix')
 
@@ -148,15 +149,15 @@ class System(Sensor):
       client.write(self.bucket,
                    self.org,
                    influxdb_client.Point('System').field(
-                     'device_uptime_sec', time.time() - psutil.boot_time()))
+                     'device_uptime_sec', time.time() - psutil.boot_time()).time(datetime.datetime.now()))
       client.write(self.bucket,
                    self.org,
                    influxdb_client.Point('System').field(
-                     'service_uptime_sec', time.time() - self.start_time))
+                     'service_uptime_sec', time.time() - self.start_time).time(datetime.datetime.now()))
       client.write(self.bucket,
                    self.org,
                    influxdb_client.Point('System').field(
-                     'system_time_utc', time.time()))
+                     'system_time_utc', time.time()).time(datetime.datetime.now()))
 
 
 
@@ -177,9 +178,10 @@ def main(args):
 
   with connect_to_influx() as influx:
     sensors = []
+    # GPS sensor goes first in case it has to set the hardware clock.
+    sensors.append(Gps(influx, interval))
     sensors.append(Bme688(influx))
     sensors.append(Pm25(influx))
-    sensors.append(Gps(influx, interval))
     sensors.append(System(influx))
     while True:
       for sensor in sensors:
