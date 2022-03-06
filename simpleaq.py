@@ -105,7 +105,7 @@ class Gps(Sensor):
 
   # We automatically update the hardware clock if the drift is greater than the reporting interval.
   # This will serve make sure that the device, no matter how long it's been powered down, reports a reasonably accurate time for measurements when possible.
-  def _update_hwtime(timestamp_utc):
+  def _update_hwtime(self, timestamp_utc):
     if (self.interval):
       epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
       if (abs(time.time() - epoch_seconds) > self.interval):
