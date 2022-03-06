@@ -90,9 +90,10 @@ class Pm25(Sensor):
 
 
 class Gps(Sensor):
-  def __init__(self, influx):
+  def __init__(self, influx, interval=None):
     super().__init__(influx)
     self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
+    self.interval = interval
 
     def update_gps():
       while True:
@@ -101,11 +102,23 @@ class Gps(Sensor):
     self.update_gps_thread = threading.Thread(target=update_gps, daemon=True)
     self.update_gps_thread.start()
 
+  # We automatically update the hardware clock if the drift is greater than the reporting interval.
+  # This will serve make sure that the device, no matter how long it's been powered down, reports a reasonably accurate time for measurements when possible.
+  def _update_hwtime(timestamp_utc):
+    if (self.interval):
+      epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
+      if (abs(time.time() - epoch_seconds) > self.interval):
+        logging.warning('Setting hardware clock to ' + str(self.gps.timestamp_utc) +
+                        ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                        ' exceeds interval time of ' + str(self.interval))
+        os.system('hwclock --set --utc --date %s' % self.gps.timestamp_utc)
  
   def publish(self):
     logging.info('Publishing GPS data to influx')
     with self.influx.write_api() as client:
       if self.gps.timestamp_utc:
+        self._update_hwtime(self.gps.timestamp_utc)
+
         epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
         client.write(self.bucket, self.org,
                      influxdb_client.Point('GPS').field(
@@ -161,7 +174,7 @@ def main(args):
     sensors = []
     sensors.append(Bme688(influx))
     sensors.append(Pm25(influx))
-    sensors.append(Gps(influx))
+    sensors.append(Gps(influx, interval))
     sensors.append(System(influx))
     while True:
       for sensor in sensors:
