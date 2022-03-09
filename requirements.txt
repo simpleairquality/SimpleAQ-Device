@@ -9,3 +9,4 @@ setuptools
 RPi.GPIO
 adafruit-blinka
 psutil
+pybluez

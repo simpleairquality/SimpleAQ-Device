@@ -3,3 +3,6 @@ bootlogd
 i2c-tools
 libi2c-dev
 libgpiod-dev
+bluetooth
+bluez
+libbluetooth-dev

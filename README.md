@@ -96,7 +96,9 @@ Be warned about the following pitfalls:
 - Ubuntu will create a new Wired connection for the device every time you plug it in, so you will need to repeat the procedure every time.
 - This is flaky and occasionally I must reboot my computer in order for the device to be detected as raspberrypi.local.
 
-## Manually Configuring Your Device To Connect to Wifi
+## Configuring Your Device To Connect to Wifi
+
+### Using a USB Reader
 
 You can configure Wifi on your device without using `ssh`.
 First, insert the imaged MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
@@ -114,6 +116,10 @@ Note that if you are concerned about the security of storing your key in plain-t
 wpa_passphrase YourWirelessNetworkID YourWirelessNetworkPassword
 ```
 and get a hash that you can use in the PSK field instead.
+
+### Using Bluetooth
+
+TODO:  Document using the `bluetooth_client.py` Python utility.
 
 ## Manually Configuring Your Device To Write Data to InfluxDB
 
@@ -141,7 +147,7 @@ One way to find the local IP address is using `ifconfig`.
 It may be helpful to confirm that you can connect to http://HOST.IP.ADDRESS.HERE:8086 from a web browser on a machine on the same network as your device.
 If InfluxDB is set up properly and accessible, you will see a login page for InfluxDB.
 
-### Configuring Your Device
+### Configuring Your Device Using a MicroSD Reader
 
 In order to connect the device to the backend, you will need a valid org, bucket and token.
 If you used the example above, you can use "my\_org", "my\_bucket" and "not\_secure\_admin\_token".
@@ -158,6 +164,10 @@ influx_server=http://HOST.IP.ADDRESS.HERE:8086
 ```
 
 If everything is configured correctly and the device has network connectivity, your device should be auto-configured on boot and automatically start sending readings to InfluxDB.
+
+### Configuring Your Device Using Bluetooth
+
+TODO:  Document using the `bluetooth_client.py` Python utility. 
 
 # Troubleshooting
 
