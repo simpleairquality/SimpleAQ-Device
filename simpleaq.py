@@ -95,6 +95,7 @@ class Gps(Sensor):
     super().__init__(influx)
     self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
     self.interval = interval
+    self.has_set_time = False
 
     def update_gps():
       while True:
@@ -105,15 +106,19 @@ class Gps(Sensor):
 
   # We automatically update the clock if the drift is greater than the reporting interval.
   # This will serve make sure that the device, no matter how long it's been powered down, reports a reasonably accurate time for measurements when possible.
+  # We set the time at most once per run, assuming that the clock drift won't be significant compared to an incorrectly set system time.
+  # Note that any change here will be quickly clobbered by NTP should any internet connection become available to the device. 
   def _update_systime(self):
-    if (self.interval):
-      epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
+    if not self.has_set_time:
+      if self.interval:
+        epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
 
-      if (abs(time.time() - epoch_seconds) > self.interval):
-        logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat() +
-                        ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                        ' exceeds interval time of ' + str(self.interval))
-        os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat())
+        if abs(time.time() - epoch_seconds) > self.interval:
+          logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat() +
+                          ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                          ' exceeds interval time of ' + str(self.interval))
+          os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat())
+          self.has_set_time = True
 
   def publish(self):
     logging.info('Publishing GPS data to influx')
