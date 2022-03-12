@@ -1,0 +1,97 @@
+I can't seem to get this example to connect at all:
+https://blog.kevindoran.co/bluetooth-programming-with-python-3/
+
+Trying BeaconService:
+
+Sorry, gattlib sucks.  Don't do this.
+
+pygattlib in requirements.txt
+glib-2.0 in packages
+libboost-all-dev
+
+Trying bleak:
+
+pip install bleak
+
+Wait... bleak doesn't have a listener!
+
+Ok let's try Adafruit's:  https://pypi.org/project/adafruit-circuitpython-ble/
+
+pip install adafruit-circuitpython-ble
+
+... oh come on:  https://github.com/adafruit/Adafruit_CircuitPython_BLE_Apple_Media/issues/10
+
+OK let's try bless:  https://github.com/kevincar/bless/blob/master/examples/server.py
+
+To get the server I have here to run, taken from bless's examples, I had to modify
+
+/etc/dbus-1/system.d/bluetooth.conf as follows:
+
+```
+<!-- This configuration file specifies the required security policies
+     for Bluetooth core daemon to work. -->
+
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+
+  <!-- ../system.conf have denied everything, so we just punch some holes -->
+
+  <policy user="root">
+    <allow own="org.bluez"/>
+    <allow own="org.bluez.SimpleAQService"/>
+    <allow send_destination="org.bluez"/>
+    <allow send_interface="org.bluez.Agent1"/>
+    <allow send_interface="org.bluez.MediaEndpoint1"/>
+    <allow send_interface="org.bluez.MediaPlayer1"/>
+    <allow send_interface="org.bluez.Profile1"/>
+    <allow send_interface="org.bluez.GattCharacteristic1"/>
+    <allow send_interface="org.bluez.GattDescriptor1"/>
+    <allow send_interface="org.bluez.LEAdvertisement1"/>
+    <allow send_interface="org.freedesktop.DBus.ObjectManager"/>
+    <allow send_interface="org.freedesktop.DBus.Properties"/>
+    <allow send_interface="org.mpris.MediaPlayer2.Player"/>
+    <allow send_interface="org.freedesktop.DBus.Introspectable"/>
+  </policy>
+
+  <!-- allow users of bluetooth group to communicate -->
+  <policy group="bluetooth">
+    <allow own="org.bluez"/>
+    <allow own="org.bluez.SimpleAQService"/>
+    <allow send_destination="org.bluez"/>
+    <allow send_interface="org.bluez.GattCharacteristic1"/>
+    <allow send_interface="org.bluez.GattDescriptor1"/>
+    <allow send_interface="org.freedesktop.DBus.ObjectManager"/>
+    <allow send_interface="org.freedesktop.DBus.Properties"/>
+    <allow send_interface="org.freedesktop.DBus.Introspectable"/>
+  </policy>
+
+  <policy context="default">
+    <allow send_destination="org.bluez"/>
+  </policy>
+
+  <policy user="blePeripheral">
+    <allow own="org.bluez"/>
+    <allow send_destination="org.bluez"/>
+    <allow own="org.bluez.SimpleAQService"/>
+    <allow send_interface="org.bluez.GattCharacteristic1"/>
+    <allow send_interface="org.bluez.GattDescriptor1"/>
+    <allow send_interface="org.freedesktop.DBus.ObjectManager"/>
+    <allow send_interface="org.freedesktop.DBus.Properties"/>
+    <allow send_interface="org.freedesktop.DBus.Introspectable"/>
+  </policy>
+
+</busconfig>
+```
+
+Then run `systemctl restart dbus`.
+It may be necessary to also add the root user to the bluetooth group, e.g. with: `sudo usermod -a -G bluetooth root`, or maybe pi?
+It'll require more experimentation.
+
+It may be important to set -E for the bluetoothd service in
+`/lib/systemd/system/bluetooth.service`, then `sudo service bluetooth restart`
+ON BOTH THE CLIENT AND LISTENER SYSTEMS!!!
+I will have to work backwards to decide exactly the subset of things that needs to happen.
+
+If you use `bluetooth_listener.py` with `bluetooth_client.py`, (the prototypey thing at the time of this writing), you'll notice intermittent failure to connect.  Is there a duty cycle?
+

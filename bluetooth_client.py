@@ -1,28 +1,46 @@
 #!/usr/bin/env python3
 
 import argparse
-import bluetooth
+import asyncio
+from bleak import BleakClient
+from bleak import discover
 import logging
 import sys
 
 
-def find_simpleaq_device(port):
+async def find_simpleaq_device():
   try:
-    nearby_devices = bluetooth.discover_devices(lookup_names=True) 
-    print(nearby_devices)
+    nearby_devices = await discover() 
+
+    for device in nearby_devices:
+      print("Device:")
+      print(device)
+      try:
+        async with BleakClient(device, timeout=30) as client:
+          svcs = await client.get_services()
+          print("Services:")
+          for service in svcs:
+            print(service)
+      except Exception as scan_err:
+        logging.error(str(scan_err))
+
   except Exception as err:
     logging.info("Are you sure the device you're using supports bluetooth?")
+    logging.info("If you're sure you have working bluetooth on Ubuntu, you could try: ")
+    logging.info("sudo rfkill unblock bluetooth")
+    logging.info("sudo systemctl restart bluetooth")
+    logging.info("sudo systemctl status bluetooth")
     logging.error(str(err))
     return 
 
 
-def main(args):
+async def main(args):
   # Configure logging.
   logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
   # Find the SimpleAQ device
   try:
-    device = args.device or find_simpleaq_device(args.port)
+    device = await find_simpleaq_device()
   except Exception as err:
     logging.info("Are you sure the device you're using supports bluetooth?")
     logging.error(str(err))
@@ -32,10 +50,7 @@ def main(args):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Bluetooth listener for SimpleAQ device.")
 
-  parser.add_argument('--port', type=int, help="Port to write to.", default=3)
-  parser.add_argument('--device', help="Device MAC address to write to.  If not provided, we will try to auto-detect.")
-
   args = parser.parse_args()
 
-  sys.exit(main(args))
+  sys.exit(asyncio.run(main(args)))
 
