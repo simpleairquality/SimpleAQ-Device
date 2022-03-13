@@ -95,3 +95,11 @@ I will have to work backwards to decide exactly the subset of things that needs 
 
 If you use `bluetooth_listener.py` with `bluetooth_client.py`, (the prototypey thing at the time of this writing), you'll notice intermittent failure to connect.  Is there a duty cycle?
 
+We will also require running:
+
+```
+  sudo hostnamectl set-hostname simpleaq
+```
+
+to rename the Raspberry Pi to simpleaq so that the listener can find it.
+We can also do this by setting TARGET\_HOSTNAME

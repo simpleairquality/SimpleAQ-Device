@@ -67,6 +67,7 @@ jobs:
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=$IMAGE > config
         echo DEPLOY_ZIP=0 >> config
+        echo TARGET_HOSTNAME=simpleaq >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
