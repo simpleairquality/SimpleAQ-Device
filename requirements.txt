@@ -5,6 +5,7 @@ adafruit-circuitpython-pm25
 adafruit-circuitpython-bme680
 bleak
 bless
+configparser
 influxdb_client
 python-dotenv
 setuptools
