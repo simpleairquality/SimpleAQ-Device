@@ -89,7 +89,6 @@ def getInitialValueForCharacteristic(characteristic_uuid, wpa_supplicant_file):
 
     logger.error("Unable to initialize characteristic: {}".format(characteristic_uuid))
 
-
 async def run(loop, args):
     trigger.clear()
     # Instantiate the server

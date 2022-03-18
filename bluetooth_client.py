@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
+# NOTE:  See https://wiki.debian.org/BluetoothUser
+# Maybe the devices just need to be paired first.
+
 import argparse
 import asyncio
 from bleak import BleakClient
 from bleak import discover
+from bless import GATTAttributePermissions
 import logging
 import sys
+
+from bluetooth_constants import SIMPLEAQ_CHARACTERISTICS
+from bluetooth_constants import SIMPLEAQ_SERVICE_UUID 
 
 
 async def find_simpleaq_device(prefix):
@@ -27,7 +34,6 @@ async def find_simpleaq_device(prefix):
       # until we connect at least once.
       async with BleakClient(device, timeout=10) as client:
         logging.debug("Connected to device: '{}'".format(device))
-#        svcs = await client.get_services()
     except Exception as err:
       logging.debug("Failed to connect to device {}: {}".format(device, str(err)))
 
@@ -62,15 +68,37 @@ async def main(args):
   logging.info("Found SimpleAQ device: {}".format(device))
 
   # Ok, we found the device.
+  while True:
+    try:
+      async with BleakClient(device, timeout=30) as client:
+        # Ensure that the device we connected to is advertising the SimpleAQ service.
+        svcs = await client.get_services()
+        found_service = False
+        for service in svcs:
+          if service.uuid.lower() == SIMPLEAQ_SERVICE_UUID.lower():
+            found_service = True
 
-#      try:
-#        async with BleakClient(device, timeout=30) as client:
-#          svcs = await client.get_services()
-#          print("Services:")
-#          for service in svcs:
-#            print(service)
-#      except Exception as scan_err:
-#        logging.error(str(scan_err))
+        if not found_service:
+          logging.error("SimpleAQ service not found.  Found services follow:")
+          for service in svcs:
+            logging.error(str(service))
+
+        # None of this will work if the device isn't paired or connected.
+        await client.connect()
+
+        # Connect to the service and dump all variables.
+        for characteristic_uuid, values in SIMPLEAQ_CHARACTERISTICS.items():
+          logging.debug("Attempting to read characteristic {}:".format(characteristic_uuid))
+          result = await client.read_gatt_char(characteristic_uuid)
+          if values.get('permissions') and values['permissions'] & GATTAttributePermissions.readable: 
+            logging.info("{}: {}".format(values.get('name') or characteristic_uuid, result.encode('utf-8')))
+          else:
+            logging.info("{}: [write-only]".format(values.get('name')))
+
+        # TODO:  Executed desired operations...
+    except Exception as err:
+      logging.error(str(err))
+      logging.error("Retrying.  Press Ctrl+C to cancel.")
 
 
 if __name__ == '__main__':
