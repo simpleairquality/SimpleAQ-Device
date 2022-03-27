@@ -38,3 +38,9 @@ on_chroot << EOF
 	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
         SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
 EOF
+
+# Set up hostapd, which will be useful for configuration.
+on_chroot << EOF
+        systemctl unmask hostapd
+        systemctl enable hostapd
+EOF
