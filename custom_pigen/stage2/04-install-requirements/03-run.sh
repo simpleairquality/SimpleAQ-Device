@@ -44,3 +44,7 @@ on_chroot << EOF
         systemctl unmask hostapd
         systemctl enable hostapd
 EOF
+
+cat files/dhcpcd-extra.conf >> "${ROOTFS_DIR}/etc/dhcpcd.conf"
+cat files/dnsmasq-extra.conf >> "${ROOTFS_DIR}/etc/dnsmasq.conf"
+cp files/hostapd.conf >> "${ROOTFS_DIR}/etc/hostapd.conf"
