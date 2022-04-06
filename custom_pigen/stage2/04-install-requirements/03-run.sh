@@ -45,6 +45,6 @@ on_chroot << EOF
         systemctl enable hostapd
 EOF
 
-cp files/interfaces >> "${ROOTFS_DIR}/etc/network/interfaces"
+cp files/interfaces "${ROOTFS_DIR}/etc/network/interfaces"
 cat files/dnsmasq-extra.conf >> "${ROOTFS_DIR}/etc/dnsmasq.conf"
 cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd.conf"
