@@ -5,3 +5,5 @@ libi2c-dev
 libgpiod-dev
 hostapd
 dnsmasq
+hostap-utils
+iw
