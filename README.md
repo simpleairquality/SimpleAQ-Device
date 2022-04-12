@@ -115,6 +115,16 @@ wpa_passphrase YourWirelessNetworkID YourWirelessNetworkPassword
 ```
 and get a hash that you can use in the PSK field instead.
 
+## SSH Into Your Device Using the `hostapd` Service
+
+If a USB Wifi adapter is plugged into the **USB/peripherals** port, your device will offer a `hostapd` network to connect to.
+By default, this starts with SimpleAQ and has the default password "simpleaq".
+If you have used a DEBUG-INSECURE image that supports `ssh`, then you can connect to this network and then connect using:
+
+```bash
+ssh 192.168.10.1
+```
+
 ## Manually Configuring Your Device To Write Data to InfluxDB
 
 ### Create a Temporary InfluxDB Instance For Testing
