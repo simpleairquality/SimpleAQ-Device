@@ -48,3 +48,4 @@ EOF
 cp files/interfaces "${ROOTFS_DIR}/etc/network/interfaces"
 cat files/dnsmasq-extra.conf >> "${ROOTFS_DIR}/etc/dnsmasq.conf"
 cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
+cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
