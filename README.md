@@ -69,8 +69,6 @@ source venv/bin/activate
 ```
 ## SSH Into your SimpleAQ Device For Testing
 
-TODO:  This may be broken now that the `dwc2` option was removed from the `dtoverlay=` in `custom_pigen/stage1/00-boot-files/files/config.txt`.
-
 Our build process automatically creates Raspbian images appropriate for both a production environment and for development.
 In order to SSH into your SimpleAQ device, you will need to select a development image labeled INSECURE-DEBUG.
 These devices use the default username `pi` and the default password `raspberry` and would be compromised immediately if placed on the public internet.
