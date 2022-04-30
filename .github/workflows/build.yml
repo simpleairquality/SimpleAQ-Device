@@ -69,6 +69,8 @@ jobs:
         echo DEPLOY_ZIP=0 >> config
         echo TARGET_HOSTNAME=simpleaq >> config
         echo TIMEZONE_DEFAULT=Etc/UTC >> config
+        echo FIRST_USER_NAME=pi       >> config
+        echo FIRST_USER_PASS=simpleaq >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -161,6 +163,8 @@ jobs:
         echo ENABLE_SSH=1 >> config
         echo TARGET_HOSTNAME=simpleaq >> config
         echo TIMEZONE_DEFAULT=Etc/UTC >> config
+        echo FIRST_USER_NAME=pi       >> config
+        echo FIRST_USER_PASS=simpleaq >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
