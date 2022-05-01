@@ -78,4 +78,4 @@ otg_mode=1
 arm_boost=1
 
 [all]
-dtoverlay=dwc2,dr_mode=otg
+# dtoverlay=dwc2,dr_mode=otg
