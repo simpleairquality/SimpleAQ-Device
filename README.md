@@ -69,6 +69,9 @@ source venv/bin/activate
 ```
 ## SSH Into your SimpleAQ Device For Testing
 
+**Note:  Link-local SSH is likely broken, since we have removed the custom changes that previously enabled this story.**
+**TODO:  Confirm that it's broken and remove this section.**
+
 Our build process automatically creates Raspbian images appropriate for both a production environment and for development.
 In order to SSH into your SimpleAQ device, you will need to select a development image labeled INSECURE-DEBUG.
 These devices use the default username `pi` and the default password `simpleaq` and would be compromised immediately if placed on the public internet.
