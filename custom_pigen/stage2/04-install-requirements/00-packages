@@ -7,4 +7,3 @@ hostapd
 dnsmasq
 hostap-utils
 iw
-systemd-timesyncd
