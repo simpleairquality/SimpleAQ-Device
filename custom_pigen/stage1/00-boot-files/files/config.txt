@@ -76,6 +76,3 @@ otg_mode=1
 [pi4]
 # Run as fast as firmware / board allows
 arm_boost=1
-
-[all]
-dtoverlay=dwc2
