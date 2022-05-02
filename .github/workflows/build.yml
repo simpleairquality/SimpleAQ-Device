@@ -78,8 +78,8 @@ jobs:
     - name: Disable Non-Lite Builds
       run: |
         cd PiGen
-        touch ./stage3/SKIP ./stage4/SKIP ./stage5/SKIP
-        touch ./stage4/SKIP_IMAGES ./stage5/SKIP_IMAGES
+        touch ./stage3/SKIP ./stage4/SKIP
+        touch ./stage4/SKIP_IMAGES
 
     - name: Build Image
       run: |
@@ -137,7 +137,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: 3385618efbd428bc14a13b7195d44978689d343a
+        ref: 91e90da69cf0b1ddae23764b417bd6b43ec02c63  # buster, as opposed to bullseye.
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -172,8 +172,8 @@ jobs:
     - name: Disable Non-Lite Builds
       run: |
         cd PiGen
-        touch ./stage3/SKIP ./stage4/SKIP ./stage5/SKIP
-        touch ./stage4/SKIP_IMAGES ./stage5/SKIP_IMAGES
+        touch ./stage3/SKIP ./stage4/SKIP
+        touch ./stage4/SKIP_IMAGES
 
     - name: Build Image
       run: |
