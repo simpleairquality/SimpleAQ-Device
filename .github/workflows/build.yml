@@ -44,7 +44,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: c5a906b676647c2334ddb595435ebbbe869bff15
+        ref: 3385618efbd428bc14a13b7195d44978689d343a
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -66,7 +66,7 @@ jobs:
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=$IMAGE > config
-        echo DEPLOY_ZIP=0 >> config
+        echo DEPLOY_COMPRESSION=none >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -133,7 +133,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: c5a906b676647c2334ddb595435ebbbe869bff15
+        ref: 3385618efbd428bc14a13b7195d44978689d343a
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -155,7 +155,7 @@ jobs:
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=INSECURE-DEBUG-SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=INSECURE-DEBUG-$IMAGE > config
-        echo DEPLOY_ZIP=0 >> config
+        echo DEPLOY_COMPRESSION=none >> config
         echo ENABLE_SSH=1 >> config
         echo "::set-output name=image::$IMAGE"
 
