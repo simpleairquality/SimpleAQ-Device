@@ -38,3 +38,13 @@ on_chroot << EOF
 	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
         SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
 EOF
+
+# Unmask hostapd, which will be useful for configuration.
+# A script will be responsible for turning it on or off.
+on_chroot << EOF
+        systemctl unmask hostapd
+EOF
+
+cat files/dnsmasq-extra.conf >> "${ROOTFS_DIR}/etc/dnsmasq.conf"
+cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
+cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
