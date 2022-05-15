@@ -72,7 +72,6 @@ jobs:
         echo FIRST_USER_NAME=pi       >> config
         echo FIRST_USER_PASS=simpleaq >> config
         echo "::set-output name=image::$IMAGE"
-        echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
     # or anything more advanced for our little IoT devices.
