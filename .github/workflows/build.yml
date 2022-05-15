@@ -67,6 +67,11 @@ jobs:
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
         echo IMG_NAME=$IMAGE > config
         echo DEPLOY_COMPRESSION=none >> config
+        echo TARGET_HOSTNAME=simpleaq >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC >> config
+        echo FIRST_USER_NAME=pi       >> config
+        echo FIRST_USER_PASS=simpleaq >> config
+        echo "::set-output name=image::$IMAGE"
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -157,6 +162,10 @@ jobs:
         echo IMG_NAME=INSECURE-DEBUG-$IMAGE > config
         echo DEPLOY_COMPRESSION=none >> config
         echo ENABLE_SSH=1 >> config
+        echo TARGET_HOSTNAME=simpleaq >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC >> config
+        echo FIRST_USER_NAME=pi       >> config
+        echo FIRST_USER_PASS=simpleaq >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
