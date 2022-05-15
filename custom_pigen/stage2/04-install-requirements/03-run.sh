@@ -43,8 +43,10 @@ EOF
 # A script will be responsible for turning it on or off.
 on_chroot << EOF
         systemctl unmask hostapd
+        systemctl disable hostapd.service
 EOF
 
-cat files/dnsmasq-extra.conf >> "${ROOTFS_DIR}/etc/dnsmasq.conf"
+# TODO:  I'm not sure this is actually necessary.
+# cat files/dnsmasq-extra.conf >> "${ROOTFS_DIR}/etc/dnsmasq.conf"
 cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
 cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
