@@ -3,7 +3,4 @@ bootlogd
 i2c-tools
 libi2c-dev
 libgpiod-dev
-hostapd
-dnsmasq
-hostap-utils
 iw
