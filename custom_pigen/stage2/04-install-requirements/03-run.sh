@@ -59,7 +59,7 @@ EOF
 # Enable systemd-networkd
 on_chroot << EOF
         systemctl enable systemd-networkd.service
-        systemctl enable systemd-resolved.conf
+        systemctl enable systemd-resolved.service
         ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 EOF
 
