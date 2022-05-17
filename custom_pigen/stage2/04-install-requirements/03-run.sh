@@ -60,6 +60,8 @@ EOF
 on_chroot << EOF
         systemctl enable systemd-networkd.service
         systemctl enable systemd-resolved.service
+        systemctl start systemd-networkd.service
+        systemctl start systemd-resolved.service
         ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 EOF
 
@@ -68,6 +70,7 @@ on_chroot << EOF
         mv /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
         systemctl disable wpa_supplicant.service
         systemctl enable wpa_supplicant@wlan0.service
+        systemctl start wpa_supplicant@wlan0.service
 EOF
 
 cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
