@@ -49,13 +49,13 @@ EOF
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
 
+# Is... this preventing setup from completing?
 # Disable Debian networking and dhcpcd
-# Skipped steps:
-#        systemctl mask networking.service dhcpcd.service
+# on_chroot << EOF
+#         systemctl mask networking.service dhcpcd.service
 #         mv /etc/network/interfaces /etc/network/interfaces-
-on_chroot << EOF
-        sed -i '1i resolvconf=NO' /etc/resolvconf.conf
-EOF
+#         sed -i '1i resolvconf=NO' /etc/resolvconf.conf
+# EOF
 
 # Enable systemd-networkd
 on_chroot << EOF
