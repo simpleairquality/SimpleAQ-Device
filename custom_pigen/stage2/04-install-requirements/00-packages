@@ -4,3 +4,4 @@ i2c-tools
 libi2c-dev
 libgpiod-dev
 iw
+userconf-pi
