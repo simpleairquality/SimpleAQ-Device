@@ -71,7 +71,7 @@ source venv/bin/activate
 
 Our build process automatically creates Raspbian images appropriate for both a production environment and for development.
 In order to SSH into your SimpleAQ device, you will need to select a development image labeled INSECURE-DEBUG.
-These devices use the default username `pi` and the default password `raspberry` and would be compromised immediately if placed on the public internet.
+These devices use the default username `pi` and the default password `simpleaq` and would be compromised immediately if placed on the public internet.
 
 After imaging your device with the desired INSECURE-DEBUG image, you will need to connect your device to your PC using the **data/peripherals** USB port.
 On a Raspberry Pi Zero W, this is the USB port closest to the center of the device.
@@ -88,7 +88,7 @@ On Ubuntu, while the device appears in the networking menu as "Ethernet Network 
 1. Run `nm-connection-editor` from the Host OS.
 2. Select the appropriate "Wired connection #" under Ethernet, then click the gear. (The device name will be something like enxbed891078ed1)
 3. Select "IPv4 Settings", then Method: "Link-Local Only".
-4. Run `ssh pi@raspberrypi.local`, using the default password `raspberry`.
+4. Run `ssh pi@raspberrypi.local`, using the default password `simpleaq`.
 
 Be warned about the following pitfalls:
 - If you disconnect your device and connect it again, you will receive a warning that the `ssh` key changed.
