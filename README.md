@@ -69,6 +69,8 @@ source venv/bin/activate
 ```
 ## SSH Into your SimpleAQ Device For Testing
 
+**TODO:  Probably remove this as it no longer works since we've moved to systemd-networkd.  Otherwise, fix it.**
+
 Our build process automatically creates Raspbian images appropriate for both a production environment and for development.
 In order to SSH into your SimpleAQ device, you will need to select a development image labeled INSECURE-DEBUG.
 These devices use the default username `pi` and the default password `simpleaq` and would be compromised immediately if placed on the public internet.
@@ -99,7 +101,7 @@ Be warned about the following pitfalls:
 ## Manually Configuring Your Device To Connect to Wifi
 
 You can configure Wifi on your device without using `ssh`.
-First, insert the imaged MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant.conf` in the root filesystem "rootfs".
+First, insert the imaged MicroSD card into a standard card reader, then edit `/etc/wpa_supplicant/wpa_supplicant-wlan0.conf` in the root filesystem "rootfs".
 At the end of the file, add:
 
 ```
