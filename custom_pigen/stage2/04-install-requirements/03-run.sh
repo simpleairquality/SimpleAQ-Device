@@ -51,9 +51,9 @@ EOF
 
 # Disable Debian networking and dhcpcd
 # Skipped steps:
+#        systemctl mask networking.service dhcpcd.service
 #         mv /etc/network/interfaces /etc/network/interfaces-
 on_chroot << EOF
-        systemctl mask networking.service dhcpcd.service
         sed -i '1i resolvconf=NO' /etc/resolvconf.conf
 EOF
 
