@@ -67,36 +67,6 @@ When you return to your work later, you can simply use:
 ```bash
 source venv/bin/activate
 ```
-## SSH Into your SimpleAQ Device For Testing
-
-**TODO:  Probably remove this as it no longer works since we've moved to systemd-networkd.  Otherwise, fix it.**
-
-Our build process automatically creates Raspbian images appropriate for both a production environment and for development.
-In order to SSH into your SimpleAQ device, you will need to select a development image labeled INSECURE-DEBUG.
-These devices use the default username `pi` and the default password `simpleaq` and would be compromised immediately if placed on the public internet.
-
-After imaging your device with the desired INSECURE-DEBUG image, you will need to connect your device to your PC using the **data/peripherals** USB port.
-On a Raspberry Pi Zero W, this is the USB port closest to the center of the device.
-You may need to wait a minute for the device to boot.
-
-On Windows or Mac, you should now be able to connect to the device using
-```
-ssh pi@raspberrypi.local
-```
-using the default password `raspberry`.
-**If you intend on connecting your device to the public internet, please change your password using `passwd`!**
-
-On Ubuntu, while the device appears in the networking menu as "Ethernet Network (Netchip Linux-USB Gadget)", it may be necessary to first mark the connection as "Link-Local" only in `nm-connection-editor`:
-1. Run `nm-connection-editor` from the Host OS.
-2. Select the appropriate "Wired connection #" under Ethernet, then click the gear. (The device name will be something like enxbed891078ed1)
-3. Select "IPv4 Settings", then Method: "Link-Local Only".
-4. Run `ssh pi@raspberrypi.local`, using the default password `simpleaq`.
-
-Be warned about the following pitfalls:
-- If you disconnect your device and connect it again, you will receive a warning that the `ssh` key changed.
-- I am unable to connect to the device via USB while connected to Ethernet on the same machine.  Wireless seems to be OK.
-- Ubuntu will create a new Wired connection for the device every time you plug it in, so you will need to repeat the procedure every time.
-- This is flaky and occasionally I must reboot my computer in order for the device to be detected as raspberrypi.local.
 
 ## Manually Configuring Your Device To Connect to Wifi
 
@@ -116,6 +86,22 @@ Note that if you are concerned about the security of storing your key in plain-t
 wpa_passphrase YourWirelessNetworkID YourWirelessNetworkPassword
 ```
 and get a hash that you can use in the PSK field instead.
+
+## SSH Into your SimpleAQ Device For Testing
+
+Our build process automatically creates Raspbian images appropriate for both a production environment and for development.
+In order to SSH into your SimpleAQ device, you will need to select a development image labeled INSECURE-DEBUG.
+These devices use the default username `pi` and the default password `simpleaq` and would be compromised immediately if placed on the public internet.
+
+Note that since our transition to `systemd-networkd` based networking, **link-local connections through your device's data/peripherals USB port are no longer supported.**
+You have two options to connect to your device.
+
+1.  If you have configured wifi in the step above, you may use your router to find the `simpleaq` device's IP address on your network, then connect with e.g., `ssh pi@192.168.1.xxx`.
+2.  If your device's wifi is not configured, you can connect through the device's `hostap` network by connecting to wireless at `SimpleAQ-xxxx`.   Then, connect with `ssh pi@192.168.4.1`.
+
+Our devices automatically switch between `hostap` and `wlan` modes based on whether `wlan` is working.  
+Therefore, if you have a correctly configured and working `wlan` connection, `ssh` into your `hostap` connection will not work.
+A service will periodically retry the `wlan` connection, but in doing so it will briefly take down the `hostap`.
 
 ## Manually Configuring Your Device To Write Data to InfluxDB
 
