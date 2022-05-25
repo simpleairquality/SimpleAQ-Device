@@ -87,5 +87,5 @@ EOF
 # Custom service that allows us to switch between hostap and wifi mode.
 cp files/wpa_supplicant@ap0.service "${ROOTFS_DIR}/etc/systemd/system"
 
-# TODO:  Re-add this using the wpa_supplicant hostap instead of hostapd
-# cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
+# Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
+cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
