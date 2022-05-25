@@ -84,8 +84,8 @@ on_chroot << EOF
         systemctl disable wpa_supplicant@ap0.service
 EOF
 
-# TODO:  Need to figure out how to set up wpa_supplicant@ap0.service appropriately.
-#        This will be easier to do once we've got an otherwise valid file to look at and play with.
+# Custom service that allows us to switch between hostap and wifi mode.
+cp files/wpa_supplicant@ap0.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # TODO:  Re-add this using the wpa_supplicant hostap instead of hostapd
 # cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
