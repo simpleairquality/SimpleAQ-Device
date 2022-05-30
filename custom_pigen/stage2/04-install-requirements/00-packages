@@ -5,3 +5,4 @@ libi2c-dev
 libgpiod-dev
 iw
 userconf-pi
+influxdb-client
