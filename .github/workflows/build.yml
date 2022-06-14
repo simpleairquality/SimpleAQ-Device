@@ -102,6 +102,46 @@ jobs:
         name: ${{ steps.config.outputs.image }}
         path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
 
+  build_bananapi:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Maximize Build Space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 10240
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+
+    - name: List Available Space
+      run: |
+        echo "Free space:"
+        df -h
+
+    - name: Checkout SimpleAQ-Device
+      uses: actions/checkout@v2
+      with:
+        path: SimpleAQ-Device
+
+    - name: Mount Image File
+      run: |
+        cd SimpleAQ-Device/custom_bananapi/base_image
+        sudo mkdir /mnt/armbian
+        sudo mount `sudo losetup -fP --show Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img`p1 /mnt/armbian/
+
+    - name: Update Image File
+      run: |
+        docker run -it -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye "chroot armbian/ /bin/bash && apt-get update"
+        docker run -it -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye "chroot armbian/ /bin/bash && apt-get upgrade -y"
+
+    # The image now exists in deploy/.  Let's save it somewhere.
+    - name: Upload Imaage File
+      uses: actions/upload-artifact@v1
+      with:
+        name: SimpleAQ-Armbian-${GITHUB_REF##*/}
+        path: SimpleAQ-Device/SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
+
   build_debug:
     runs-on: ubuntu-latest
     steps:
