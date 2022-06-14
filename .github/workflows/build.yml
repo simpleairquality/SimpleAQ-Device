@@ -124,9 +124,15 @@ jobs:
       with:
         path: SimpleAQ-Device
 
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y xz-utils
+
     - name: Mount Image File
       run: |
         cd SimpleAQ-Device/custom_bananapi/base_image
+        xz -d Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img.xz
         sudo mkdir /mnt/armbian
         sudo mount `sudo losetup -fP --show Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img`p1 /mnt/armbian/
 
