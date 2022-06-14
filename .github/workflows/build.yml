@@ -132,6 +132,7 @@ jobs:
     - name: Mount Image File
       run: |
         cd SimpleAQ-Device/custom_bananapi/base_image
+        sha1sum Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img.xz
         xz -d Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img.xz
         sudo mkdir /mnt/armbian
         sudo mount `sudo losetup -fP --show Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img`p1 /mnt/armbian/
