@@ -122,7 +122,12 @@ jobs:
     - name: Checkout SimpleAQ-Device
       uses: actions/checkout@v2
       with:
+        lfs: 'true'
         path: SimpleAQ-Device
+        ssh-key: ${{ secrets.git_ssh_key }}
+      env:
+        GIT_CURL_VERBOSE: '1'
+        GIT_TRACE: '1'
 
     - name: Install Dependencies
       run: |
