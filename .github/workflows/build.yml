@@ -134,6 +134,13 @@ jobs:
         sudo apt update
         sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
 
+    - name: Name Image
+      id: debugconfig
+      run: |
+        NOW=$(date +"%Y-%m-%d-%H%M")
+        IMAGE=BananaPi-SimpleAQ-${GITHUB_REF##*/}-$NOW
+        echo "::set-output name=image::$IMAGE"
+
     - name: Mount Image File
       run: |
         cd SimpleAQ-Device/custom_bananapi/base_image
@@ -144,15 +151,16 @@ jobs:
 
     - name: Update Image File
       run: |
-        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye ls /
         docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get update
         docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get upgrade -y
 
+    # TODO:  Install other dependencies, set up SimpleAQ itself.
+
     # The image now exists in deploy/.  Let's save it somewhere.
-    - name: Upload Imaage File
+    - name: Upload Image File
       uses: actions/upload-artifact@v1
       with:
-        name: SimpleAQ-Armbian-${GITHUB_REF##*/}
+        name: ${{ steps.debugconfig.outputs.image }}
         path: SimpleAQ-Device/SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
 
   build_debug:
