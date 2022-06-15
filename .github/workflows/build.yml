@@ -145,15 +145,15 @@ jobs:
       run: |
         cd SimpleAQ-Device/custom_bananapi/base_image
         xz -d Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img.xz
-        mkdir /mnt/armbian
-        mount `sudo losetup -fP --show Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img`p1 /mnt/armbian/
+        sudo mkdir /mnt/armbian
+        sudo mount `sudo losetup -fP --show Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img`p1 /mnt/armbian/
 
     - name: Update Image File
       run: |
         sha1sum SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
-        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get update
+        sudo docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get update
         sha1sum SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
-        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get upgrade -y
+        sudo docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get upgrade -y
         sha1sum SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
 
     # TODO:  Install other dependencies, set up SimpleAQ itself.
