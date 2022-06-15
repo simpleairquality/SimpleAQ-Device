@@ -156,12 +156,11 @@ jobs:
 
     # TODO:  Install other dependencies, set up SimpleAQ itself.
 
-    # The image now exists in deploy/.  Let's save it somewhere.
     - name: Upload Image File
       uses: actions/upload-artifact@v1
       with:
         name: ${{ steps.debugconfig.outputs.image }}
-        path: SimpleAQ-Device/SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
+        path: /SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
 
   build_debug:
     runs-on: ubuntu-latest
