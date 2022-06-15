@@ -158,6 +158,10 @@ jobs:
 
     # TODO:  Install other dependencies, set up SimpleAQ itself.
 
+    - name: Unmount Image File
+      run:
+        sudo umount /mnt/armbian
+
     - name: Upload Image File
       uses: actions/upload-artifact@v1
       with:
