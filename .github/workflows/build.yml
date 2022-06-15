@@ -144,8 +144,9 @@ jobs:
 
     - name: Update Image File
       run: |
-        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye "chroot armbian/ /bin/bash && apt-get update"
-        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye "chroot armbian/ /bin/bash && apt-get upgrade -y"
+        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye "ls armbian/"
+        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye "chroot armbian/ apt-get update"
+        docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye "chroot armbian/ apt-get upgrade -y"
 
     # The image now exists in deploy/.  Let's save it somewhere.
     - name: Upload Imaage File
