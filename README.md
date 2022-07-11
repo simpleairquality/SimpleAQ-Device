@@ -98,6 +98,7 @@ You have two options to connect to your device.
 
 1.  If you have configured wifi in the step above, you may use your router to find the `simpleaq` device's IP address on your network, then connect with e.g., `ssh pi@192.168.1.xxx`.
 2.  If your device's wifi is not configured, you can connect through the device's `hostap` network by connecting to wireless at `SimpleAQ-xxxx`.   Then, connect with `ssh pi@192.168.4.1`.
+3.  You can connect a keyboard to the device's data/peripheral port and a monitor to the device's HDMI pirt.
 
 Our devices automatically switch between `hostap` and `wlan` modes based on whether `wlan` is working.  
 Therefore, if you have a correctly configured and working `wlan` connection, `ssh` into your `hostap` connection will not work.
