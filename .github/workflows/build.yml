@@ -162,7 +162,7 @@ jobs:
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=INSECURE-DEBUG-SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo IMG_NAME=INSECURE-DEBUG-$IMAGE         > config
+        echo IMG_NAME=$IMAGE                        > config
         echo DEPLOY_COMPRESSION=none               >> config
         echo ENABLE_SSH=1                          >> config
         echo TARGET_HOSTNAME=simpleaq              >> config
