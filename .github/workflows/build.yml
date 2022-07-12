@@ -65,16 +65,16 @@ jobs:
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo IMG_NAME=$IMAGE                   > config
-        echo DEPLOY_COMPRESSION=none          >> config
-        echo TARGET_HOSTNAME=simpleaq         >> config
-        echo TIMEZONE_DEFAULT=Etc/UTC         >> config
-        echo FIRST_USER_NAME=pi               >> config
-        echo FIRST_USER_PASS=simpleaq         >> config
-        echo LOCALE_DEFAULT=en_US.UTF-8       >> config
-        echo KEYBOARD_KEYMAP=us               >> config
-        echo KEYBOARD_LAYOUT="English (US)"   >> config
-        echo DISABLE_FIRST_BOOT_USER_RENAME=1 >> config
+        echo IMG_NAME=$IMAGE                        > config
+        echo DEPLOY_COMPRESSION=none               >> config
+        echo TARGET_HOSTNAME=simpleaq              >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC              >> config
+        echo FIRST_USER_NAME=pi                    >> config
+        echo FIRST_USER_PASS=simpleaq              >> config
+        echo LOCALE_DEFAULT=en_US.UTF-8            >> config
+        echo KEYBOARD_KEYMAP=us                    >> config
+        echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
+        echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -162,17 +162,17 @@ jobs:
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=INSECURE-DEBUG-SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo IMG_NAME=INSECURE-DEBUG-$IMAGE    > config
-        echo DEPLOY_COMPRESSION=none          >> config
-        echo ENABLE_SSH=1                     >> config
-        echo TARGET_HOSTNAME=simpleaq         >> config
-        echo TIMEZONE_DEFAULT=Etc/UTC         >> config
-        echo FIRST_USER_NAME=pi               >> config
-        echo FIRST_USER_PASS=simpleaq         >> config
-        echo LOCALE_DEFAULT=en_US.UTF-8       >> config
-        echo KEYBOARD_KEYMAP=us               >> config
-        echo KEYBOARD_LAYOUT="English (US)"   >> config
-        echo DISABLE_FIRST_BOOT_USER_RENAME=1 >> config
+        echo IMG_NAME=INSECURE-DEBUG-$IMAGE         > config
+        echo DEPLOY_COMPRESSION=none               >> config
+        echo ENABLE_SSH=1                          >> config
+        echo TARGET_HOSTNAME=simpleaq              >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC              >> config
+        echo FIRST_USER_NAME=pi                    >> config
+        echo FIRST_USER_PASS=simpleaq              >> config
+        echo LOCALE_DEFAULT=en_US.UTF-8            >> config
+        echo KEYBOARD_KEYMAP=us                    >> config
+        echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
+        echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
