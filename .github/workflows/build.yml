@@ -44,7 +44,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: 3385618efbd428bc14a13b7195d44978689d343a
+        ref: 01b2432007766a6a1acc942f62d4ece7b25e560d
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -65,12 +65,16 @@ jobs:
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo IMG_NAME=$IMAGE > config
-        echo DEPLOY_COMPRESSION=none >> config
-        echo TARGET_HOSTNAME=simpleaq >> config
-        echo TIMEZONE_DEFAULT=Etc/UTC >> config
-        echo FIRST_USER_NAME=pi       >> config
-        echo FIRST_USER_PASS=simpleaq >> config
+        echo IMG_NAME=$IMAGE                   > config
+        echo DEPLOY_COMPRESSION=none          >> config
+        echo TARGET_HOSTNAME=simpleaq         >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC         >> config
+        echo FIRST_USER_NAME=pi               >> config
+        echo FIRST_USER_PASS=simpleaq         >> config
+        echo LOCALE_DEFAULT=en_US.UTF-8       >> config
+        echo KEYBOARD_KEYMAP=us               >> config
+        echo KEYBOARD_LAYOUT="English (US)"   >> config
+        echo DISABLE_FIRST_BOOT_USER_RENAME=1 >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -137,7 +141,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: 3385618efbd428bc14a13b7195d44978689d343a
+        ref: 01b2432007766a6a1acc942f62d4ece7b25e560d
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -158,13 +162,17 @@ jobs:
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=INSECURE-DEBUG-SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo IMG_NAME=INSECURE-DEBUG-$IMAGE > config
-        echo DEPLOY_COMPRESSION=none >> config
-        echo ENABLE_SSH=1 >> config
-        echo TARGET_HOSTNAME=simpleaq >> config
-        echo TIMEZONE_DEFAULT=Etc/UTC >> config
-        echo FIRST_USER_NAME=pi       >> config
-        echo FIRST_USER_PASS=simpleaq >> config
+        echo IMG_NAME=INSECURE-DEBUG-$IMAGE    > config
+        echo DEPLOY_COMPRESSION=none          >> config
+        echo ENABLE_SSH=1                     >> config
+        echo TARGET_HOSTNAME=simpleaq         >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC         >> config
+        echo FIRST_USER_NAME=pi               >> config
+        echo FIRST_USER_PASS=simpleaq         >> config
+        echo LOCALE_DEFAULT=en_US.UTF-8       >> config
+        echo KEYBOARD_KEYMAP=us               >> config
+        echo KEYBOARD_LAYOUT="English (US)"   >> config
+        echo DISABLE_FIRST_BOOT_USER_RENAME=1 >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
