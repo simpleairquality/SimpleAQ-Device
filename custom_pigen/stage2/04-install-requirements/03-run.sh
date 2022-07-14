@@ -38,3 +38,54 @@ on_chroot << EOF
 	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
         SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
 EOF
+
+# Unmask hostapd, which will be useful for configuration.
+# A script will be responsible for turning it on or off.
+on_chroot << EOF
+        systemctl unmask hostapd
+        systemctl disable hostapd.service
+EOF
+
+# Following instructions at:
+# https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
+
+# Disable Debian networking and dhcpcd
+on_chroot << EOF
+        systemctl mask networking.service dhcpcd.service
+        mv /etc/network/interfaces /etc/network/interfaces-
+        sed -i '1i resolvconf=NO' /etc/resolvconf.conf
+EOF
+
+# Enable systemd-networkd
+on_chroot << EOF
+        systemctl enable systemd-networkd.service
+        systemctl enable systemd-resolved.service
+        systemctl start systemd-networkd.service
+        systemctl start systemd-resolved.service
+        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+EOF
+
+# The wifi client must be on wlan0.
+on_chroot << EOF
+        mv /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+        systemctl disable wpa_supplicant.service
+        systemctl enable wpa_supplicant@wlan0.service
+        systemctl start wpa_supplicant@wlan0.service
+EOF
+
+cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
+
+# The hostap is on ap0.
+cp files/wpa_supplicant-ap0.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant-ap0.conf"
+cp files/12-ap0.network   "${ROOTFS_DIR}/etc/systemd/network"
+
+# The hostap starts "off".  We'll switch it on if needed.
+on_chroot << EOF
+        systemctl disable wpa_supplicant@ap0.service
+EOF
+
+# Custom service that allows us to switch between hostap and wifi mode.
+cp files/wpa_supplicant@ap0.service "${ROOTFS_DIR}/etc/systemd/system"
+
+# Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
+cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"

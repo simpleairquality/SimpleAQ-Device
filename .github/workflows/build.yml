@@ -44,7 +44,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: 3385618efbd428bc14a13b7195d44978689d343a
+        ref: 01b2432007766a6a1acc942f62d4ece7b25e560d
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -65,12 +65,16 @@ jobs:
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo IMG_NAME=$IMAGE > config
-        echo DEPLOY_COMPRESSION=none >> config
-        echo TARGET_HOSTNAME=simpleaq >> config
-        echo TIMEZONE_DEFAULT=Etc/UTC >> config
-        echo FIRST_USER_NAME=pi       >> config
-        echo FIRST_USER_PASS=simpleaq >> config
+        echo IMG_NAME=$IMAGE                        > config
+        echo DEPLOY_COMPRESSION=none               >> config
+        echo TARGET_HOSTNAME=simpleaq              >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC              >> config
+        echo FIRST_USER_NAME=pi                    >> config
+        echo FIRST_USER_PASS=simpleaq              >> config
+        echo LOCALE_DEFAULT=en_US.UTF-8            >> config
+        echo KEYBOARD_KEYMAP=us                    >> config
+        echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
+        echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop
@@ -101,72 +105,6 @@ jobs:
       with:
         name: ${{ steps.config.outputs.image }}
         path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
-
-  build_bananapi:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Maximize Build Space
-      uses: easimon/maximize-build-space@master
-      with:
-        root-reserve-mb: 10240
-        swap-size-mb: 1024
-        remove-dotnet: 'true'
-        remove-android: 'true'
-        remove-haskell: 'true'
-
-    - name: List Available Space
-      run: |
-        echo "Free space:"
-        df -h
-
-    - name: Checkout SimpleAQ-Device
-      uses: actions/checkout@v2
-      with:
-        lfs: 'true'
-        path: SimpleAQ-Device
-        ssh-key: ${{ secrets.git_ssh_key }}
-      env:
-        GIT_CURL_VERBOSE: '1'
-        GIT_TRACE: '1'
-
-    - name: Install Dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
-
-    - name: Name Image
-      id: debugconfig
-      run: |
-        NOW=$(date +"%Y-%m-%d-%H%M")
-        IMAGE=BananaPi-SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo "::set-output name=image::$IMAGE"
-
-    - name: Mount Image File
-      run: |
-        cd SimpleAQ-Device/custom_bananapi/base_image
-        xz -d Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img.xz
-        sudo mkdir /mnt/armbian
-        sudo mount `sudo losetup -fP --show Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img`p1 /mnt/armbian/
-
-    - name: Update Image File
-      run: |
-        sha1sum SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
-        sudo docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get update
-        sha1sum SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
-        sudo docker run -v /mnt/armbian:/armbian --platform linux/arm64/v8 --security-opt seccomp=unconfined arm64v8/debian:bullseye chroot armbian/ apt-get upgrade -y
-        sha1sum SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
-
-    # TODO:  Install other dependencies, set up SimpleAQ itself.
-
-    - name: Unmount Image File
-      run:
-        sudo umount /mnt/armbian
-
-    - name: Upload Image File
-      uses: actions/upload-artifact@v1
-      with:
-        name: ${{ steps.debugconfig.outputs.image }}
-        path: SimpleAQ-Device/custom_bananapi/base_image/Armbian_21.08.1_Bananapim2zero_bullseye_current_5.10.60.img
 
   build_debug:
     runs-on: ubuntu-latest
@@ -203,7 +141,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: 3385618efbd428bc14a13b7195d44978689d343a
+        ref: 01b2432007766a6a1acc942f62d4ece7b25e560d
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -224,13 +162,17 @@ jobs:
         cd PiGen
         NOW=$(date +"%Y-%m-%d-%H%M")
         IMAGE=INSECURE-DEBUG-SimpleAQ-${GITHUB_REF##*/}-$NOW
-        echo IMG_NAME=INSECURE-DEBUG-$IMAGE > config
-        echo DEPLOY_COMPRESSION=none >> config
-        echo ENABLE_SSH=1 >> config
-        echo TARGET_HOSTNAME=simpleaq >> config
-        echo TIMEZONE_DEFAULT=Etc/UTC >> config
-        echo FIRST_USER_NAME=pi       >> config
-        echo FIRST_USER_PASS=simpleaq >> config
+        echo IMG_NAME=$IMAGE                        > config
+        echo DEPLOY_COMPRESSION=none               >> config
+        echo ENABLE_SSH=1                          >> config
+        echo TARGET_HOSTNAME=simpleaq              >> config
+        echo TIMEZONE_DEFAULT=Etc/UTC              >> config
+        echo FIRST_USER_NAME=pi                    >> config
+        echo FIRST_USER_PASS=simpleaq              >> config
+        echo LOCALE_DEFAULT=en_US.UTF-8            >> config
+        echo KEYBOARD_KEYMAP=us                    >> config
+        echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
+        echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
         echo "::set-output name=image::$IMAGE"
 
     # Greatly speed up our build because we don't need a desktop

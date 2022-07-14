@@ -50,16 +50,16 @@
 # Additional overlays and parameters are documented /boot/overlays/README
 
 # Enable audio (loads snd_bcm2835)
-dtparam=audio=on
+# dtparam=audio=on
 
 # Automatically load overlays for detected cameras
-camera_auto_detect=1
+# camera_auto_detect=1
 
 # Automatically load overlays for detected DSI displays
-display_auto_detect=1
+# display_auto_detect=1
 
 # Enable DRM VC4 V3D driver
-dtoverlay=vc4-kms-v3d
+# dtoverlay=vc4-kms-v3d
 max_framebuffers=2
 
 # Disable compensation for displays with overscan
