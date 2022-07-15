@@ -8,7 +8,7 @@ PartOf=wpa_supplicant@ap0.service
 User=pi
 WorkingDirectory=/simpleaq
 EnvironmentFile=/etc/environment
-ExecStart=gunicorn -b 192.168.4.1:80 -w 1 hostap_config:app
+ExecStart=flask run --host=0.0.0.0 --port=80
 Restart=always
 
 [Install]
