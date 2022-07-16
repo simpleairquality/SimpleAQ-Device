@@ -14,6 +14,7 @@ EOF
 # in for most users.
 # https://github.com/torfsen/python-systemd-tutorial is awesome.
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
@@ -26,6 +27,10 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/simpleaq.service
         chmod 644 /etc/systemd/system/simpleaq.service
         systemctl enable simpleaq
+
+        chown root:root /etc/systemd/system/hostap_config.service
+        chmod 644 /etc/systemd/system/hostap_config.service
+        systemctl enable hostap_config
 EOF
 
 # Delete now-unnecessary custom pigen stuff.

@@ -4,7 +4,7 @@ Requires=sys-subsystem-net-devices-wlan0.device
 After=sys-subsystem-net-devices-wlan0.device
 Conflicts=wpa_supplicant@wlan0.service
 Before=network.target
-Wants=network.target
+Wants=network.target hostap_config.service
 
 # NetworkManager users will probably want the dbus version instead.
 

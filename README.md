@@ -68,6 +68,15 @@ When you return to your work later, you can simply use:
 source venv/bin/activate
 ```
 
+## The Flask HostAP Configuration Tool
+
+You can run this locally to test it out.
+```bash
+cp example.env .env
+source .env
+flask run
+```
+
 ## Manually Configuring Your Device To Connect to Wifi
 
 You can configure Wifi on your device without using `ssh`.
