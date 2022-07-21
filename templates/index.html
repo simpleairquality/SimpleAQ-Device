@@ -1,0 +1,65 @@
+<html>
+<head>
+<title>SimpleAQ Configuration</title>
+</head>
+<body>
+<img src="{{simpleaq_logo}}" width=200 height=200/>
+<p/>
+<form>
+<table>
+<tr>
+  <th>Setting</th>
+  <th>Value</th>
+</tr>
+<tr>
+  <td>Local Wifi Network</td>
+  <td></td>
+</tr>
+<tr>
+  <td>Local Wifi Password</td>
+  <td></td>
+</tr>
+<tr>
+  <td>InfluxDB Organization</td>
+  <td><input type="text" value="{{influx_org}}"/></td>
+</tr>
+<tr>
+  <td>InfluxDB Bucket</td>
+  <td><input type="text" value="{{influx_bucket}}"/></td>
+</tr>
+<tr>
+  <td>InfluxDB Token</td>
+  <td><input type="text" value="{{influx_token}}"/></td>
+</tr>
+<tr>
+  <td>InfluxDB Server</td>
+  <td><input type="text" value="{{influx_server}}"/></td>
+</tr>
+<tr>
+  <td>Data Collection Interval (seconds)</td>
+  <td><input type="number" value="{{simpleaq_interval}}"/></td>
+</tr>
+<tr>
+  <td>Anypoint Network Host Name</td>
+  <td><input type="text" value="{{simpleaq_hostapd_name}}"/></td>
+</tr>
+<tr>
+  <td>Remote Server Connection Retry Interval (seconds)</td>
+  <td><input type="number" value="{{hostap_retry_interval_sec}}"/></td>
+</tr>
+<tr>
+  <td>Max Writes Per Interval</td>
+  <td><input type="number" value="{{max_backlog_writes}}"/></td>
+</tr>
+<tr>
+  <td>Anypoint Network Password</td>
+  <td></td>
+</tr>
+<tr>
+  <td><button type="submit">Submit Changes and Reboot</button></td>
+  <td><button type="reset">Reset Changes</button></td>
+</tr>
+</table>
+</form>
+</body>
+</html>
