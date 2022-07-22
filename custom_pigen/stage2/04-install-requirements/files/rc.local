@@ -19,7 +19,7 @@ fi
 
 # Append something unique to the hostapd wireless name if it's left default.
 _SIMPLEAQ_HOSTAPD_NAME=$(grep "^simpleaq_hostapd_name=" /etc/environment | cut -c23-)
-_SIMPLEAQ_HOSTAPD_PASSWORD=$(grep "^simpleaq_hostapd_password=" /etc/environment | cut -c23-)
+_SIMPLEAQ_HOSTAPD_PASSWORD=$(grep "^simpleaq_hostapd_password=" /etc/environment | cut -c27-)
 
 if [ "$_SIMPLEAQ_HOSTAPD_NAME" = "SimpleAQ" ]; then
   _PI_SSID=SimpleAQ-$(cat /etc/machine-id | cut -c1-4)
