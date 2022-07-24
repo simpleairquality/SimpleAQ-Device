@@ -141,6 +141,15 @@ If InfluxDB is set up properly and accessible, you will see a login page for Inf
 
 ### Configuring Your Device
 
+#### Using the HostAP network
+
+When you boot your SimpleAQ image, it should start a HostAP network with a name like SimpleAQ-xxxx, and a default password of SimpleAQ.
+If you connect to the HostAP network with any device, navigate to [http://192.168.4.1](http://192.168.4.1) or [http://simpleaq.setup](http://simpleaq.setup) in a web browser.
+On this page, you will be able to change relevant settings.
+When the device is reporting data to a backend server expected, this HostAP network will not appear.
+
+#### Manually
+
 In order to connect the device to the backend, you will need a valid org, bucket and token.
 If you used the example above, you can use "my\_org", "my\_bucket" and "not\_secure\_admin\_token".
 
