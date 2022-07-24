@@ -5,6 +5,10 @@ import re
 
 app = Flask(__name__)
 
+
+# TODO:  Data download in NDJSON format.
+# TODO:  Show some logs from the SimpleAQ service to help debug.
+
 @app.route('/')
 def main():
   ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
@@ -69,8 +73,14 @@ def update():
     dotenv.set_key(os.getenv('env_file'), key, request.form[key],
                    quote_mode='never' if key in no_quote_keys else 'always')
 
+  # Remove the HostAP status file so we retry connections on reboot.
+  if os.path.exists('/simpleaq/hostap_status_file'):
+    os.remove('/simpleaq/hostap_status_file')
+
   # Reboot.
   os.system('reboot')
 
   # The user may never see this before the system restarts.
   return render_template('update.html')
+
+
