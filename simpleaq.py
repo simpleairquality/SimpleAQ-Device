@@ -236,7 +236,11 @@ def main(args):
 
   # Maybe trigger wlan mode
   if switch_to_wlan():
+    logging.warning("Trying to switch to wlan mode.")
     os.system("systemctl start " + os.getenv("wlan_service"))
+    # This sleep is essential, or we may switch right back to AP mode because
+    # we didn't manage to switch to wlan fast enough.
+    time.sleep(30)
 
   with connect_to_influx() as influx:
     sensors = []
