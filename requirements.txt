@@ -10,3 +10,4 @@ RPi.GPIO
 adafruit-blinka
 psutil
 flask==2.1.3
+jsonlines
