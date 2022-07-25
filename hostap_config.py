@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, make_response
 import dotenv
 import os
 import re
+import subprocess
 
 app = Flask(__name__)
 
@@ -83,4 +84,23 @@ def update():
   # The user may never see this before the system restarts.
   return render_template('update.html')
 
+@app.route('/debug/dmesg/')
+def dmesg():
+  result = subprocess.run(['dmesg'], stdout=subprocess.PIPE)
+  response = make_response(result.stdout, 200)
+  response.mimetype = 'text/plain'
+  return response
 
+@app.route('/debug/simpleaq/')
+def simpleaq():
+  result = subprocess.run(['journalctl', '-u', 'simpleaq.service'], stdout=subprocess.PIPE)
+  response = make_response(result.stdout, 200)
+  response.mimetype = 'text/plain'
+  return response
+
+@app.route('/debug/hostap/')
+def hostap():
+  result = subprocess.run(['journalctl', '-u', 'hostap_config.service'], stdout=subprocess.PIPE)
+  response = make_response(result.stdout, 200)
+  response.mimetype = 'text/plain'
+  return response
