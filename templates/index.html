@@ -3,7 +3,6 @@
 <title>SimpleAQ Configuration</title>
 </head>
 <body>
-<form method="post" action="update">
 <table>
 <tr>
   <td colspan=2>
@@ -12,6 +11,7 @@
     </center>
   </td>
 </tr>
+<form method="post" action="update">
 <tr>
   <th>Setting</th>
   <th>Value</th>
@@ -70,6 +70,32 @@
   <td><button type="submit">Submit Changes and Reboot</button></td>
   <td><button type="reset">Reset Changes</button></td>
 </tr>
+</form>
+<tr>
+<th colspan=2>
+  Data Downloads
+</th>
+</tr>
+<tr>
+  <td>
+    Currently Available Data Points
+  </td>
+  <td>
+    {{num_data_points}}
+  </td>
+</tr>
+<tr>
+  <td>
+    <form action="simpleaq.ndjson" method="GET">
+      <button type="submit">Download All Local Data</button>
+    </form>
+  </td>
+  <td>
+    <form action="purge_warn" method="GET">
+      <button type="submit">Purge All Local Data</button>
+    </form>
+  </td>
+</tr>
 <tr>
 <th colspan=2>
   Log File Downloads
@@ -85,6 +111,5 @@
   <td colspan=2><a href="/debug/hostap/">hostap config service logs</a></td>
 </tr>
 </table>
-</form>
 </body>
 </html>

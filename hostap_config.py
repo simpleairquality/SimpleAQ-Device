@@ -1,17 +1,22 @@
-from flask import Flask, render_template, request, make_response
+from flask import Flask, render_template, request, make_response, Response, redirect
 import dotenv
 import os
+import json
 import re
 import subprocess
 
 app = Flask(__name__)
 
+def prevent_hostap_switch():
+  subprocess.run(['touch', '/simpleaq/hostap_status_file'])
 
-# TODO:  Data download in NDJSON format.
-# TODO:  Show some logs from the SimpleAQ service to help debug.
+def get_all_data_files():
+  return os.listdir(os.getenv('data_save_path'))
 
 @app.route('/')
 def main():
+  prevent_hostap_switch()
+
   ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
   psk_re = re.compile("^\s*psk=\"(.*)\"\s*$")
 
@@ -29,8 +34,11 @@ def main():
       if search_result:
         local_psk = search_result.group(1)
 
+  num_data_points = len(get_all_data_files())
+
   return render_template(
       'index.html',
+      num_data_points=num_data_points,
       local_wifi_network=local_ssid,
       local_wifi_password=local_psk,
       simpleaq_logo='static/simpleaq_logo.png',
@@ -43,6 +51,31 @@ def main():
       simpleaq_hostapd_password=os.getenv('simpleaq_hostapd_password'),
       hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
       max_backlog_writes=os.getenv('max_backlog_writes'))
+
+@app.route('/simpleaq.ndjson', methods=('GET',))
+def download():
+  prevent_hostap_switch()
+
+  touch_every = int(os.getenv('hostap_retry_interval_sec', '100'))
+
+  def generate():
+    count = 0
+    for file in get_all_data_files():
+      count += 1
+      if count > touch_every:
+        prevent_hostap_switch()
+        count = 0
+      if os.path.isfile(os.path.join(os.getenv('data_save_path'), file)):
+        with open(os.path.join(os.getenv('data_save_path'), file), 'r') as fp:
+          # Crunch the data down to a single line.
+          try:
+            data = json.dumps(json.loads(fp.read()))
+            yield data + '\n'
+          except Exception:
+            # Doesn't matter, don't let a bad file spoil the download.
+            pass
+
+  return Response(generate(), mimetype='application/x-ndjson')
 
 @app.route('/update/', methods=('POST',))
 def update():
@@ -84,8 +117,31 @@ def update():
   # The user may never see this before the system restarts.
   return render_template('update.html')
 
+@app.route("/purge_warn/", methods=('GET',))
+def purge_warn():
+  prevent_hostap_switch()
+  return render_template('purge_warn.html', simpleaq_logo='/static/simpleaq_logo.png')
+
+@app.route("/purge/", methods=('POST',))
+def purge():
+  prevent_hostap_switch()
+
+  touch_every = int(os.getenv('hostap_retry_interval_sec', 100))
+
+  count = 0
+  for file in get_all_data_files():
+    count += 1
+    if count > touch_every:
+      prevent_hostap_switch()
+      count = 0
+    if os.path.isfile(os.path.join(os.getenv('data_save_path'), file)):
+      os.remove(os.path.join(os.getenv('data_save_path'), file))
+  return redirect('/')
+
+
 @app.route('/debug/dmesg/')
 def dmesg():
+  prevent_hostap_switch()
   result = subprocess.run(['dmesg'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
@@ -93,6 +149,7 @@ def dmesg():
 
 @app.route('/debug/simpleaq/')
 def simpleaq():
+  prevent_hostap_switch()
   result = subprocess.run(['journalctl', '-u', 'simpleaq.service'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
@@ -100,6 +157,7 @@ def simpleaq():
 
 @app.route('/debug/hostap/')
 def hostap():
+  prevent_hostap_switch()
   result = subprocess.run(['journalctl', '-u', 'hostap_config.service'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
