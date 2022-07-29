@@ -1,0 +1,115 @@
+<html>
+<head>
+<title>SimpleAQ Configuration</title>
+</head>
+<body>
+<table>
+<tr>
+  <td colspan=2>
+    <center>
+      <img src="{{simpleaq_logo}}" width=200 height=200/>
+    </center>
+  </td>
+</tr>
+<form method="post" action="update">
+<tr>
+  <th>Setting</th>
+  <th>Value</th>
+</tr>
+<tr>
+  <td>Local Wifi Network</td>
+  <td>
+    <input name="original_local_wifi_network" type="hidden" value="{{local_wifi_network}}"/>
+    <input name="local_wifi_network" type="text" value="{{local_wifi_network}}"/>
+  </td>
+</tr>
+<tr>
+  <td>Local Wifi Password</td>
+  <td>
+    <input name="original_local_wifi_password" type="hidden" value="{{local_wifi_password}}"/>
+    <input name="local_wifi_password" type="text" value="{{local_wifi_password}}"/>
+  </td>
+</tr>
+<tr>
+  <td>InfluxDB Organization</td>
+  <td><input name="influx_org" type="text" value="{{influx_org}}"/></td>
+</tr>
+<tr>
+  <td>InfluxDB Bucket</td>
+  <td><input name="influx_bucket" type="text" value="{{influx_bucket}}"/></td>
+</tr>
+<tr>
+  <td>InfluxDB Token</td>
+  <td><input name="influx_token" type="text" value="{{influx_token}}"/></td>
+</tr>
+<tr>
+  <td>InfluxDB Server</td>
+  <td><input name="influx_server" type="text" value="{{influx_server}}"/></td>
+</tr>
+<tr>
+  <td>Data Collection Interval (seconds)</td>
+  <td><input name="simpleaq_interval" type="number" value="{{simpleaq_interval}}"/></td>
+</tr>
+<tr>
+  <td>Anypoint Network Host Name</td>
+  <td><input name="simpleaq_hostapd_name" type="text" value="{{simpleaq_hostapd_name}}"/></td>
+</tr>
+<tr>
+  <td>Anypoint Network Host Password</td>
+  <td><input name="simpleaq_hostapd_password" type="text" value="{{simpleaq_hostapd_password}}"/></td>
+</tr>
+<tr>
+  <td>Remote Server Connection Retry Interval (seconds)</td>
+  <td><input name="hostap_retry_interval_sec" type="number" value="{{hostap_retry_interval_sec}}"/></td>
+</tr>
+<tr>
+  <td>Max Writes Per Interval</td>
+  <td><input name="max_backlog_writes" type="number" value="{{max_backlog_writes}}"/></td>
+</tr>
+<tr>
+  <td><button type="submit">Submit Changes and Reboot</button></td>
+  <td><button type="reset">Reset Changes</button></td>
+</tr>
+</form>
+<tr>
+<th colspan=2>
+  Data Downloads
+</th>
+</tr>
+<tr>
+  <td>
+    Currently Available Data Points
+  </td>
+  <td>
+    {{num_data_points}}
+  </td>
+</tr>
+<tr>
+  <td>
+    <form action="simpleaq.ndjson" method="GET">
+      <button type="submit">Download All Local Data</button>
+    </form>
+  </td>
+  <td>
+    <form action="purge_warn" method="GET">
+      <button type="submit">Purge All Local Data</button>
+    </form>
+  </td>
+</tr>
+<tr>
+<th colspan=2>
+  Log File Downloads
+</th>
+</tr>
+<tr>
+  <td colspan=2><a href="/debug/dmesg/">dmesg logs</a></td>
+</tr>
+<tr>
+  <td colspan=2><a href="/debug/simpleaq/">simpleaq service logs</a></td>
+</tr>
+<tr>
+  <td colspan=2><a href="/debug/hostap/">hostap config service logs</a></td>
+</tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>SimpleAQ Configuration</title>
+</head>
+<body>
+<table>
+<tr>
+  <td colspan=2>
+    <center>
+      <img src="{{simpleaq_logo}}" width=200 height=200/>
+    </center>
+  </td>
+</tr>
+<tr>
+  <th colspan=2>
+    This action will delete all data saved locally on this device.<br/>
+    The most likely reason you would want to do this is if you have already downloaded the data and want to free up space.<p/>
+    Are you sure?
+  </th>
+</tr>
+<tr>
+  <td>
+    <center>
+      <form action="/" method="GET">
+        <button type="submit">Cancel</button>
+      </form>
+    </center>
+  </td>
+  <td>
+    <center>
+      <form action="/purge/" method="POST">
+        <button type="submit">Purge All Data</button>
+      </form>
+    </center>
+  </td>
+</tr>
+</table>
+</body>
+</html>
