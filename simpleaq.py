@@ -85,10 +85,12 @@ class Bme688(Sensor):
     logging.info('Publishing Bme688 to influx')
     result = False
     try:
-      result = result or self._try_write_to_influx('BME688', 'temperature_C', self.sensor.temperature)
-      result = result or self._try_write_to_influx('BME688', 'voc_ohms', self.sensor.gas)
-      result = result or self._try_write_to_influx('BME688', 'relative_humidity_pct', self.sensor.humidity)
-      result = result or self._try_write_to_influx('BME688', 'pressure_hPa', self.sensor.pressure)
+      # It is actually important that the try_write_to_influx happens before the result, otherwise
+      # it will never be evaluated!
+      result = self._try_write_to_influx('BME688', 'temperature_C', self.sensor.temperature) or result
+      result = self._try_write_to_influx('BME688', 'voc_ohms', self.sensor.gas) or result
+      result = self._try_write_to_influx('BME688', 'relative_humidity_pct', self.sensor.humidity) or result
+      result = self._try_write_to_influx('BME688', 'pressure_hPa', self.sensor.pressure) or result
     except Exception as err:
       logging.error("Error getting data from BME688.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True
@@ -123,7 +125,9 @@ class Pm25(Sensor):
           influx_key += " ug per m3"
         if influx_key.endswith('standard'):
           influx_key += " ug per m3"
-        result = result or self._try_write_to_influx('PM25', influx_key, val)
+        # It is actually important that the try_write_to_influx happens before the result, otherwise
+        # it will never be evaluated!
+        result = self._try_write_to_influx('PM25', influx_key, val) or result
     except Exception as err:
       logging.error("Error getting data from PM25.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True
@@ -173,13 +177,17 @@ class Gps(Sensor):
       if self.gps.timestamp_utc:
         self._update_systime()
 
-        result = result or self._try_write_to_influx('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc))
+        # It is actually important that the try_write_to_influx happens before the result, otherwise
+        # it will never be evaluated!
+        result = self._try_write_to_influx('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
       else:
         logging.warning('GPS has no timestamp data')
 
       if self.gps.has_fix:
-        result = result or self._try_write_to_influx('GPS', 'latitude_degrees', self.gps.latitude)
-        result = result or self._try_write_to_influx('GPS', 'longitude_degrees', self.gps.longitude)
+        # It is actually important that the try_write_to_influx happens before the result, otherwise
+        # it will never be evaluated!
+        result = self._try_write_to_influx('GPS', 'latitude_degrees', self.gps.latitude) or result
+        result = self._try_write_to_influx('GPS', 'longitude_degrees', self.gps.longitude) or result
       else:
         logging.warning('GPS has no fix')
     except Exception as err:
@@ -198,9 +206,12 @@ class System(Sensor):
     logging.info('Publishing system stats')
     result = False
 
-    result = result or self._try_write_to_influx('System', 'device_uptime_sec', time.time() - psutil.boot_time())
-    result = result or self._try_write_to_influx('System', 'service_uptime_sec', time.time() - psutil.boot_time())
-    result = result or self._try_write_to_influx('System', 'system_time_utc', time.time())
+    # It is actually important that the try_write_to_influx happens before the result, otherwise
+    # it will never be evaluated!
+
+    result = self._try_write_to_influx('System', 'device_uptime_sec', time.time() - psutil.boot_time()) or result
+    result = self._try_write_to_influx('System', 'service_uptime_sec', time.time() - psutil.boot_time()) or result
+    result = self._try_write_to_influx('System', 'system_time_utc', time.time()) or result
 
     return result
 
