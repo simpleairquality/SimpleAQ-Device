@@ -102,3 +102,7 @@ on_chroot << EOF
          echo "192.168.4.1             simpleaq.setup" >> /etc/hosts
 EOF
 
+# Don't let logs get too big.
+on_chroot << EOF
+         journalctl --vacuum-size=1G
+EOF
