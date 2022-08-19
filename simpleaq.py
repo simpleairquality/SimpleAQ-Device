@@ -6,7 +6,6 @@ import json
 import os
 import psutil
 import sys
-import threading
 import time
 from dateutil import parser
 from pprint import pprint
@@ -139,18 +138,17 @@ class Gps(Sensor):
   def __init__(self, influx, interval=None):
     super().__init__(influx)
 
+    self.interval = interval
+    self.has_set_time = False
+
     try:
       self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
-      self.interval = interval
-      self.has_set_time = False
-
-      def update_gps():
-        while True:
-          self.gps.update()
-          time.sleep(0.5)
-      self.update_gps_thread = threading.Thread(target=update_gps, daemon=True)
-      self.update_gps_thread.start()
+      # Turn on everything the module collects.
+      self.gps.send_command(b"PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0")
+      # Update once every second (1000ms)
+      self.gps.send_command(b"PMTK220,1000")
     except Exception as err:
+      # We raise here because if GPS fails, we're probably getting unuseful data entirely.
       logging.error("Error setting up GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       raise err
 
@@ -172,24 +170,30 @@ class Gps(Sensor):
 
   def publish(self):
     logging.info('Publishing GPS data to influx')
+    # Yes, recommended behavior is to call update twice.  
+    self.gps.update()
+    self.gps.update()
     result = False
     try:
-      if self.gps.timestamp_utc:
-        self._update_systime()
-
-        # It is actually important that the try_write_to_influx happens before the result, otherwise
-        # it will never be evaluated!
-        result = self._try_write_to_influx('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
-      else:
-        logging.warning('GPS has no timestamp data')
-
       if self.gps.has_fix:
-        # It is actually important that the try_write_to_influx happens before the result, otherwise
-        # it will never be evaluated!
-        result = self._try_write_to_influx('GPS', 'latitude_degrees', self.gps.latitude) or result
-        result = self._try_write_to_influx('GPS', 'longitude_degrees', self.gps.longitude) or result
+        if self.gps.timestamp_utc:
+          self._update_systime()
+
+          # It is actually important that the try_write_to_influx happens before the result, otherwise
+          # it will never be evaluated!
+          result = self._try_write_to_influx('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
+        else:
+          logging.warning('GPS has no timestamp data')
+
+        if self.gps.latitude and self.gps.longitude:
+          # It is actually important that the try_write_to_influx happens before the result, otherwise
+          # it will never be evaluated!
+          result = self._try_write_to_influx('GPS', 'latitude_degrees', self.gps.latitude) or result
+          result = self._try_write_to_influx('GPS', 'longitude_degrees', self.gps.longitude) or result
+        else:
+          logging.warning('GPS has no lat/lon data.')
       else:
-        logging.warning('GPS has no fix')
+        logging.warning('GPS has no fix.')
     except Exception as err:
       logging.error("Error getting data from GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True
