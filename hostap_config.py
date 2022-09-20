@@ -49,6 +49,7 @@ def main():
       simpleaq_interval=os.getenv('simpleaq_interval'),
       simpleaq_hostapd_name=os.getenv('simpleaq_hostapd_name'),
       simpleaq_hostapd_password=os.getenv('simpleaq_hostapd_password'),
+      simpleaq_hostapd_hide_ssid_checked=('checked' if os.getenv('simpleaq_hostapd_hide_ssid') == '1' else ''),
       hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
       max_backlog_writes=os.getenv('max_backlog_writes'))
 
@@ -106,6 +107,13 @@ def update():
   for key in keys:
     dotenv.set_key(os.getenv('env_file'), key, request.form[key],
                    quote_mode='never' if key in no_quote_keys else 'always')
+
+  # Checkbox needs to be handled separately.
+  dotenv.set_key(
+      os.getenv('env_file'),
+      'simpleaq_hostapd_hide_ssid',
+      request.form.get('simpleaq_hostapd_hide_ssid', '0'),
+      quote_mode='never')
 
   # Remove the HostAP status file so we retry connections on reboot.
   if os.path.exists('/simpleaq/hostap_status_file'):
