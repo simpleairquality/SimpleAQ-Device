@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, make_response, Response, redirect
+import contextlib
 import dotenv
 import os
 import json
 import re
+import sqlite3
 import subprocess
 
 app = Flask(__name__)
@@ -10,8 +12,18 @@ app = Flask(__name__)
 def prevent_hostap_switch():
   subprocess.run(['touch', '/simpleaq/hostap_status_file'])
 
-def get_all_data_files():
-  return os.listdir(os.getenv('data_save_path'))
+def count_all_data_files():
+  # Make sure there's a place to actually put the backlog database if necessary.
+  os.makedirs(os.getenv("sqlite_db_path"))
+
+  # This implicitly creates the database.
+  with contextlib.closing(sqlite3.connect("sqlite_db_path")) as db_conn:
+    # OK, we need a table to store backlog data if it doesn't exist.
+    with contextlib.closing(db_conn.cursor()) as cursor:
+      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+      cursor.execute("SELECT COUNT(*) FROM data")
+      result = cursor.fetchone()
+      return result[0]
 
 @app.route('/')
 def main():
@@ -34,7 +46,7 @@ def main():
       if search_result:
         local_psk = search_result.group(1)
 
-  num_data_points = len(get_all_data_files())
+  num_data_points = count_all_data_files()
 
   return render_template(
       'index.html',
@@ -59,24 +71,39 @@ def download():
 
   touch_every = int(os.getenv('hostap_retry_interval_sec', '100'))
 
-  def generate():
+  def generate(cursor):
     count = 0
-    for file in get_all_data_files():
-      count += 1
-      if count > touch_every:
-        prevent_hostap_switch()
-        count = 0
-      if os.path.isfile(os.path.join(os.getenv('data_save_path'), file)):
-        with open(os.path.join(os.getenv('data_save_path'), file), 'r') as fp:
-          # Crunch the data down to a single line.
-          try:
-            data = json.dumps(json.loads(fp.read()))
-            yield data + '\n'
-          except Exception:
-            # Doesn't matter, don't let a bad file spoil the download.
-            pass
+    data = cursor.fetchone()
 
-  return Response(generate(), mimetype='application/x-ndjson')
+    while data:
+      try:
+        # Maybe prevent HostAP switching during a large download.
+        count += 1
+        if count > touch_every:
+          prevent_hostap_switch()
+          count = 0
+
+        # Make sure we only return valid JSON
+        data_jsonstr = json.dumps(json.loads(data[1]))
+        yield data_jsonstr + '\n'
+      except Exception:
+        # Doesn't matter, don't let a bad file spoil the download.
+        pass
+
+      data = cursor.fetchone()
+
+  # Make sure there's a place to actually put the backlog database if necessary.
+  os.makedirs(os.getenv("sqlite_db_path"))
+
+  # This implicitly creates the database.
+  with contextlib.closing(sqlite3.connect("sqlite_db_path")) as db_conn:
+
+    # OK, we need a table to store backlog data if it doesn't exist.
+    with contextlib.closing(db_conn.cursor()) as cursor:
+      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+      cursor.execute("SELECT * FROM data")
+
+      return Response(generate(cursor), mimetype='application/x-ndjson')
 
 @app.route('/update/', methods=('POST',))
 def update():
@@ -134,16 +161,16 @@ def purge_warn():
 def purge():
   prevent_hostap_switch()
 
-  touch_every = int(os.getenv('hostap_retry_interval_sec', 100))
+  # Make sure there's a place to actually put the backlog database if necessary.
+  os.makedirs(os.getenv("sqlite_db_path"))
 
-  count = 0
-  for file in get_all_data_files():
-    count += 1
-    if count > touch_every:
-      prevent_hostap_switch()
-      count = 0
-    if os.path.isfile(os.path.join(os.getenv('data_save_path'), file)):
-      os.remove(os.path.join(os.getenv('data_save_path'), file))
+  # This implicitly creates the database.
+  with contextlib.closing(sqlite3.connect("sqlite_db_path")) as db_conn:
+    # OK, we need a table to store backlog data if it doesn't exist.
+    with contextlib.closing(db_conn.cursor()) as cursor:
+      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+      cursor.execute("DELETE FROM data")
+
   return redirect('/')
 
 

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import calendar
+import contextlib
 import datetime
 import json
 import os
 import psutil
+import sqlite3
 import sys
 import time
 from dateutil import parser
@@ -27,8 +29,9 @@ flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired
 
 
 class Sensor(object):
-  def __init__(self, influx):
+  def __init__(self, influx, connection):
     self.influx = influx
+    self.connection = connection
     self.bucket = os.getenv('influx_bucket')
     self.org = os.getenv('influx_org')
 
@@ -56,18 +59,15 @@ class Sensor(object):
       # If we failed to write, save to disk instead.
       # Need to make sure the path exists first.
       try:
-        if not os.path.isdir(os.getenv("data_save_path")):
-          os.makedirs(os.getenv("data_save_path"))
+        data_json = {
+            'point': point,
+            'field': field,
+            'value': self._make_ints_to_float(value),
+            'time': datetime.datetime.now().isoformat()
+        }
 
-        with open(os.path.join(os.getenv("data_save_path"), str(point) + "_" + str(field) + "_" + str(time.time())), "w") as f:
-          data_json = {
-              'point': point,
-              'field': field,
-              'value': self._make_ints_to_float(value),
-              'time': datetime.datetime.now().isoformat()
-          }
-
-          f.write(json.dumps(data_json))
+        with contextlib.closing(connection.cursor()) as cursor:
+          cur.execute("INSERT INTO data VALUES(?, ?)", None, json.dumps(data_json))
 
         return True
       except Exception as backup_err:
@@ -76,8 +76,8 @@ class Sensor(object):
         return True
 
 class Bme688(Sensor):
-  def __init__(self, influx):
-    super().__init__(influx)
+  def __init__(self, influx, connection):
+    super().__init__(influx, connection)
     self.sensor = adafruit_bme680.Adafruit_BME680_I2C(board.I2C())
 
   def publish(self):
@@ -97,8 +97,8 @@ class Bme688(Sensor):
 
 
 class Pm25(Sensor):
-  def __init__(self, influx):
-    super().__init__(influx)
+  def __init__(self, influx, connection):
+    super().__init__(influx, connection)
     i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
     self.pm25 = PM25_I2C(i2c)
 
@@ -135,8 +135,8 @@ class Pm25(Sensor):
 
 
 class Gps(Sensor):
-  def __init__(self, influx, interval=None):
-    super().__init__(influx)
+  def __init__(self, influx, connection, interval=None):
+    super().__init__(influx, connection)
 
     self.interval = interval
     self.has_set_time = False
@@ -247,91 +247,104 @@ def main(args):
   else:
     dotenv.load_dotenv()
 
-  interval = int(os.getenv('simpleaq_interval'))
+  # Make sure there's a place to actually put the backlog database if necessary.
+  os.makedirs(os.getenv("sqlite_db_path"))
 
-  # Maybe trigger wlan mode
-  if switch_to_wlan():
-    logging.warning("Trying to switch to wlan mode.")
-    os.system("systemctl start " + os.getenv("wlan_service"))
-    # This sleep is essential, or we may switch right back to AP mode because
-    # we didn't manage to switch to wlan fast enough.
-    time.sleep(30)
+  # This implicitly creates the database.
+  with contextlib.closing(sqlite3.connect("sqlite_db_path")) as db_conn:
 
-  with connect_to_influx() as influx:
-    sensors = []
-    # GPS sensor goes first in case it has to set the hardware clock.
-    sensors.append(Gps(influx, interval))
-    sensors.append(Bme688(influx))
-    sensors.append(Pm25(influx))
-    sensors.append(System(influx))
-    while True:
-      for sensor in sensors:
-        result_failure = [sensor.publish() for sensor in sensors]
-        if any(result_failure):
-          logging.warning("Failed to write some results.  Switching to hostap mode.")
+    # OK, we need a table to store backlog data if it doesn't exist.
+    with contextlib.closing(db_conn.cursor()) as cursor:
+      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
 
-          # Trigger hostapd mode.
-          os.system("systemctl start " + os.getenv("ap_service"))
+    interval = int(os.getenv('simpleaq_interval'))
 
-          # Maybe touch a file to indicate the time that we did this.
-          if not os.path.exists(os.getenv("hostap_status_file")):
-            os.system("touch " + os.getenv("hostap_status_file"))
-        else:
-          # Write backlog files.
-          files_written = 0
-          logging.info("Checking for backlog files to write.")
+    # Maybe trigger wlan mode
+    if switch_to_wlan():
+      logging.warning("Trying to switch to wlan mode.")
+      os.system("systemctl start " + os.getenv("wlan_service"))
+      # This sleep is essential, or we may switch right back to AP mode because
+      # we didn't manage to switch to wlan fast enough.
+      time.sleep(30)
 
-          if os.path.isdir(os.getenv("data_save_path")) and len(os.listdir(os.getenv("data_save_path"))) > 0:
-            logging.info("Found {} backlog files!".format(len(os.listdir(os.getenv("data_save_path")))))
+    with connect_to_influx() as influx:
+      sensors = []
+      # GPS sensor goes first in case it has to set the hardware clock.
+      sensors.append(Gps(influx, interval))
+      sensors.append(Bme688(influx))
+      sensors.append(Pm25(influx))
+      sensors.append(System(influx))
+      while True:
+        for sensor in sensors:
+          result_failure = [sensor.publish() for sensor in sensors]
+          if any(result_failure):
+            logging.warning("Failed to write some results.  Switching to hostap mode.")
 
-            for f in os.listdir(os.getenv("data_save_path")):
-              if os.path.isfile(os.path.join(os.getenv("data_save_path"), f)):
-                try:
-                  with open(os.path.join(os.getenv("data_save_path"), f)) as fp:
-                    data_json = json.load(fp)
+            # Trigger hostapd mode.
+            os.system("systemctl start " + os.getenv("ap_service"))
 
-                    if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
-                      try:
-                        with influx.write_api(write_options=SYNCHRONOUS) as client:
-                          client.write(
-                              os.getenv('influx_bucket'),
-                              os.getenv('influx_org'),
-                              influxdb_client.Point(data_json.get('point')).field(
-                                  data_json.get('field'), data_json.get('value')).time(parser.parse(data_json.get('time'))))
-                      except Exception as err:
-                        # Immediately break on Influx errors -- if the connection was lost,
-                        # we don't need to retry every file forever.
-                        logging.error("Error writing file " + f + " to Influx: " + str(err))
-                        break
-
-                      # Delete the file once written successfully.
-                      os.remove(os.path.join(os.getenv("data_save_path"), f))
-                      files_written += 1
-                    else:
-                      # Eventually, very many malformed files in this directory would cause unacceptable slowness.
-                      logging.warning("Data file " + f + " has missing fields.")
-                except Exception as err:
-                  logging.error("Error writing saved file [" + f + "] : " + str(err))
-              else:
-                logging.info("{} is a directory!".format(f))
-
-              # We spread out our writing of backlogs, so as not to spend a long time writing
-              # many backups after a long downtime.  We'll catch up eventually.
-              if files_written >= int(os.getenv("max_backlog_writes")):
-                break
-
-            logging.info("Wrote {} backlog files.".format(files_written))
+            # Maybe touch a file to indicate the time that we did this.
+            if not os.path.exists(os.getenv("hostap_status_file")):
+              os.system("touch " + os.getenv("hostap_status_file"))
           else:
-            logging.info("None found!")
+            # Write backlog files.
+            files_written = 0
+            logging.info("Checking for backlog files to write.")
 
-      # Maybe trigger wlan mode.
-      if switch_to_wlan():
-        logging.warning("Maintaining wlan mode.")
-        os.system("systemctl start " + os.getenv("wlan_service"))
+            with contextlib.closing(db_conn.cursor()) as cursor:
+              result = cursor.execute("SELECT COUNT(*) FROM data")
+              count = result.fetchone()[0]
 
-      # TODO:  We should probably wait until a specific future time,  instead of sleep.
-      time.sleep(interval)
+              logging.info("Found {} backlog files!".format(count))
+ 
+              result = cursor.execute("SELECT * FROM data")
 
+              data_point = result.fetchone()
+              while data_point:
+                try:
+                  data_json = json.loads(result[1])
+
+                  if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
+                    try:
+                      with influx.write_api(write_options=SYNCHRONOUS) as client:
+                        client.write(
+                            os.getenv('influx_bucket'),
+                            os.getenv('influx_org'),
+                            influxdb_client.Point(data_json.get('point')).field(
+                                data_json.get('field'), data_json.get('value')).time(parser.parse(data_json.get('time'))))
+                    except Exception as err:
+                      # Immediately break on Influx errors -- if the connection was lost,
+                      # we don't need to retry every file forever.
+                      logging.error("Error writing saved data point with id [{}] to Influx: {}".format(result[0], str(err)))
+                      break
+
+                    # Delete the file once written successfully.
+                    cursor.execute("DELETE FROM DATA WHERE id=?", result[0])
+                    files_written += 1
+                  else:
+                    # Eventually, very many malformed files in this directory would cause unacceptable slowness.
+                    logging.warning("Data point with id [{}] has missing fields.".format(result[0]))
+
+                except Exception as err:
+                  logging.error("Error writing saved data point with id [{}]: {}".format(result[0], str(err)))
+
+                # We spread out our writing of backlogs, so as not to spend a long time writing
+                # many backups after a long downtime.  We'll catch up eventually.
+                if files_written >= int(os.getenv("max_backlog_writes")):
+                  break
+
+                data_point = result.fetchone()
+
+              logging.info("Wrote {} backlog files.".format(files_written))
+ 
+        # Maybe trigger wlan mode.
+        if switch_to_wlan():
+          logging.warning("Maintaining wlan mode.")
+          os.system("systemctl start " + os.getenv("wlan_service"))
+  
+        # TODO:  We should probably wait until a specific future time,  instead of sleep.
+        time.sleep(interval)
+ 
 
 if __name__ == '__main__':
   app.run(main)
