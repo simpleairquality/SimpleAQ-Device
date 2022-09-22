@@ -71,7 +71,7 @@ def download():
 
   touch_every = int(os.getenv('hostap_retry_interval_sec', '100'))
 
-  def generate(cursor):
+  def generate(connection, cursor):
     count = 0
     data = cursor.fetchone()
 
@@ -92,18 +92,25 @@ def download():
 
       data = cursor.fetchone()
 
+    cursor.close()
+    connection.close()
+
   # Make sure there's a place to actually put the backlog database if necessary.
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
+  # No, we cannot use contextlib.closing here.
+  # The WSGI middleware in the streaming response generator will close them before
+  # generate can be called!  
+
   # This implicitly creates the database.
-  with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
+  db_conn = sqlite3.connect(os.getenv("sqlite_db_path"))
 
-    # OK, we need a table to store backlog data if it doesn't exist.
-    with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
-      cursor.execute("SELECT * FROM data")
+  # OK, we need a table to store backlog data if it doesn't exist.
+  cursor = db_conn.cursor()
+  cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+  cursor.execute("SELECT * FROM data")
 
-      return Response(generate(cursor), mimetype='application/x-ndjson')
+  return Response(generate(db_conn, cursor), mimetype='application/x-ndjson')
 
 @app.route('/update/', methods=('POST',))
 def update():
