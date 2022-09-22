@@ -202,8 +202,8 @@ class Gps(Sensor):
 
 
 class System(Sensor):
-  def __init__(self, influx):
-    super().__init__(influx)
+  def __init__(self, influx, connection):
+    super().__init__(influx, connection)
     self.start_time = time.time()
 
   def publish(self):
