@@ -270,10 +270,10 @@ def main(args):
     with connect_to_influx() as influx:
       sensors = []
       # GPS sensor goes first in case it has to set the hardware clock.
-      sensors.append(Gps(influx, interval))
-      sensors.append(Bme688(influx))
-      sensors.append(Pm25(influx))
-      sensors.append(System(influx))
+      sensors.append(Gps(influx, db_conn, interval))
+      sensors.append(Bme688(influx, db_conn))
+      sensors.append(Pm25(influx, db_conn))
+      sensors.append(System(influx, db_conn))
       while True:
         for sensor in sensors:
           result_failure = [sensor.publish() for sensor in sensors]
