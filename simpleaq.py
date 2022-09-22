@@ -67,7 +67,7 @@ class Sensor(object):
         }
 
         with contextlib.closing(self.connection.cursor()) as cursor:
-          cursor.execute("INSERT INTO data VALUES(?, ?)", None, json.dumps(data_json))
+          cursor.execute("INSERT INTO data VALUES(?, ?)", (None, json.dumps(data_json)))
 
         return True
       except Exception as backup_err:
@@ -319,7 +319,7 @@ def main(args):
                       break
 
                     # Delete the file once written successfully.
-                    cursor.execute("DELETE FROM DATA WHERE id=?", result[0])
+                    cursor.execute("DELETE FROM DATA WHERE id=?", (result[0],))
                     files_written += 1
                   else:
                     # Eventually, very many malformed files in this directory would cause unacceptable slowness.
