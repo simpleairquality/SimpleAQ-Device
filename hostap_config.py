@@ -170,6 +170,7 @@ def purge():
     with contextlib.closing(db_conn.cursor()) as cursor:
       cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
       cursor.execute("DELETE FROM data")
+      db_conn.commit()
 
   return redirect('/')
 

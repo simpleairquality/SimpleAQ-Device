@@ -68,6 +68,7 @@ class Sensor(object):
 
         with contextlib.closing(self.connection.cursor()) as cursor:
           cursor.execute("INSERT INTO data VALUES(?, ?)", (None, json.dumps(data_json)))
+          self.connection.commit()
 
         return True
       except Exception as backup_err:
@@ -256,6 +257,7 @@ def main(args):
     # OK, we need a table to store backlog data if it doesn't exist.
     with contextlib.closing(db_conn.cursor()) as cursor:
       cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+      db_conn.commit()
 
     interval = int(os.getenv('simpleaq_interval'))
 
@@ -334,6 +336,9 @@ def main(args):
                   break
 
                 data_point = result.fetchone()
+
+              # Commit deleted rows.
+              db_conn.commit()
 
               logging.info("Wrote {} backlog files.".format(files_written))
  
