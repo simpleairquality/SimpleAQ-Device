@@ -66,7 +66,7 @@ class Sensor(object):
             'time': datetime.datetime.now().isoformat()
         }
 
-        with contextlib.closing(connection.cursor()) as cursor:
+        with contextlib.closing(self.connection.cursor()) as cursor:
           cur.execute("INSERT INTO data VALUES(?, ?)", None, json.dumps(data_json))
 
         return True
