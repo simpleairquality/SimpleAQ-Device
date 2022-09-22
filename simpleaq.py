@@ -252,7 +252,7 @@ def main(args):
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
   # This implicitly creates the database.
-  with contextlib.closing(sqlite3.connect("sqlite_db_path")) as db_conn:
+  with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
 
     # OK, we need a table to store backlog data if it doesn't exist.
     with contextlib.closing(db_conn.cursor()) as cursor:
