@@ -248,7 +248,7 @@ def main(args):
     dotenv.load_dotenv()
 
   # Make sure there's a place to actually put the backlog database if necessary.
-  os.makedirs(os.getenv("sqlite_db_path"))
+  os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
   # This implicitly creates the database.
   with contextlib.closing(sqlite3.connect("sqlite_db_path")) as db_conn:
