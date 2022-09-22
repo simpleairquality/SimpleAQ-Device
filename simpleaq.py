@@ -67,7 +67,7 @@ class Sensor(object):
         }
 
         with contextlib.closing(self.connection.cursor()) as cursor:
-          cur.execute("INSERT INTO data VALUES(?, ?)", None, json.dumps(data_json))
+          cursor.execute("INSERT INTO data VALUES(?, ?)", None, json.dumps(data_json))
 
         return True
       except Exception as backup_err:
