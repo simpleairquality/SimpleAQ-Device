@@ -67,7 +67,7 @@ class Sensor(object):
         }
 
         with contextlib.closing(self.connection.cursor()) as cursor:
-          cursor.execute("INSERT INTO data VALUES(?, ?)", (None, json.dumps(data_json)))
+          cursor.execute("INSERT INTO data (json) VALUES(?)", (json.dumps(data_json),))
           self.connection.commit()
 
         return True
@@ -256,7 +256,7 @@ def main(args):
 
     # OK, we need a table to store backlog data if it doesn't exist.
     with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
       db_conn.commit()
 
     interval = int(os.getenv('simpleaq_interval'))
@@ -277,70 +277,69 @@ def main(args):
       sensors.append(Pm25(influx, db_conn))
       sensors.append(System(influx, db_conn))
       while True:
-        for sensor in sensors:
-          result_failure = [sensor.publish() for sensor in sensors]
-          if any(result_failure):
-            logging.warning("Failed to write some results.  Switching to hostap mode.")
+        result_failure = [sensor.publish() for sensor in sensors]
+        if any(result_failure):
+          logging.warning("Failed to write some results.  Switching to hostap mode.")
 
-            # Trigger hostapd mode.
-            os.system("systemctl start " + os.getenv("ap_service"))
+          # Trigger hostapd mode.
+          os.system("systemctl start " + os.getenv("ap_service"))
 
-            # Maybe touch a file to indicate the time that we did this.
-            if not os.path.exists(os.getenv("hostap_status_file")):
-              os.system("touch " + os.getenv("hostap_status_file"))
-          else:
-            # Write backlog files.
-            files_written = 0
-            logging.info("Checking for backlog files to write.")
+          # Maybe touch a file to indicate the time that we did this.
+          if not os.path.exists(os.getenv("hostap_status_file")):
+            os.system("touch " + os.getenv("hostap_status_file"))
+        else:
+          # Write backlog files.
+          files_written = 0
+          logging.info("Checking for backlog files to write.")
 
-            with contextlib.closing(db_conn.cursor()) as cursor:
-              result = cursor.execute("SELECT COUNT(*) FROM data")
-              count = result.fetchone()[0]
+          with contextlib.closing(db_conn.cursor()) as cursor:
+            result = cursor.execute("SELECT COUNT(*) FROM data")
+            count = result.fetchone()[0]
 
-              logging.info("Found {} backlog files!".format(count))
+            logging.info("Found {} backlog files!".format(count))
  
-              result = cursor.execute("SELECT * FROM data")
+            cursor.execute("SELECT * FROM data")
 
-              data_point = result.fetchone()
-              while data_point:
-                try:
-                  data_json = json.loads(result[1])
+            # We iterate over the cursor to avoid loading everything into memory at once.
+            for data_point in cursor:
+              try:
+                data_json = json.loads(data_point[1])
 
-                  if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
-                    try:
-                      with influx.write_api(write_options=SYNCHRONOUS) as client:
-                        client.write(
-                            os.getenv('influx_bucket'),
-                            os.getenv('influx_org'),
-                            influxdb_client.Point(data_json.get('point')).field(
-                                data_json.get('field'), data_json.get('value')).time(parser.parse(data_json.get('time'))))
-                    except Exception as err:
-                      # Immediately break on Influx errors -- if the connection was lost,
-                      # we don't need to retry every file forever.
-                      logging.error("Error writing saved data point with id [{}] to Influx: {}".format(result[0], str(err)))
-                      break
+                if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
+                  try:
+                    with influx.write_api(write_options=SYNCHRONOUS) as client:
+                      client.write(
+                          os.getenv('influx_bucket'),
+                          os.getenv('influx_org'),
+                          influxdb_client.Point(data_json.get('point')).field(
+                              data_json.get('field'), data_json.get('value')).time(parser.parse(data_json.get('time'))))
+                  except Exception as err:
+                    # Immediately break on Influx errors -- if the connection was lost,
+                    # we don't need to retry every file forever.
+                    logging.error("Error writing saved data point with id [{}] to Influx: {}".format(data_point[0], str(err)))
+                    break
 
-                    # Delete the file once written successfully.
-                    cursor.execute("DELETE FROM DATA WHERE id=?", (result[0],))
-                    files_written += 1
-                  else:
-                    # Eventually, very many malformed files in this directory would cause unacceptable slowness.
-                    logging.warning("Data point with id [{}] has missing fields.".format(result[0]))
+                  # Delete the file once written successfully.
+                  with contextlib.closing(db_conn.cursor()) as delete_cursor:
+                    delete_cursor.execute("DELETE FROM data WHERE id=?", (data_point[0],))
+                  files_written += 1
+                else:
+                  # Eventually, very many malformed files in this directory would cause unacceptable slowness.
+                  logging.warning("Data point with id [{}] has missing fields.".format(data_point[0]))
 
-                except Exception as err:
-                  logging.error("Error writing saved data point with id [{}]: {}".format(result[0], str(err)))
+              except Exception as err:
+                logging.error("Error writing saved data point with id [{}]: {}".format(data_point[0], str(err)))
 
-                # We spread out our writing of backlogs, so as not to spend a long time writing
-                # many backups after a long downtime.  We'll catch up eventually.
-                if files_written >= int(os.getenv("max_backlog_writes")):
-                  break
+              # We spread out our writing of backlogs, so as not to spend a long time writing
+              # many backups after a long downtime.  We'll catch up eventually.
 
-                data_point = result.fetchone()
+              if files_written >= int(os.getenv("max_backlog_writes")):
+                break
 
-              # Commit deleted rows.
-              db_conn.commit()
+            # Commit deleted rows.
+            db_conn.commit()
 
-              logging.info("Wrote {} backlog files.".format(files_written))
+            logging.info("Wrote {} backlog files.".format(files_written))
  
         # Maybe trigger wlan mode.
         if switch_to_wlan():

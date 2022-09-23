@@ -20,7 +20,7 @@ def count_all_data_files():
   with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
     # OK, we need a table to store backlog data if it doesn't exist.
     with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
       cursor.execute("SELECT COUNT(*) FROM data")
       result = cursor.fetchone()
       return result[0]
@@ -107,7 +107,7 @@ def download():
 
   # OK, we need a table to store backlog data if it doesn't exist.
   cursor = db_conn.cursor()
-  cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+  cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
   cursor.execute("SELECT * FROM data")
 
   return Response(generate(db_conn, cursor), mimetype='application/x-ndjson')
@@ -175,7 +175,7 @@ def purge():
   with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
     # OK, we need a table to store backlog data if it doesn't exist.
     with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INT PRIMARY KEY, json TEXT)")
+      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
       cursor.execute("DELETE FROM data")
       db_conn.commit()
 
