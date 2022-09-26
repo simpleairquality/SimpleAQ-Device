@@ -1,224 +1,25 @@
 #!/usr/bin/env python3
 
-import calendar
 import contextlib
-import datetime
 import json
 import os
-import psutil
 import sqlite3
-import sys
 import time
 from dateutil import parser
-from pprint import pprint
 
 from absl import app, flags, logging
-
-import board
-import busio
-from adafruit_pm25.i2c import PM25_I2C
-import adafruit_bme680
-import adafruit_gps
 
 import influxdb_client
 from influxdb_client.client.write_api import SYNCHRONOUS
 import dotenv
 
+from devices.system import System
+from devices.bme688 import Bme688
+from devices.gps import Gps
+from devices.pm25 import Pm25
+
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
-
-
-class Sensor(object):
-  def __init__(self, influx, connection):
-    self.influx = influx
-    self.connection = connection
-    self.bucket = os.getenv('influx_bucket')
-    self.org = os.getenv('influx_org')
-
-  # Even though we never explicitly create rows, InfluxDB assigns a type
-  # when a row is first written.  Apparently, sometimes intended float values are incorrectly
-  # interpreted as a int and changing field types after the fact is hard.
-  # So let's avoid that hassle entirely.
-  def _make_ints_to_float(self, value):
-    if isinstance(value, int):
-      return float(value)
-    return value
-
-  def _try_write_to_influx(self, point, field, value):
-    try:
-      with self.influx.write_api(write_options=SYNCHRONOUS) as client:
-        client.write(
-            self.bucket,
-            self.org,
-            influxdb_client.Point(point).field(
-                field, self._make_ints_to_float(value)).time(datetime.datetime.now()))
-        return False
-    except Exception as err:
-      logging.error("Could not write to InfluxDB: " + str(err))
-
-      # If we failed to write, save to disk instead.
-      # Need to make sure the path exists first.
-      try:
-        data_json = {
-            'point': point,
-            'field': field,
-            'value': self._make_ints_to_float(value),
-            'time': datetime.datetime.now().isoformat()
-        }
-
-        with contextlib.closing(self.connection.cursor()) as cursor:
-          cursor.execute("INSERT INTO data (json) VALUES(?)", (json.dumps(data_json),))
-          self.connection.commit()
-
-        return True
-      except Exception as backup_err:
-        # Something has truly gone sideways.  We can't even write backup data.
-        logging.error("Error saving data to local disk: " + str(backup_err))
-        return True
-
-class Bme688(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
-    self.sensor = adafruit_bme680.Adafruit_BME680_I2C(board.I2C())
-
-  def publish(self):
-    logging.info('Publishing Bme688 to influx')
-    result = False
-    try:
-      # It is actually important that the try_write_to_influx happens before the result, otherwise
-      # it will never be evaluated!
-      result = self._try_write_to_influx('BME688', 'temperature_C', self.sensor.temperature) or result
-      result = self._try_write_to_influx('BME688', 'voc_ohms', self.sensor.gas) or result
-      result = self._try_write_to_influx('BME688', 'relative_humidity_pct', self.sensor.humidity) or result
-      result = self._try_write_to_influx('BME688', 'pressure_hPa', self.sensor.pressure) or result
-    except Exception as err:
-      logging.error("Error getting data from BME688.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
-    return result
-
-
-class Pm25(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
-    i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
-    self.pm25 = PM25_I2C(i2c)
-
-  def read(self):
-    try:
-      aqdata = self.pm25.read()
-    except RuntimeError as e:
-      logging.error(f"Couldn't read data from PM2.5 sensor: {e}")
-      return {}
-    return aqdata
-
-  def publish(self):
-    logging.info('Publishing PM2.5 to influx')
-    result = False
-    try:
-      aqdata = self.read()
-
-      for key, val in aqdata.items():
-        influx_key = key
-        if influx_key.startswith('particles'):
-          influx_key += " per dL"
-        if influx_key.endswith('env'):
-          influx_key += " ug per m3"
-        if influx_key.endswith('standard'):
-          influx_key += " ug per m3"
-        # It is actually important that the try_write_to_influx happens before the result, otherwise
-        # it will never be evaluated!
-        result = self._try_write_to_influx('PM25', influx_key, val) or result
-    except Exception as err:
-      logging.error("Error getting data from PM25.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
-
-    return result
-
-
-class Gps(Sensor):
-  def __init__(self, influx, connection, interval=None):
-    super().__init__(influx, connection)
-
-    self.interval = interval
-    self.has_set_time = False
-
-    try:
-      self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
-      # Turn on everything the module collects.
-      self.gps.send_command(b"PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0")
-      # Update once every second (1000ms)
-      self.gps.send_command(b"PMTK220,1000")
-    except Exception as err:
-      # We raise here because if GPS fails, we're probably getting unuseful data entirely.
-      logging.error("Error setting up GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      raise err
-
-  # We automatically update the clock if the drift is greater than the reporting interval.
-  # This will serve make sure that the device, no matter how long it's been powered down, reports a reasonably accurate time for measurements when possible.
-  # We set the time at most once per run, assuming that the clock drift won't be significant compared to an incorrectly set system time.
-  # Note that any change here will be quickly clobbered by NTP should any internet connection become available to the device. 
-  def _update_systime(self):
-    if not self.has_set_time:
-      if self.interval:
-        epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
-
-        if abs(time.time() - epoch_seconds) > self.interval:
-          logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat() +
-                          ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                          ' exceeds interval time of ' + str(self.interval))
-          os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat())
-          self.has_set_time = True
-
-  def publish(self):
-    logging.info('Publishing GPS data to influx')
-    # Yes, recommended behavior is to call update twice.  
-    self.gps.update()
-    self.gps.update()
-    result = False
-    try:
-      if self.gps.has_fix:
-        if self.gps.timestamp_utc:
-          self._update_systime()
-
-          # It is actually important that the try_write_to_influx happens before the result, otherwise
-          # it will never be evaluated!
-          result = self._try_write_to_influx('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
-        else:
-          logging.warning('GPS has no timestamp data')
-
-        if self.gps.latitude and self.gps.longitude:
-          # It is actually important that the try_write_to_influx happens before the result, otherwise
-          # it will never be evaluated!
-          result = self._try_write_to_influx('GPS', 'latitude_degrees', self.gps.latitude) or result
-          result = self._try_write_to_influx('GPS', 'longitude_degrees', self.gps.longitude) or result
-        else:
-          logging.warning('GPS has no lat/lon data.')
-      else:
-        logging.warning('GPS has no fix.')
-    except Exception as err:
-      logging.error("Error getting data from GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
-
-    return result
-
-
-class System(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
-    self.start_time = time.time()
-
-  def publish(self):
-    logging.info('Publishing system stats')
-    result = False
-
-    # It is actually important that the try_write_to_influx happens before the result, otherwise
-    # it will never be evaluated!
-
-    result = self._try_write_to_influx('System', 'device_uptime_sec', time.time() - psutil.boot_time()) or result
-    result = self._try_write_to_influx('System', 'service_uptime_sec', time.time() - psutil.boot_time()) or result
-    result = self._try_write_to_influx('System', 'system_time_utc', time.time()) or result
-
-    return result
 
 
 def connect_to_influx():
