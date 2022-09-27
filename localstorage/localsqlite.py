@@ -3,7 +3,7 @@ import json
 import os
 import sqlite3
 
-from . import Sensor
+from . import LocalStorage 
 
 
 class LocalSqlite(LocalStorage): 
