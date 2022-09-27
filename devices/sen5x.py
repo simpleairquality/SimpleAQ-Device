@@ -8,7 +8,7 @@ from sensirion_i2c_sen5x import Sen5xI2cDevice
 
 from . import Sensor
 
-# Based on https://github.com/Sensirion/python-i2c-sen5x/blob/master/conftest.py
+# Based on https://sensirion.github.io/python-i2c-sen5x/quickstart.html#linux-i2c-bus-example
 class Sen5x(Sensor):
   def __init__(self, influx, connection):
     super().__init__(influx, connection)
@@ -29,7 +29,10 @@ class Sen5x(Sensor):
       # TODO:  Maybe perform fan cleaning sometimes?
 
   def read(self):
+    # TODO:  Are these with blocks actually necessary?  Does this have to be closed?
     with LinuxI2cTransceiver('/dev/i2c-1') as i2c_transceiver:
+      device = Sen5xI2cDevice(I2cConnection(i2c_transceiver))
+
       # Start measurement
       device.start_measurement()
 
