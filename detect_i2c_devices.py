@@ -2,9 +2,9 @@
 
 import contextlib
 import os
-import sqlite3
 
 from absl import app, flags, logging
+from localstorage.localdummy import LocalDummy
 
 import influxdb_client
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -30,44 +30,35 @@ def main(args):
   else:
     dotenv.load_dotenv()
 
-  # Make sure there's a place to actually put the backlog database if necessary.
-  os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
-
-  # This implicitly creates the database.
-  with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
-
-    # OK, we need a table to store backlog data if it doesn't exist.
-    with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
-      db_conn.commit()
-
+  # This will not actually be used. 
+  with contextlib.closing(LocalDummy()) as local_storage:
     interval = int(os.getenv('simpleaq_interval'))
 
     with connect_to_influx() as influx:
       try:
         from devices.system import System
-        System(influx, db_conn).publish()
+        System(influx, local_storage).publish()
         print("FOUND System")
       except Exception:
         print("NOT FOUND System")
 
       try:
         from devices.bme688 import Bme688
-        Bme688(influx, db_conn).publish()
+        Bme688(influx, local_storage).publish()
         print("FOUND Bme688")
       except Exception:
         print("NOT FOUND Bme688")
 
       try:
         from devices.gps import Gps
-        Gps(influx, db_conn).publish()
+        Gps(influx, local_storage).publish()
         print("FOUND Gps")
       except Exception:
         print("NOT FOUND Gps")
 
       try:
         from devices.pm25 import Pm25
-        Pm25(influx, db_conn).publish()
+        Pm25(influx, local_storage).publish()
         print("FOUND Pm25")
       except Exception:
         print("NOT FOUND Pm25")

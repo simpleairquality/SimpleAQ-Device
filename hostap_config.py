@@ -4,26 +4,15 @@ import dotenv
 import os
 import json
 import re
-import sqlite3
 import subprocess
+
+from localstorage.localsqlite import LocalSqlite
 
 app = Flask(__name__)
 
 def prevent_hostap_switch():
   subprocess.run(['touch', '/simpleaq/hostap_status_file'])
 
-def count_all_data_files():
-  # Make sure there's a place to actually put the backlog database if necessary.
-  os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
-
-  # This implicitly creates the database.
-  with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
-    # OK, we need a table to store backlog data if it doesn't exist.
-    with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
-      cursor.execute("SELECT COUNT(*) FROM data")
-      result = cursor.fetchone()
-      return result[0]
 
 @app.route('/')
 def main():
@@ -46,7 +35,13 @@ def main():
       if search_result:
         local_psk = search_result.group(1)
 
-  num_data_points = count_all_data_files()
+  num_data_points = "Database Error"
+  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
+    try:
+      num_data_points = local_storage.getcount()
+    except Exception:
+      # Don't let this break things.
+      pass
 
   return render_template(
       'index.html',
@@ -98,16 +93,22 @@ def download():
   # Make sure there's a place to actually put the backlog database if necessary.
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
-  # No, we cannot use contextlib.closing here.
+  # Implcitly create the database.
+  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
+    pass
+
+  # No, we cannot use contextlib.closing or a with block here.
   # The WSGI middleware in the streaming response generator will close them before
   # generate can be called!  
+  # There is no clear path to refactor this into the local_storage paradigm.
+  # TODO:  Figure out a way.  Maybe if "generate" existed within the "with" block?
+  # That would be weird but might just work.
 
   # This implicitly creates the database.
   db_conn = sqlite3.connect(os.getenv("sqlite_db_path"))
 
   # OK, we need a table to store backlog data if it doesn't exist.
   cursor = db_conn.cursor()
-  cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
   cursor.execute("SELECT * FROM data")
 
   return Response(generate(db_conn, cursor), mimetype='application/x-ndjson')
@@ -172,12 +173,8 @@ def purge():
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
   # This implicitly creates the database.
-  with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
-    # OK, we need a table to store backlog data if it doesn't exist.
-    with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
-      cursor.execute("DELETE FROM data")
-      db_conn.commit()
+  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
+    local_storage.deleteall()
 
   return redirect('/')
 

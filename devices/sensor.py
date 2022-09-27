@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-import contextlib
 import datetime
-import json
 import os
 
 from absl import logging
@@ -12,9 +10,9 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 
 class Sensor(object):
-  def __init__(self, influx, connection):
+  def __init__(self, influx, localstorage):
     self.influx = influx
-    self.connection = connection
+    self.localstorage = localstorage
     self.bucket = os.getenv('influx_bucket')
     self.org = os.getenv('influx_org')
 
@@ -49,9 +47,7 @@ class Sensor(object):
             'time': datetime.datetime.now().isoformat()
         }
 
-        with contextlib.closing(self.connection.cursor()) as cursor:
-          cursor.execute("INSERT INTO data (json) VALUES(?)", (json.dumps(data_json),))
-          self.connection.commit()
+        self.localstorage.writejson(data_json);
 
         return True
       except Exception as backup_err:

@@ -3,7 +3,6 @@
 import contextlib
 import json
 import os
-import sqlite3
 import time
 from dateutil import parser
 
@@ -17,6 +16,8 @@ from devices.system import System
 from devices.bme688 import Bme688
 from devices.gps import Gps
 from devices.pm25 import Pm25
+
+from localstorage.localsqlite import LocalSqlite 
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
@@ -49,16 +50,8 @@ def main(args):
   else:
     dotenv.load_dotenv()
 
-  # Make sure there's a place to actually put the backlog database if necessary.
-  os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
-
   # This implicitly creates the database.
-  with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
-
-    # OK, we need a table to store backlog data if it doesn't exist.
-    with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
-      db_conn.commit()
+  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
 
     interval = int(os.getenv('simpleaq_interval'))
 
@@ -73,10 +66,10 @@ def main(args):
     with connect_to_influx() as influx:
       sensors = []
       # GPS sensor goes first in case it has to set the hardware clock.
-      sensors.append(Gps(influx, db_conn, interval))
-      sensors.append(Bme688(influx, db_conn))
-      sensors.append(Pm25(influx, db_conn))
-      sensors.append(System(influx, db_conn))
+      sensors.append(Gps(influx, local_storage, interval))
+      sensors.append(Bme688(influx, local_storage))
+      sensors.append(Pm25(influx, local_storage))
+      sensors.append(System(influx, local_storage))
       while True:
         result_failure = [sensor.publish() for sensor in sensors]
         if any(result_failure):
@@ -91,16 +84,13 @@ def main(args):
         else:
           # Write backlog files.
           files_written = 0
+
           logging.info("Checking for backlog files to write.")
+          count = local_storage.getcount()
 
-          with contextlib.closing(db_conn.cursor()) as cursor:
-            result = cursor.execute("SELECT COUNT(*) FROM data")
-            count = result.fetchone()[0]
-
-            logging.info("Found {} backlog files!".format(count))
+          logging.info("Found {} backlog files!".format(count))
  
-            cursor.execute("SELECT * FROM data")
-
+          with contextlib.closing(local_storage.getcursor()) as cursor:
             # We iterate over the cursor to avoid loading everything into memory at once.
             for data_point in cursor:
               try:
@@ -121,8 +111,8 @@ def main(args):
                     break
 
                   # Delete the file once written successfully.
-                  with contextlib.closing(db_conn.cursor()) as delete_cursor:
-                    delete_cursor.execute("DELETE FROM data WHERE id=?", (data_point[0],))
+                  localstorage.deleterecord(data_point[0])
+
                   files_written += 1
                 else:
                   # Eventually, very many malformed files in this directory would cause unacceptable slowness.
@@ -136,9 +126,6 @@ def main(args):
 
               if files_written >= int(os.getenv("max_backlog_writes")):
                 break
-
-            # Commit deleted rows.
-            db_conn.commit()
 
             logging.info("Wrote {} backlog files.".format(files_written))
  
