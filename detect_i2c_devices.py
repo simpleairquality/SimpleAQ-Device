@@ -63,5 +63,13 @@ def main(args):
       except Exception:
         print("NOT FOUND Pm25")
 
+      try:
+        from devices.sen5x import Sen5x
+        Sen5x(influx, local_storage).publish()
+        print("FOUND Sen5x")
+      except Exception:
+        print("NOT FOUND Pm25")
+
+
 if __name__ == '__main__':
   app.run(main)
