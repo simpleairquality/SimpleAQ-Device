@@ -4,6 +4,7 @@ import os
 import json
 import re
 import subprocess
+import sqlite3
 
 from localstorage.localsqlite import LocalSqlite
 
