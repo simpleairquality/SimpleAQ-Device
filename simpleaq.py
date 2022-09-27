@@ -51,7 +51,7 @@ def main(args):
     dotenv.load_dotenv()
 
   # This implicitly creates the database.
-  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
+  with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
 
     interval = int(os.getenv('simpleaq_interval'))
 

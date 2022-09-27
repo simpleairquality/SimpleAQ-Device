@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, make_response, Response, redirect
-import contextlib
 import dotenv
 import os
 import json
@@ -36,7 +35,7 @@ def main():
         local_psk = search_result.group(1)
 
   num_data_points = "Database Error"
-  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
+  with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
     try:
       num_data_points = local_storage.getcount()
     except Exception:
@@ -94,7 +93,7 @@ def download():
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
   # Implcitly create the database.
-  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
+  with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
     pass
 
   # No, we cannot use contextlib.closing or a with block here.
@@ -173,7 +172,7 @@ def purge():
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
   # This implicitly creates the database.
-  with contextlib.closing(LocalSqlite(os.getenv("sqlite_db_path"))) as local_storage:
+  with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
     local_storage.deleteall()
 
   return redirect('/')
