@@ -37,7 +37,7 @@ def main():
   num_data_points = "Database Error"
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
     try:
-      num_data_points = local_storage.getcount()
+      num_data_points = local_storage.countrecords()
     except Exception:
       # Don't let this break things.
       pass

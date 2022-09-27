@@ -86,7 +86,7 @@ def main(args):
           files_written = 0
 
           logging.info("Checking for backlog files to write.")
-          count = local_storage.getcount()
+          count = local_storage.countrecords()
 
           logging.info("Found {} backlog files!".format(count))
  
