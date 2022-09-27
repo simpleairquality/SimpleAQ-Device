@@ -24,10 +24,6 @@ class LocalStorage(ABC):
   def writejson(self, json_message):
     pass
 
-  @abstractmethod
-  def close(self):
-    pass
-  
   def __enter__(self):
     return self
 
