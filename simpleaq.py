@@ -111,7 +111,7 @@ def main(args):
                     break
 
                   # Delete the file once written successfully.
-                  localstorage.deleterecord(data_point[0])
+                  local_storage.deleterecord(data_point[0])
 
                   files_written += 1
                 else:
