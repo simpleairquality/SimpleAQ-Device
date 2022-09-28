@@ -38,7 +38,7 @@ class Sen5x(Sensor):
 
       # Wait until next result is available
       total_wait_sec = 0
-      while device.read_data_ready() is False and total_wait_time < self.max_wait_sec:
+      while device.read_data_ready() is False and total_wait_sec < self.max_wait_sec:
         time.sleep(0.1)
         total_wait_sec += 0.1
 
