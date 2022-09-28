@@ -2,7 +2,7 @@ from . import LocalStorage
 
 class LocalDummy(LocalStorage): 
   def __init__(self):
-    super(LocalStorage, self).__init__()
+    super().__init__()
 
   def countrecords(self):
     return 0 

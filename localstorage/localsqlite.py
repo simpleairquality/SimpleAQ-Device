@@ -8,7 +8,7 @@ from . import LocalStorage
 
 class LocalSqlite(LocalStorage): 
   def __init__(self, db_path):
-    super(LocalStorage, self).__init__()
+    super().__init__()
     self.db_path = db_path
     self.db_conn = None
 
