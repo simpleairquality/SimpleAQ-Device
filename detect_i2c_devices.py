@@ -68,7 +68,7 @@ def main(args):
         Sen5x(influx, local_storage).publish()
         print("FOUND Sen5x")
       except Exception:
-        print("NOT FOUND Pm25")
+        print("NOT FOUND Sen5x")
 
 
 if __name__ == '__main__':
