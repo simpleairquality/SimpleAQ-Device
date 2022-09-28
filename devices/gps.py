@@ -13,8 +13,8 @@ import adafruit_gps
 
 
 class Gps(Sensor):
-  def __init__(self, influx, connection, interval=None):
-    super().__init__(influx, connection)
+  def __init__(self, remotestorage, localstorage, interval=None):
+    super().__init__(remotestorage, localstorage)
 
     self.interval = interval
     self.has_set_time = False
@@ -47,7 +47,7 @@ class Gps(Sensor):
           self.has_set_time = True
 
   def publish(self):
-    logging.info('Publishing GPS data to influx')
+    logging.info('Publishing GPS data to remote')
     # Yes, recommended behavior is to call update twice.  
     self.gps.update()
     self.gps.update()
@@ -57,17 +57,17 @@ class Gps(Sensor):
         if self.gps.timestamp_utc:
           self._update_systime()
 
-          # It is actually important that the try_write_to_influx happens before the result, otherwise
+          # It is actually important that the try_write_to_remote happens before the result, otherwise
           # it will never be evaluated!
-          result = self._try_write_to_influx('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
+          result = self._try_write_to_remote('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
         else:
           logging.warning('GPS has no timestamp data')
 
         if self.gps.latitude and self.gps.longitude:
-          # It is actually important that the try_write_to_influx happens before the result, otherwise
+          # It is actually important that the try_write_to_remote happens before the result, otherwise
           # it will never be evaluated!
-          result = self._try_write_to_influx('GPS', 'latitude_degrees', self.gps.latitude) or result
-          result = self._try_write_to_influx('GPS', 'longitude_degrees', self.gps.longitude) or result
+          result = self._try_write_to_remote('GPS', 'latitude_degrees', self.gps.latitude) or result
+          result = self._try_write_to_remote('GPS', 'longitude_degrees', self.gps.longitude) or result
         else:
           logging.warning('GPS has no lat/lon data.')
       else:

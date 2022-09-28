@@ -10,8 +10,8 @@ from . import Sensor
 
 
 class Pm25(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
+  def __init__(self, remotestorage, localstorage):
+    super().__init__(remotestorage, localstorage,)
     i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
     self.pm25 = PM25_I2C(i2c)
 
@@ -24,22 +24,22 @@ class Pm25(Sensor):
     return aqdata
 
   def publish(self):
-    logging.info('Publishing PM2.5 to influx')
+    logging.info('Publishing PM2.5 to remote')
     result = False
     try:
       aqdata = self.read()
 
       for key, val in aqdata.items():
-        influx_key = key
-        if influx_key.startswith('particles'):
-          influx_key += " per dL"
-        if influx_key.endswith('env'):
-          influx_key += " ug per m3"
-        if influx_key.endswith('standard'):
-          influx_key += " ug per m3"
-        # It is actually important that the try_write_to_influx happens before the result, otherwise
+        remote_key = key
+        if remote_key.startswith('particles'):
+          remote_key += " per dL"
+        if remote_key.endswith('env'):
+          remote_key += " ug per m3"
+        if remote_key.endswith('standard'):
+          remote_key += " ug per m3"
+        # It is actually important that the try_write_to_remote happens before the result, otherwise
         # it will never be evaluated!
-        result = self._try_write_to_influx('PM25', influx_key, val) or result
+        result = self._try_write_to_remote('PM25', remote_key, val) or result
     except Exception as err:
       logging.error("Error getting data from PM25.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True

@@ -4,12 +4,9 @@ import contextlib
 import json
 import os
 import time
-from dateutil import parser
 
 from absl import app, flags, logging
 
-import influxdb_client
-from influxdb_client.client.write_api import SYNCHRONOUS
 import dotenv
 
 from devices.system import System
@@ -18,16 +15,10 @@ from devices.gps import Gps
 from devices.pm25 import Pm25
 
 from localstorage.localsqlite import LocalSqlite 
+from remotestorage.influxstorage import InfluxStorage
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
-
-
-def connect_to_influx():
-  url = os.getenv('influx_server')
-  token = os.getenv('influx_token')
-  org = os.getenv('influx_org')
-  return influxdb_client.InfluxDBClient(url=url, token=token, org=org)
 
 
 def switch_to_wlan():
@@ -50,6 +41,9 @@ def main(args):
   else:
     dotenv.load_dotenv()
 
+  # TODO:  Eventually select between this and SimpleAQ API.
+  remote_storage_class = InfluxStorage
+
   # This implicitly creates the database.
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
 
@@ -63,13 +57,13 @@ def main(args):
       # we didn't manage to switch to wlan fast enough.
       time.sleep(30)
 
-    with connect_to_influx() as influx:
+    with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
       sensors = []
       # GPS sensor goes first in case it has to set the hardware clock.
-      sensors.append(Gps(influx, local_storage, interval))
-      sensors.append(Bme688(influx, local_storage))
-      sensors.append(Pm25(influx, local_storage))
-      sensors.append(System(influx, local_storage))
+      sensors.append(Gps(remote, local_storage, interval))
+      sensors.append(Bme688(remote, local_storage))
+      sensors.append(Pm25(remote, local_storage))
+      sensors.append(System(remote, local_storage))
       while True:
         result_failure = [sensor.publish() for sensor in sensors]
         if any(result_failure):
@@ -98,12 +92,7 @@ def main(args):
 
                 if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
                   try:
-                    with influx.write_api(write_options=SYNCHRONOUS) as client:
-                      client.write(
-                          os.getenv('influx_bucket'),
-                          os.getenv('influx_org'),
-                          influxdb_client.Point(data_json.get('point')).field(
-                              data_json.get('field'), data_json.get('value')).time(parser.parse(data_json.get('time'))))
+                    remote.write(data_json)
                   except Exception as err:
                     # Immediately break on Influx errors -- if the connection was lost,
                     # we don't need to retry every file forever.

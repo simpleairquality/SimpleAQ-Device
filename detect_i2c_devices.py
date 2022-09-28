@@ -5,67 +5,53 @@ import os
 
 from absl import app, flags, logging
 from localstorage.localdummy import LocalDummy
+from remotestorage.dummystorage import DummyStorage
+
+import dotenv
 
 import influxdb_client
 from influxdb_client.client.write_api import SYNCHRONOUS
-import dotenv
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
 
 
-def connect_to_influx():
-  url = os.getenv('influx_server')
-  token = os.getenv('influx_token')
-  org = os.getenv('influx_org')
-  return influxdb_client.InfluxDBClient(url=url, token=token, org=org)
-
-
-# This program loads environment variables only on boot.
-# If the environment variables change for any reason, the systemd service
-# will have to be restarted.
 def main(args):
-  if (FLAGS.env):
-    dotenv.load_dotenv(FLAGS.env)
-  else:
-    dotenv.load_dotenv()
-
-  # This will not actually be used. 
   with contextlib.closing(LocalDummy()) as local_storage:
-    interval = int(os.getenv('simpleaq_interval'))
+    with DummyStorage() as remote_storage:
+      interval = int(os.getenv('simpleaq_interval', 60))
 
-    with connect_to_influx() as influx:
       try:
         from devices.system import System
-        System(influx, local_storage).publish()
+        System(remote_storage, local_storage).publish()
         print("FOUND System")
       except Exception:
         print("NOT FOUND System")
 
       try:
         from devices.bme688 import Bme688
-        Bme688(influx, local_storage).publish()
+        Bme688(remote_storage, local_storage).publish()
         print("FOUND Bme688")
       except Exception:
         print("NOT FOUND Bme688")
 
       try:
         from devices.gps import Gps
-        Gps(influx, local_storage).publish()
+        Gps(remote_storage, local_storage).publish()
         print("FOUND Gps")
       except Exception:
         print("NOT FOUND Gps")
 
       try:
         from devices.pm25 import Pm25
-        Pm25(influx, local_storage).publish()
+        Pm25(remote_storage, local_storage).publish()
         print("FOUND Pm25")
       except Exception:
         print("NOT FOUND Pm25")
 
       try:
         from devices.sen5x import Sen5x
-        Sen5x(influx, local_storage).publish()
+        Sen5x(remote_storage, local_storage).publish()
         print("FOUND Sen5x")
       except Exception:
         print("NOT FOUND Sen5x")

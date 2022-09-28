@@ -10,8 +10,8 @@ from . import Sensor
 
 # Based on https://sensirion.github.io/python-i2c-sen5x/quickstart.html#linux-i2c-bus-example
 class Sen5x(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
+  def __init__(self, remotestorage, localstorage):
+    super().__init__(remotestorage, localstorage)
 
     self.i2c_bus = '/dev/i2c-1'
     self.max_wait_sec = 5
@@ -62,14 +62,14 @@ class Sen5x(Sensor):
     try:
       data = self.read()
 
-      result = self._try_write_to_influx('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
-      result = self._try_write_to_influx('SEN5X', 'temperature_C', data.ambient_temperature.degrees_celsius) or result
-      result = self._try_write_to_influx('SEN5X', 'pm10.0_ug_m3', data.mass_concentration_10p0.physical) or result
-      result = self._try_write_to_influx('SEN5X', 'pm1.0_ug_m3', data.mass_concentration_1p0.physical) or result
-      result = self._try_write_to_influx('SEN5X', 'pm2.5_ug_m3', data.mass_concentration_2p5.physical) or result
-      result = self._try_write_to_influx('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
-      result = self._try_write_to_influx('SEN5X', 'nox_index', data.nox_index.scaled) or result  # TODO:  This returns nan if not available.  Is that a problem?
-      result = self._try_write_to_influx('SEN5X', 'voc_index', data.voc_index.scaled) or result
+      result = self._try_write_to_remote('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
+      result = self._try_write_to_remote('SEN5X', 'temperature_C', data.ambient_temperature.degrees_celsius) or result
+      result = self._try_write_to_remote('SEN5X', 'pm10.0_ug_m3', data.mass_concentration_10p0.physical) or result
+      result = self._try_write_to_remote('SEN5X', 'pm1.0_ug_m3', data.mass_concentration_1p0.physical) or result
+      result = self._try_write_to_remote('SEN5X', 'pm2.5_ug_m3', data.mass_concentration_2p5.physical) or result
+      result = self._try_write_to_remote('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
+      result = self._try_write_to_remote('SEN5X', 'nox_index', data.nox_index.scaled) or result  # TODO:  This returns nan if not available.  Is that a problem?
+      result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
     except Exception as err:
       logging.error("Error getting data from SEN5X.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True
