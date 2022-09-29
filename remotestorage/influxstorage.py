@@ -13,7 +13,7 @@ class InfluxStorage(RemoteStorage):
     with self.influx.write_api(write_options=SYNCHRONOUS) as client:
       client.write(
           self.bucket,
-          self.organization 
+          self.organization, 
           influxdb_client.Point(data_json.get('point')).field(
                data_json.get('field'), data_json.get('value')).time(parser.parse(data_json.get('time'))))
 
