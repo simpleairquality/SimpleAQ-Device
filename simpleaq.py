@@ -13,6 +13,7 @@ from devices.system import System
 from devices.bme688 import Bme688
 from devices.gps import Gps
 from devices.pm25 import Pm25
+from devices.sen5x import Sen5x
 
 from localstorage.localdummy import LocalDummy
 from localstorage.localsqlite import LocalSqlite 
