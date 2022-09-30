@@ -85,7 +85,7 @@ def detect_devices(env_file):
 
   # Ok, add the rest.
   for device in detected_devices:
-   device_objects.append(device_map[priority_device])
+   device_objects.append(device_map[device])
 
   return device_objects
 
