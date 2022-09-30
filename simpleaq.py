@@ -80,12 +80,12 @@ def detect_devices(env_file):
 
   for priority_device in priority_devices:
     if priority_device in detected_devices:
-      device_objects.push(device_map[priority_device])
+      device_objects.append(device_map[priority_device])
       detected_devices.remove(priority_device)
 
   # Ok, add the rest.
   for device in detected_devices:
-   device_objects.push(device_map[priority_device])
+   device_objects.append(device_map[priority_device])
 
   return device_objects
 
