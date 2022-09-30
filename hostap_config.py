@@ -58,7 +58,8 @@ def main():
       simpleaq_hostapd_password=os.getenv('simpleaq_hostapd_password'),
       simpleaq_hostapd_hide_ssid_checked=('checked' if os.getenv('simpleaq_hostapd_hide_ssid') == '1' else ''),
       hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
-      max_backlog_writes=os.getenv('max_backlog_writes'))
+      max_backlog_writes=os.getenv('max_backlog_writes'),
+      detected_devices=os.getenv('detected_devices'))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():

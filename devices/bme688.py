@@ -8,7 +8,7 @@ import adafruit_bme680
 
 
 class Bme688(Sensor):
-  def __init__(self, remotestorage, localstorage):
+  def __init__(self, remotestorage, localstorage, **kwargs):
     super().__init__(remotestorage, localstorage)
     self.sensor = adafruit_bme680.Adafruit_BME680_I2C(board.I2C())
 

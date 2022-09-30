@@ -13,7 +13,7 @@ import adafruit_gps
 
 
 class Gps(Sensor):
-  def __init__(self, remotestorage, localstorage, interval=None):
+  def __init__(self, remotestorage, localstorage, interval=None, **kwargs):
     super().__init__(remotestorage, localstorage)
 
     self.interval = interval

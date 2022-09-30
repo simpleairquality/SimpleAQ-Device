@@ -7,7 +7,7 @@ from absl import logging
 
 
 class Sensor(object):
-  def __init__(self, remotestorage, localstorage):
+  def __init__(self, remotestorage, localstorage, **kwargs):
     self.remotestorage = remotestorage
     self.localstorage = localstorage
 

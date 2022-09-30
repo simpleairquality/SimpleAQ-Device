@@ -14,7 +14,9 @@ from devices.bme688 import Bme688
 from devices.gps import Gps
 from devices.pm25 import Pm25
 
+from localstorage.localdummy import LocalDummy
 from localstorage.localsqlite import LocalSqlite 
+from remotestorage.dummystorage import DummyStorage
 from remotestorage.influxstorage import InfluxStorage
 
 FLAGS = flags.FLAGS
@@ -32,6 +34,61 @@ def switch_to_wlan():
     return True
 
 
+# Enumerate the list of supported devices here.
+device_map = {
+    'system': System,
+    'bme688': Bme688,
+    'gps': Gps,
+    'pm25': Pm25,
+    'sen5x': Sen5x
+}
+
+priority_devices = ['gps']
+
+# Find the set of devices that are installed in this system.
+def detect_devices(env_file):
+  detected_devices = set()
+
+  # Figure out what devices are connected.
+  with contextlib.closing(LocalDummy()) as local_storage:
+    with DummyStorage() as remote_storage:
+      for name, device in device_map.items():
+        try:
+          device(remotestorage=remote_storage, localstorage=local_storage).publish()
+          detected_devices.add(name)
+          logging.info("Detected device: {}".format(name))
+        except Exception:
+          logging.info("Device not detected: {}".format(name))
+
+  # Get the existing devices
+  current_devices = set(os.getenv('detected_devices').split(','))
+
+  # Now let's see if these are the same devices listed in the environment variables.
+  # If a file is provided, then we set and reboot.
+  if env_file and current_devices != detected_devices:
+    dotenv.set_key(
+        env_file,
+        'detected_devices',
+        ','.join(detected_devices))
+
+    # Reboot
+    os.system('reboot')
+
+  # Let's make sure that if any priority devices were detected, they are listed first.
+  device_objects = []
+
+  for priority_device in priority_devices:
+    if priority_device in detected_devices:
+      device_objects.push(device_map[priority_device])
+      detected_devices.remove(priority_device)
+
+  # Ok, add the rest.
+  for device in detected_devices:
+   device_objects.push(device_map[priority_device])
+
+  return device_objects
+
+
 # This program loads environment variables only on boot.
 # If the environment variables change for any reason, the systemd service
 # will have to be restarted.
@@ -40,6 +97,8 @@ def main(args):
     dotenv.load_dotenv(FLAGS.env)
   else:
     dotenv.load_dotenv()
+
+  device_objects = detect_devices(FLAGS.env)
 
   # TODO:  Eventually select between this and SimpleAQ API.
   remote_storage_class = InfluxStorage
@@ -59,11 +118,10 @@ def main(args):
 
     with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
       sensors = []
-      # GPS sensor goes first in case it has to set the hardware clock.
-      sensors.append(Gps(remote, local_storage, interval))
-      sensors.append(Bme688(remote, local_storage))
-      sensors.append(Pm25(remote, local_storage))
-      sensors.append(System(remote, local_storage))
+
+      for device_object in device_objects:
+        sensors.append(device_object(remotestorage=remote, localstorage=local_storage, interval=interval))
+
       while True:
         result_failure = [sensor.publish() for sensor in sensors]
         if any(result_failure):
