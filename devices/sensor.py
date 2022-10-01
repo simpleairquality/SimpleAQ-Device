@@ -44,3 +44,9 @@ class Sensor(object):
         # Something has truly gone sideways.  We can't even write backup data.
         logging.error("Error saving data to local disk: " + str(backup_err))
         return True
+
+  def __enter__(self):
+    pass
+
+  def __exit__(self):
+    pass

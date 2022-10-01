@@ -10,49 +10,25 @@ from . import Sensor
 
 # Based on https://sensirion.github.io/python-i2c-sen5x/quickstart.html#linux-i2c-bus-example
 class Sen5x(Sensor):
-  def __init__(self, remotestorage, localstorage, **kwargs):
+  def __init__(self, remotestorage, localstorage, i2c_transceiver, **kwargs):
     super().__init__(remotestorage, localstorage)
 
-    self.i2c_bus = '/dev/i2c-1'
-    self.max_wait_sec = 5
+    self.i2c_transceiver = i2c_transceiver
+    self.device = Sen5xI2cDevice(I2cConnection(i2c_transceiver))
 
-    with LinuxI2cTransceiver(self.i2c_bus) as i2c_transceiver:
-      device = Sen5xI2cDevice(I2cConnection(i2c_transceiver))
+    logging.info("SEN5X Version: {}".format(self.device.get_version()))
+    logging.info("SEN5X Product Name: {}".format(self.device.get_product_name()))
+    logging.info("SEN5X Serial Number: {}".format(self.device.get_serial_number()))
 
-      logging.info("SEN5X Version: {}".format(device.get_version()))
-      logging.info("SEN5X Product Name: {}".format(device.get_product_name()))
-      logging.info("SEN5X Serial Number: {}".format(device.get_serial_number()))
-
-      # Perform a device reset (reboot firmware)
-      device.device_reset()
-
-      # TODO:  Maybe perform fan cleaning sometimes?
+    # Perform a device reset (reboot firmware)
+    self.device.device_reset()
 
   def read(self):
-    # TODO:  Are these with blocks actually necessary?  Does this have to be closed?
-    # TODO:  Factor the transceiver out into a caller and wrap this, and all other devices, in with blocks passing the needed parameters through to __init__.
-    with LinuxI2cTransceiver('/dev/i2c-1') as i2c_transceiver:
-      device = Sen5xI2cDevice(I2cConnection(i2c_transceiver))
+    if not self.device.read_data_ready():
+      return {}
 
-      # Start measurement
-      # TODO:  When we wrap this in a with block, start this at __enter__
-      device.start_measurement()
-
-      # Wait until next result is available
-      total_wait_sec = 0
-      while device.read_data_ready() is False and total_wait_sec < self.max_wait_sec:
-        time.sleep(0.1)
-        total_wait_sec += 0.1
-
-      if not device.read_data_ready():
-        return {}
-
-      # Read measured values -> clears the "data ready" flag
-      values = device.read_measured_values()
-
-      # Stop measurement
-      # TODO:  When we wrap this in a with block, start this at __exit__
-      device.stop_measurement()
+    # Read measured values -> clears the "data ready" flag
+    values = self.device.read_measured_values()
 
     return values
 
@@ -75,3 +51,9 @@ class Sen5x(Sensor):
       result = True
 
     return result
+
+  def __enter__(self):
+    self.device.start_measurement()
+
+  def __exit__(self):
+    self.device.stop_measurement()

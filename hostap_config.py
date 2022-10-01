@@ -59,7 +59,8 @@ def main():
       simpleaq_hostapd_hide_ssid_checked=('checked' if os.getenv('simpleaq_hostapd_hide_ssid') == '1' else ''),
       hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
       max_backlog_writes=os.getenv('max_backlog_writes'),
-      detected_devices=os.getenv('detected_devices'))
+      detected_devices=os.getenv('detected_devices'),
+      i2c_bus=os.getenv('i2c_bus'))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():
@@ -136,7 +137,7 @@ def update():
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
           'simpleaq_interval', 'simpleaq_hostapd_name',
           'simpleaq_hostapd_password', 'hostap_retry_interval_sec',
-          'max_backlog_writes']
+          'max_backlog_writes', 'i2c_bus']
 
   no_quote_keys = ['simpleaq_hostapd_name', 'simpleaq_hostapd_password']
 
