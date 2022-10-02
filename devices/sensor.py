@@ -34,7 +34,7 @@ class Sensor(object):
             'point': point,
             'field': field,
             'value': self._make_ints_to_float(value),
-            'time': datetime.datetime.now().isoformat()
+            'time': datetime.datetime.now().astimezone().isoformat()
         }
 
         self.localstorage.writejson(data_json);
