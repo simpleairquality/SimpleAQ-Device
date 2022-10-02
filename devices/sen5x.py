@@ -25,7 +25,7 @@ class Sen5x(Sensor):
 
   def read(self):
     if not self.device.read_data_ready():
-      return {}
+      return None 
 
     # Read measured values -> clears the "data ready" flag
     values = self.device.read_measured_values()
@@ -38,14 +38,17 @@ class Sen5x(Sensor):
     try:
       data = self.read()
 
-      result = self._try_write_to_remote('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
-      result = self._try_write_to_remote('SEN5X', 'temperature_C', data.ambient_temperature.degrees_celsius) or result
-      result = self._try_write_to_remote('SEN5X', 'pm10.0_ug_m3', data.mass_concentration_10p0.physical) or result
-      result = self._try_write_to_remote('SEN5X', 'pm1.0_ug_m3', data.mass_concentration_1p0.physical) or result
-      result = self._try_write_to_remote('SEN5X', 'pm2.5_ug_m3', data.mass_concentration_2p5.physical) or result
-      result = self._try_write_to_remote('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
-      result = self._try_write_to_remote('SEN5X', 'nox_index', data.nox_index.scaled) or result  # TODO:  This returns nan if not available.  Is that a problem?
-      result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
+      if data:
+        result = self._try_write_to_remote('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
+        result = self._try_write_to_remote('SEN5X', 'temperature_C', data.ambient_temperature.degrees_celsius) or result
+        result = self._try_write_to_remote('SEN5X', 'pm10.0_ug_m3', data.mass_concentration_10p0.physical) or result
+        result = self._try_write_to_remote('SEN5X', 'pm1.0_ug_m3', data.mass_concentration_1p0.physical) or result
+        result = self._try_write_to_remote('SEN5X', 'pm2.5_ug_m3', data.mass_concentration_2p5.physical) or result
+        result = self._try_write_to_remote('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
+        result = self._try_write_to_remote('SEN5X', 'nox_index', data.nox_index.scaled) or result  # TODO:  This returns nan if not available.  Is that a problem?
+        result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
+      else:
+        logging.info("Data was not ready for SEN5X.")
     except Exception as err:
       logging.error("Error getting data from SEN5X.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True
