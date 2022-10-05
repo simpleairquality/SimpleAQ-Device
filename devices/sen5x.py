@@ -17,9 +17,14 @@ class Sen5x(Sensor):
     self.device = Sen5xI2cDevice(I2cConnection(i2c_transceiver))
 
     logging.info("SEN5X Version: {}".format(self.device.get_version()))
+    self._try_write_to_remote('SEN5X', 'firmware_version', '{}.{}'.format(self.device.get_version().firmware.major, self.device.get_version().firmware.minor))
+    self._try_write_to_remote('SEN5X', 'hardware_version', '{}.{}'.format(self.device.get_version().hardware.major, self.device.get_version().hardware.minor))
+    self._try_write_to_remote('SEN5X', 'protocol_version', '{}.{}'.format(self.device.get_version().protocol.major, self.device.get_version().protocol.minor))
     logging.info("SEN5X Product Name: {}".format(self.device.get_product_name()))
+    self._try_write_to_remote('SEN5X', 'product_name', self.device.get_product_name())
     logging.info("SEN5X Serial Number: {}".format(self.device.get_serial_number()))
-
+    self._try_write_to_remote('SEN5X', 'serial_number', self.device.get_serial_number())
+ 
     # Perform a device reset (reboot firmware)
     self.device.device_reset()
 
