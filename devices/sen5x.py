@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from absl import logging
-
+import math
 import time
 from sensirion_i2c_driver import I2cConnection, LinuxI2cTransceiver
 from sensirion_i2c_sen5x import Sen5xI2cDevice
@@ -44,14 +44,23 @@ class Sen5x(Sensor):
       data = self.read()
 
       if data:
-        result = self._try_write_to_remote('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
-        result = self._try_write_to_remote('SEN5X', 'temperature_C', data.ambient_temperature.degrees_celsius) or result
-        result = self._try_write_to_remote('SEN5X', 'pm10.0_ug_m3', data.mass_concentration_10p0.physical) or result
-        result = self._try_write_to_remote('SEN5X', 'pm1.0_ug_m3', data.mass_concentration_1p0.physical) or result
-        result = self._try_write_to_remote('SEN5X', 'pm2.5_ug_m3', data.mass_concentration_2p5.physical) or result
-        result = self._try_write_to_remote('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
-        result = self._try_write_to_remote('SEN5X', 'nox_index', data.nox_index.scaled) or result  # TODO:  This returns nan if not available.  Is that a problem?
-        result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
+        # NAN values are NOT valid JSON.  We will not send anything if a nan value is ever found for any reason.
+        if not math.isnan(data.ambient_humidity.percent_rh):
+          result = self._try_write_to_remote('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
+        if not math.isnan(data.ambient_temperature.degrees_celsius):
+          result = self._try_write_to_remote('SEN5X', 'temperature_C', data.ambient_temperature.degrees_celsius) or result
+        if not math.isnan(data.mass_concentration_10p0.physical):
+          result = self._try_write_to_remote('SEN5X', 'pm10.0_ug_m3', data.mass_concentration_10p0.physical) or result
+        if not math.isnan(data.mass_concentration_1p0.physical):
+          result = self._try_write_to_remote('SEN5X', 'pm1.0_ug_m3', data.mass_concentration_1p0.physical) or result
+        if not math.isnan(data.mass_concentration_2p5.physical):
+          result = self._try_write_to_remote('SEN5X', 'pm2.5_ug_m3', data.mass_concentration_2p5.physical) or result
+        if not math.isnan(data.mass_concentration_4p0.physical):
+          result = self._try_write_to_remote('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
+        if not math.isnan(data.nox_index.scaled):
+          result = self._try_write_to_remote('SEN5X', 'nox_index', data.nox_index.scaled) or result
+        if not math.isnan(data.voc_index.scaled):
+          result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
       else:
         logging.info("Data was not ready for SEN5X.")
     except Exception as err:
