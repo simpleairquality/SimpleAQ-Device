@@ -48,6 +48,9 @@ def main():
       num_data_points=num_data_points,
       local_wifi_network=local_ssid,
       local_wifi_password=local_psk,
+      endpoint_type_simpleaq="selected" if os.getenv('endpoint_type') == "SIMPLEAQ" else "",
+      endpoint_type_influx="selected" if os.getenv('endpoint_type') == "INFLUXDB" else "",
+      influx_options_enabled="true" if os.getenv('endpoint_type') == "INFLUXDB" else "false",
       simpleaq_logo='static/simpleaq_logo.png',
       influx_org=os.getenv('influx_org'),
       influx_bucket=os.getenv('influx_bucket'),
@@ -135,7 +138,7 @@ def update():
 
   # Update environment variables.
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
-          'simpleaq_interval', 'simpleaq_hostapd_name',
+          'simpleaq_interval', 'simpleaq_hostapd_name', 'endpoint_type',
           'simpleaq_hostapd_password', 'hostap_retry_interval_sec',
           'max_backlog_writes', 'i2c_bus']
 

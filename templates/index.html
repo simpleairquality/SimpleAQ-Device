@@ -31,19 +31,28 @@
   </td>
 </tr>
 <tr>
+  <td>Backend Type</td>
+  <td>
+    <select name="endpoint_type" onchange="document.getElementById('influx_org').enabled = this.options[this.selectedIndex].value == 'INFLUXDB'; document.getElementById('influx_bucket').enabled = this.options[this.selectedIndex].value == 'INFLUXDB';">
+      <option value="SIMPLEAQ" {{endpoint_type_simpleaq}}>SimpleAQ</option>
+      <option value="INFLUXDB" {{endpoint_type_influxdb}}>InfluxDB</option>
+    </select>
+  </td>
+</tr>
+<tr>
   <td>InfluxDB Organization</td>
-  <td><input name="influx_org" type="text" value="{{influx_org}}"/></td>
+  <td><input id="influx_org" name="influx_org" type="text" value="{{influx_org}}" enabled={{influx_options_enabled}}/></td>
 </tr>
 <tr>
   <td>InfluxDB Bucket</td>
-  <td><input name="influx_bucket" type="text" value="{{influx_bucket}}"/></td>
+  <td><input id="influx_bucket" name="influx_bucket" type="text" value="{{influx_bucket}}" enabled={{influx_options_enabled}}/></td>
 </tr>
 <tr>
-  <td>InfluxDB Token</td>
+  <td>Access Token</td>
   <td><input name="influx_token" type="text" value="{{influx_token}}"/></td>
 </tr>
 <tr>
-  <td>InfluxDB Server</td>
+  <td>Server</td>
   <td><input name="influx_server" type="text" value="{{influx_server}}"/></td>
 </tr>
 <tr>
