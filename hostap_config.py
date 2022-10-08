@@ -49,7 +49,7 @@ def main():
       local_wifi_network=local_ssid,
       local_wifi_password=local_psk,
       endpoint_type_simpleaq="selected" if os.getenv('endpoint_type') == "SIMPLEAQ" else "",
-      endpoint_type_influx="selected" if os.getenv('endpoint_type') == "INFLUXDB" else "",
+      endpoint_type_influxdb="selected" if os.getenv('endpoint_type') == "INFLUXDB" else "",
       influx_options_disabled="" if os.getenv('endpoint_type') == "INFLUXDB" else "disabled",
       simpleaq_logo='static/simpleaq_logo.png',
       influx_org=os.getenv('influx_org'),
