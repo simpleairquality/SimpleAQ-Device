@@ -5,6 +5,7 @@ adafruit-circuitpython-pm25
 adafruit-circuitpython-bme680
 influxdb_client
 python-dotenv
+sensirion-i2c-sen5x
 setuptools
 RPi.GPIO
 adafruit-blinka

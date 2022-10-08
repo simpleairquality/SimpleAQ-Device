@@ -1,231 +1,29 @@
 #!/usr/bin/env python3
 
-import calendar
 import contextlib
-import datetime
 import json
 import os
-import psutil
-import sqlite3
-import sys
 import time
-from dateutil import parser
-from pprint import pprint
 
 from absl import app, flags, logging
 
-import board
-import busio
-from adafruit_pm25.i2c import PM25_I2C
-import adafruit_bme680
-import adafruit_gps
-
-import influxdb_client
-from influxdb_client.client.write_api import SYNCHRONOUS
 import dotenv
+
+from devices.system import System
+from devices.bme688 import Bme688
+from devices.gps import Gps
+from devices.pm25 import Pm25
+from devices.sen5x import Sen5x
+
+from localstorage.localdummy import LocalDummy
+from localstorage.localsqlite import LocalSqlite 
+from remotestorage.dummystorage import DummyStorage
+from remotestorage.influxstorage import InfluxStorage
+
+from sensirion_i2c_driver import LinuxI2cTransceiver
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
-
-
-class Sensor(object):
-  def __init__(self, influx, connection):
-    self.influx = influx
-    self.connection = connection
-    self.bucket = os.getenv('influx_bucket')
-    self.org = os.getenv('influx_org')
-
-  # Even though we never explicitly create rows, InfluxDB assigns a type
-  # when a row is first written.  Apparently, sometimes intended float values are incorrectly
-  # interpreted as a int and changing field types after the fact is hard.
-  # So let's avoid that hassle entirely.
-  def _make_ints_to_float(self, value):
-    if isinstance(value, int):
-      return float(value)
-    return value
-
-  def _try_write_to_influx(self, point, field, value):
-    try:
-      with self.influx.write_api(write_options=SYNCHRONOUS) as client:
-        client.write(
-            self.bucket,
-            self.org,
-            influxdb_client.Point(point).field(
-                field, self._make_ints_to_float(value)).time(datetime.datetime.now()))
-        return False
-    except Exception as err:
-      logging.error("Could not write to InfluxDB: " + str(err))
-
-      # If we failed to write, save to disk instead.
-      # Need to make sure the path exists first.
-      try:
-        data_json = {
-            'point': point,
-            'field': field,
-            'value': self._make_ints_to_float(value),
-            'time': datetime.datetime.now().isoformat()
-        }
-
-        with contextlib.closing(self.connection.cursor()) as cursor:
-          cursor.execute("INSERT INTO data (json) VALUES(?)", (json.dumps(data_json),))
-          self.connection.commit()
-
-        return True
-      except Exception as backup_err:
-        # Something has truly gone sideways.  We can't even write backup data.
-        logging.error("Error saving data to local disk: " + str(backup_err))
-        return True
-
-class Bme688(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
-    self.sensor = adafruit_bme680.Adafruit_BME680_I2C(board.I2C())
-
-  def publish(self):
-    logging.info('Publishing Bme688 to influx')
-    result = False
-    try:
-      # It is actually important that the try_write_to_influx happens before the result, otherwise
-      # it will never be evaluated!
-      result = self._try_write_to_influx('BME688', 'temperature_C', self.sensor.temperature) or result
-      result = self._try_write_to_influx('BME688', 'voc_ohms', self.sensor.gas) or result
-      result = self._try_write_to_influx('BME688', 'relative_humidity_pct', self.sensor.humidity) or result
-      result = self._try_write_to_influx('BME688', 'pressure_hPa', self.sensor.pressure) or result
-    except Exception as err:
-      logging.error("Error getting data from BME688.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
-    return result
-
-
-class Pm25(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
-    i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
-    self.pm25 = PM25_I2C(i2c)
-
-  def read(self):
-    try:
-      aqdata = self.pm25.read()
-    except RuntimeError as e:
-      logging.error(f"Couldn't read data from PM2.5 sensor: {e}")
-      return {}
-    return aqdata
-
-  def publish(self):
-    logging.info('Publishing PM2.5 to influx')
-    result = False
-    try:
-      aqdata = self.read()
-
-      for key, val in aqdata.items():
-        influx_key = key
-        if influx_key.startswith('particles'):
-          influx_key += " per dL"
-        if influx_key.endswith('env'):
-          influx_key += " ug per m3"
-        if influx_key.endswith('standard'):
-          influx_key += " ug per m3"
-        # It is actually important that the try_write_to_influx happens before the result, otherwise
-        # it will never be evaluated!
-        result = self._try_write_to_influx('PM25', influx_key, val) or result
-    except Exception as err:
-      logging.error("Error getting data from PM25.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
-
-    return result
-
-
-class Gps(Sensor):
-  def __init__(self, influx, connection, interval=None):
-    super().__init__(influx, connection)
-
-    self.interval = interval
-    self.has_set_time = False
-
-    try:
-      self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
-      # Turn on everything the module collects.
-      self.gps.send_command(b"PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0")
-      # Update once every second (1000ms)
-      self.gps.send_command(b"PMTK220,1000")
-    except Exception as err:
-      # We raise here because if GPS fails, we're probably getting unuseful data entirely.
-      logging.error("Error setting up GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      raise err
-
-  # We automatically update the clock if the drift is greater than the reporting interval.
-  # This will serve make sure that the device, no matter how long it's been powered down, reports a reasonably accurate time for measurements when possible.
-  # We set the time at most once per run, assuming that the clock drift won't be significant compared to an incorrectly set system time.
-  # Note that any change here will be quickly clobbered by NTP should any internet connection become available to the device. 
-  def _update_systime(self):
-    if not self.has_set_time:
-      if self.interval:
-        epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
-
-        if abs(time.time() - epoch_seconds) > self.interval:
-          logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat() +
-                          ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                          ' exceeds interval time of ' + str(self.interval))
-          os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat())
-          self.has_set_time = True
-
-  def publish(self):
-    logging.info('Publishing GPS data to influx')
-    # Yes, recommended behavior is to call update twice.  
-    self.gps.update()
-    self.gps.update()
-    result = False
-    try:
-      if self.gps.has_fix:
-        if self.gps.timestamp_utc:
-          self._update_systime()
-
-          # It is actually important that the try_write_to_influx happens before the result, otherwise
-          # it will never be evaluated!
-          result = self._try_write_to_influx('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
-        else:
-          logging.warning('GPS has no timestamp data')
-
-        if self.gps.latitude and self.gps.longitude:
-          # It is actually important that the try_write_to_influx happens before the result, otherwise
-          # it will never be evaluated!
-          result = self._try_write_to_influx('GPS', 'latitude_degrees', self.gps.latitude) or result
-          result = self._try_write_to_influx('GPS', 'longitude_degrees', self.gps.longitude) or result
-        else:
-          logging.warning('GPS has no lat/lon data.')
-      else:
-        logging.warning('GPS has no fix.')
-    except Exception as err:
-      logging.error("Error getting data from GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
-
-    return result
-
-
-class System(Sensor):
-  def __init__(self, influx, connection):
-    super().__init__(influx, connection)
-    self.start_time = time.time()
-
-  def publish(self):
-    logging.info('Publishing system stats')
-    result = False
-
-    # It is actually important that the try_write_to_influx happens before the result, otherwise
-    # it will never be evaluated!
-
-    result = self._try_write_to_influx('System', 'device_uptime_sec', time.time() - psutil.boot_time()) or result
-    result = self._try_write_to_influx('System', 'service_uptime_sec', time.time() - psutil.boot_time()) or result
-    result = self._try_write_to_influx('System', 'system_time_utc', time.time()) or result
-
-    return result
-
-
-def connect_to_influx():
-  url = os.getenv('influx_server')
-  token = os.getenv('influx_token')
-  org = os.getenv('influx_org')
-  return influxdb_client.InfluxDBClient(url=url, token=token, org=org)
 
 
 def switch_to_wlan():
@@ -239,6 +37,62 @@ def switch_to_wlan():
     return True
 
 
+# Enumerate the list of supported devices here.
+device_map = {
+    'system': System,
+    'bme688': Bme688,
+    'gps': Gps,
+    'pm25': Pm25,
+    'sen5x': Sen5x
+}
+
+priority_devices = ['gps']
+
+# Find the set of devices that are installed in this system.
+def detect_devices(env_file):
+  detected_devices = set()
+
+  # Figure out what devices are connected.
+  with contextlib.closing(LocalDummy()) as local_storage:
+    with DummyStorage() as remote_storage:
+      with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
+        for name, device in device_map.items():
+          try:
+            device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver).publish()
+            detected_devices.add(name)
+            logging.info("Detected device: {}".format(name))
+          except Exception:
+            logging.info("Device not detected: {}".format(name))
+
+  # Get the existing devices
+  current_devices = set(os.getenv('detected_devices').split(','))
+
+  # Now let's see if these are the same devices listed in the environment variables.
+  # If a file is provided, then we set and reboot.
+  if env_file and current_devices != detected_devices:
+    dotenv.set_key(
+        env_file,
+        'detected_devices',
+        ','.join(detected_devices))
+
+    # Reboot
+    os.system('reboot')
+
+  # Let's make sure that if any priority devices were detected, they are listed first.
+  device_objects = []
+
+  for priority_device in priority_devices:
+    if priority_device in detected_devices:
+      device_objects.append(device_map[priority_device])
+      detected_devices.remove(priority_device)
+
+  # Ok, add the rest.
+  for device in detected_devices:
+   device_objects.append(device_map[device])
+
+  return device_objects
+
+
 # This program loads environment variables only on boot.
 # If the environment variables change for any reason, the systemd service
 # will have to be restarted.
@@ -248,16 +102,13 @@ def main(args):
   else:
     dotenv.load_dotenv()
 
-  # Make sure there's a place to actually put the backlog database if necessary.
-  os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
+  device_objects = detect_devices(FLAGS.env)
+
+  # TODO:  Eventually select between this and SimpleAQ API.
+  remote_storage_class = InfluxStorage
 
   # This implicitly creates the database.
-  with contextlib.closing(sqlite3.connect(os.getenv("sqlite_db_path"))) as db_conn:
-
-    # OK, we need a table to store backlog data if it doesn't exist.
-    with contextlib.closing(db_conn.cursor()) as cursor:
-      cursor.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT)")
-      db_conn.commit()
+  with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
 
     interval = int(os.getenv('simpleaq_interval'))
 
@@ -269,85 +120,80 @@ def main(args):
       # we didn't manage to switch to wlan fast enough.
       time.sleep(30)
 
-    with connect_to_influx() as influx:
-      sensors = []
-      # GPS sensor goes first in case it has to set the hardware clock.
-      sensors.append(Gps(influx, db_conn, interval))
-      sensors.append(Bme688(influx, db_conn))
-      sensors.append(Pm25(influx, db_conn))
-      sensors.append(System(influx, db_conn))
-      while True:
-        result_failure = [sensor.publish() for sensor in sensors]
-        if any(result_failure):
-          logging.warning("Failed to write some results.  Switching to hostap mode.")
+    with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
+      with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
+        sensors = []
 
-          # Trigger hostapd mode.
-          os.system("systemctl start " + os.getenv("ap_service"))
+        for device_object in device_objects:
+          sensors.append(device_object(remotestorage=remote, localstorage=local_storage, interval=interval, i2c_transceiver=i2c_transceiver))
 
-          # Maybe touch a file to indicate the time that we did this.
-          if not os.path.exists(os.getenv("hostap_status_file")):
-            os.system("touch " + os.getenv("hostap_status_file"))
-        else:
-          # Write backlog files.
-          files_written = 0
-          logging.info("Checking for backlog files to write.")
-
-          with contextlib.closing(db_conn.cursor()) as cursor:
-            result = cursor.execute("SELECT COUNT(*) FROM data")
-            count = result.fetchone()[0]
-
-            logging.info("Found {} backlog files!".format(count))
+        # This enteres a guaranteed-closing context manager for every sensors.
+        # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
+        # Most of the others are no-ops.
+        with contextlib.ExitStack() as stack:
+          for sensor in sensors:
+            stack.enter_context(sensor)
  
-            cursor.execute("SELECT * FROM data")
+          while True:
+            result_failure = [sensor.publish() for sensor in sensors]
+            if any(result_failure):
+              logging.warning("Failed to write some results.  Switching to hostap mode.")
 
-            # We iterate over the cursor to avoid loading everything into memory at once.
-            for data_point in cursor:
-              try:
-                data_json = json.loads(data_point[1])
+              # Trigger hostapd mode.
+              os.system("systemctl start " + os.getenv("ap_service"))
 
-                if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
+              # Maybe touch a file to indicate the time that we did this.
+              if not os.path.exists(os.getenv("hostap_status_file")):
+                os.system("touch " + os.getenv("hostap_status_file"))
+            else:
+              # Write backlog files.
+              files_written = 0
+
+              logging.info("Checking for backlog files to write.")
+              count = local_storage.countrecords()
+
+              logging.info("Found {} backlog files!".format(count))
+ 
+              with contextlib.closing(local_storage.getcursor()) as cursor:
+                # We iterate over the cursor to avoid loading everything into memory at once.
+                for data_point in cursor:
                   try:
-                    with influx.write_api(write_options=SYNCHRONOUS) as client:
-                      client.write(
-                          os.getenv('influx_bucket'),
-                          os.getenv('influx_org'),
-                          influxdb_client.Point(data_json.get('point')).field(
-                              data_json.get('field'), data_json.get('value')).time(parser.parse(data_json.get('time'))))
+                    data_json = json.loads(data_point[1])
+
+                    if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
+                      try:
+                        remote.write(data_json)
+                      except Exception as err:
+                        # Immediately break on Influx errors -- if the connection was lost,
+                        # we don't need to retry every file forever.
+                        logging.error("Error writing saved data point with id [{}] to Influx: {}".format(data_point[0], str(err)))
+                        break
+
+                      # Delete the file once written successfully.
+                      local_storage.deleterecord(data_point[0])
+
+                      files_written += 1
+                    else:
+                      # Eventually, very many malformed files in this directory would cause unacceptable slowness.
+                      logging.warning("Data point with id [{}] has missing fields.".format(data_point[0]))
+
                   except Exception as err:
-                    # Immediately break on Influx errors -- if the connection was lost,
-                    # we don't need to retry every file forever.
-                    logging.error("Error writing saved data point with id [{}] to Influx: {}".format(data_point[0], str(err)))
+                    logging.error("Error writing saved data point with id [{}]: {}".format(data_point[0], str(err)))
+
+                  # We spread out our writing of backlogs, so as not to spend a long time writing
+                  # many backups after a long downtime.  We'll catch up eventually.
+                  if files_written >= int(os.getenv("max_backlog_writes")):
                     break
 
-                  # Delete the file once written successfully.
-                  with contextlib.closing(db_conn.cursor()) as delete_cursor:
-                    delete_cursor.execute("DELETE FROM data WHERE id=?", (data_point[0],))
-                  files_written += 1
-                else:
-                  # Eventually, very many malformed files in this directory would cause unacceptable slowness.
-                  logging.warning("Data point with id [{}] has missing fields.".format(data_point[0]))
-
-              except Exception as err:
-                logging.error("Error writing saved data point with id [{}]: {}".format(data_point[0], str(err)))
-
-              # We spread out our writing of backlogs, so as not to spend a long time writing
-              # many backups after a long downtime.  We'll catch up eventually.
-
-              if files_written >= int(os.getenv("max_backlog_writes")):
-                break
-
-            # Commit deleted rows.
-            db_conn.commit()
-
-            logging.info("Wrote {} backlog files.".format(files_written))
+                logging.info("Wrote {} backlog files.".format(files_written))
  
-        # Maybe trigger wlan mode.
-        if switch_to_wlan():
-          logging.warning("Maintaining wlan mode.")
-          os.system("systemctl start " + os.getenv("wlan_service"))
+            # Maybe trigger wlan mode.
+            if switch_to_wlan():
+              logging.warning("Maintaining wlan mode.")
+              os.system("systemctl start " + os.getenv("wlan_service"))
   
-        # TODO:  We should probably wait until a specific future time,  instead of sleep.
-        time.sleep(interval)
+            # TODO:  We should probably wait until a specific future time,  instead of sleep.
+            time.sleep(interval)
  
 
 if __name__ == '__main__':

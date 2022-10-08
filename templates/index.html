@@ -47,6 +47,9 @@
   <td><input name="influx_server" type="text" value="{{influx_server}}"/></td>
 </tr>
 <tr>
+<td colspan=2>Advanced Settings</td>
+</tr>
+<tr>
   <td>Data Collection Interval (seconds)</td>
   <td><input name="simpleaq_interval" type="number" value="{{simpleaq_interval}}"/></td>
 </tr>
@@ -71,10 +74,17 @@
   <td><input name="max_backlog_writes" type="number" value="{{max_backlog_writes}}"/></td>
 </tr>
 <tr>
+  <td>I2C Bus</td>
+  <td><input name="i2c_bus" type="text" value="{{i2c_bus}}"/></td>
+</tr>
+<tr>
   <td><button type="submit">Submit Changes and Reboot</button></td>
   <td><button type="reset">Reset Changes</button></td>
 </tr>
 </form>
+<tr>
+<td>Detected Sensors:</td><td>{{detected_devices}}</td>
+</tr>
 <tr>
 <th colspan=2>
   Data Downloads
