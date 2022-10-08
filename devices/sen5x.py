@@ -10,8 +10,8 @@ from . import Sensor
 
 # Based on https://sensirion.github.io/python-i2c-sen5x/quickstart.html#linux-i2c-bus-example
 class Sen5x(Sensor):
-  def __init__(self, remotestorage, localstorage, i2c_transceiver, **kwargs):
-    super().__init__(remotestorage, localstorage)
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
+    super().__init__(remotestorage, localstorage, timesource)
 
     self.i2c_transceiver = i2c_transceiver
     self.device = Sen5xI2cDevice(I2cConnection(i2c_transceiver))

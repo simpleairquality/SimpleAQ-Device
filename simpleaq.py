@@ -21,6 +21,9 @@ from remotestorage.dummystorage import DummyStorage
 from remotestorage.influxstorage import InfluxStorage
 from remotestorage.simpleaqstorage import SimpleAQStorage
 
+from timesources.systemtimesource import SystemTimeSource
+from timesources.synctimesource import SyncTimeSource
+
 from sensirion_i2c_driver import LinuxI2cTransceiver
 
 FLAGS = flags.FLAGS
@@ -107,10 +110,13 @@ def main(args):
 
   # TODO:  Eventually select between this and SimpleAQ API.
   remote_storage_class = None
+  timesource = None
   if os.getenv('endpoint_type') == 'INFLUXDB':
     remote_storage_class = InfluxStorage
+    timesource = SystemTimeSource
   else:
     remote_storage_class = SimpleAQStorage
+    timesource = SyncTimeSource
 
   # This implicitly creates the database.
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
@@ -130,7 +136,7 @@ def main(args):
         sensors = []
 
         for device_object in device_objects:
-          sensors.append(device_object(remotestorage=remote, localstorage=local_storage, interval=interval, i2c_transceiver=i2c_transceiver))
+          sensors.append(device_object(remotestorage=remote, localstorage=local_storage, timesource=timesource, interval=interval, i2c_transceiver=i2c_transceiver))
 
         # This enteres a guaranteed-closing context manager for every sensors.
         # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.

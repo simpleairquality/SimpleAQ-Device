@@ -8,8 +8,8 @@ from . import Sensor
 
 
 class System(Sensor):
-  def __init__(self, remotestorage, localstorage, **kwargs):
-    super().__init__(remotestorage, localstorage)
+  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+    super().__init__(remotestorage, localstorage, timesource)
     self.start_time = time.time()
 
   def publish(self):

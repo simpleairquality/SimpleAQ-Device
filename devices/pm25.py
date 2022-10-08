@@ -10,8 +10,8 @@ from . import Sensor
 
 
 class Pm25(Sensor):
-  def __init__(self, remotestorage, localstorage, **kwargs):
-    super().__init__(remotestorage, localstorage)
+  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+    super().__init__(remotestorage, localstorage, timesource)
     i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
     self.pm25 = PM25_I2C(i2c)
 

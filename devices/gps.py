@@ -13,8 +13,8 @@ import adafruit_gps
 
 
 class Gps(Sensor):
-  def __init__(self, remotestorage, localstorage, interval=None, **kwargs):
-    super().__init__(remotestorage, localstorage)
+  def __init__(self, remotestorage, localstorage, timesource, interval=None, **kwargs):
+    super().__init__(remotestorage, localstorage, timesource)
 
     self.interval = interval
     self.has_set_time = False
@@ -44,6 +44,7 @@ class Gps(Sensor):
                           ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
                           ' exceeds interval time of ' + str(self.interval))
           os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat())
+          self.timesource.set_time(datetime.datetime.now())
           self.has_set_time = True
 
   def publish(self):
