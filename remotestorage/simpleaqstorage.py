@@ -18,11 +18,14 @@ class SimpleAQStorage(RemoteStorage):
             'file': ('file', json.dumps(data_json), 'application/ndjson')
         })
 
-    requests.post(
+    response = requests.post(
         self.endpoint,
         data=encoder,
         headers={'Content-Type': encoder.content_type}
     )
+
+    if response.status_code >= 400:
+      raise Exception("Received status {} from SimpleAQ endpoint {}".format(response.status_code, self.endpoint))
 
   def __enter__(self):
     return self
