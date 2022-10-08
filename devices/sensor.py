@@ -25,7 +25,7 @@ class Sensor(object):
       self.remotestorage.write({'point': point, 'field': field, 'value': self._make_ints_to_float(value), 'time': datetime.datetime.now().isoformat()})
       return False
     except Exception as err:
-      logging.error("Could not write to InfluxDB: " + str(err))
+      logging.error("Could not write to remote: " + str(err))
 
       # If we failed to write, save to disk instead.
       # Need to make sure the path exists first.
