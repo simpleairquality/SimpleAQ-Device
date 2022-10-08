@@ -19,6 +19,7 @@ from localstorage.localdummy import LocalDummy
 from localstorage.localsqlite import LocalSqlite 
 from remotestorage.dummystorage import DummyStorage
 from remotestorage.influxstorage import InfluxStorage
+from remotestorage.simpleaqstorage import SimpleAQStorage
 
 from sensirion_i2c_driver import LinuxI2cTransceiver
 
@@ -105,7 +106,11 @@ def main(args):
   device_objects = detect_devices(FLAGS.env)
 
   # TODO:  Eventually select between this and SimpleAQ API.
-  remote_storage_class = InfluxStorage
+  remote_storage_class = None
+  if os.getenv('endpoint_type') == 'INFLUXDB':
+    remote_storage_class = InfluxStorage
+  else:
+    remote_storage_class = SimpleAQStorage
 
   # This implicitly creates the database.
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
