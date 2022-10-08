@@ -108,15 +108,17 @@ def main(args):
 
   device_objects = detect_devices(FLAGS.env)
 
-  # TODO:  Eventually select between this and SimpleAQ API.
   remote_storage_class = None
   timesource = None
+  send_last_known_gps = False
   if os.getenv('endpoint_type') == 'INFLUXDB':
     remote_storage_class = InfluxStorage
     timesource = SystemTimeSource
+    send_last_known_gps = False
   else:
     remote_storage_class = SimpleAQStorage
     timesource = SyncTimeSource
+    send_last_known_gps = True
 
   # This implicitly creates the database.
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
@@ -136,7 +138,13 @@ def main(args):
         sensors = []
 
         for device_object in device_objects:
-          sensors.append(device_object(remotestorage=remote, localstorage=local_storage, timesource=timesource, interval=interval, i2c_transceiver=i2c_transceiver))
+          sensors.append(device_object(remotestorage=remote,
+                                       localstorage=local_storage,
+                                       timesource=timesource,
+                                       interval=interval,
+                                       i2c_transceiver=i2c_transceiver,
+                                       env_file=FLAGS.env,
+                                       send_last_known_gps=send_last_known_gps))
 
         # This enteres a guaranteed-closing context manager for every sensors.
         # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.

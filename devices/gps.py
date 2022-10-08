@@ -2,6 +2,7 @@
 
 import calendar
 import datetime
+import dotenv
 import os
 import time
 
@@ -13,11 +14,17 @@ import adafruit_gps
 
 
 class Gps(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, interval=None, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
 
     self.interval = interval
     self.has_set_time = False
+    # If available, we will save last known GPS coordinates to environment variables.
+    self.env_file = env_file
+
+    # Seed last_latitude and last_longitude from the environment variable, if available.
+    self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None
+    self.longitude = float(os.getenv('last_longitude')) if os.getenv('last_longitude') else None
 
     try:
       self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
@@ -67,9 +74,32 @@ class Gps(Sensor):
         if self.gps.latitude and self.gps.longitude:
           # It is actually important that the try_write_to_remote happens before the result, otherwise
           # it will never be evaluated!
-          result = self._try_write_to_remote('GPS', 'latitude_degrees', self.gps.latitude) or result
-          result = self._try_write_to_remote('GPS', 'longitude_degrees', self.gps.longitude) or result
+          self.latitude = self.gps.latitude
+          result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
+          self.longitude = self.gps.longitude
+          result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
+
+          if self.send_last_known_gps:
+            result = self._try_write_to_remote('GPS', 'gps_is_last_known', 0) or result
+
+          # Save the last-known latitude and longitude if they're available.
+          if args.env_file:
+            dotenv.set_key(
+                env_file,
+                'last_latitude',
+                str(self.latitude))
+            dotenv.set_key(
+                env_file,
+                'last_longitude',
+                str(self.longitude))
         else:
+          if self.send_last_known_gps:
+            # If desired, send the last-known GPS values.
+            if self.latitude is not None and self.longitude is not None:
+              result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
+              result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
+              result = self._try_write_to_remote('GPS', 'gps_is_last_known', 1) or result
+
           logging.warning('GPS has no lat/lon data.')
       else:
         logging.warning('GPS has no fix.')
