@@ -145,8 +145,9 @@ def update():
   no_quote_keys = ['simpleaq_hostapd_name', 'simpleaq_hostapd_password']
 
   for key in keys:
-    dotenv.set_key(os.getenv('env_file'), key, request.form[key],
-                   quote_mode='never' if key in no_quote_keys else 'always')
+    if key in request.form.keys():
+      dotenv.set_key(os.getenv('env_file'), key, request.form[key],
+                     quote_mode='never' if key in no_quote_keys else 'always')
 
   # Checkbox needs to be handled separately.
   dotenv.set_key(
