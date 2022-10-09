@@ -99,11 +99,11 @@ class Gps(Sensor):
           # Save the last-known latitude and longitude if they're available.
           if self.env_file:
             dotenv.set_key(
-                env_file,
+                self.env_file,
                 'last_latitude',
                 str(self.latitude))
             dotenv.set_key(
-                env_file,
+                self.env_file,
                 'last_longitude',
                 str(self.longitude))
         else:
