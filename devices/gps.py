@@ -94,7 +94,7 @@ class Gps(Sensor):
           result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
 
           if self.send_last_known_gps:
-            result = self._try_write_to_remote('GPS', 'gps_is_last_known', 0) or result
+            result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 0) or result
 
           # Save the last-known latitude and longitude if they're available.
           if self.env_file:
@@ -112,7 +112,7 @@ class Gps(Sensor):
             if self.latitude is not None and self.longitude is not None:
               result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
               result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
-              result = self._try_write_to_remote('GPS', 'gps_is_last_known', 1) or result
+              result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
 
           logging.warning('GPS has no lat/lon data.')
       else:
