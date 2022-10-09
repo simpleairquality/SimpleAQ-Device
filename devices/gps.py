@@ -45,7 +45,12 @@ class Gps(Sensor):
   def _update_systime(self):
     if not self.has_set_time:
       if self.interval:
-        epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
+        epoch_seconds = None
+        try:
+          epoch_seconds = calendar.timegm(self.gps.timestamp_utc)
+        except Exception as err:
+          logging.warning("Error converting GPS timestamp: " + str(err))
+          return
 
         if abs(time.time() - epoch_seconds) > self.interval:
           logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat() +
