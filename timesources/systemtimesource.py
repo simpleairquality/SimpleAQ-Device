@@ -9,6 +9,5 @@ class SystemTimeSource(TimeSource):
   def set_time(self, time):
     pass
 
-  @abstractmethod
   def get_time(self):
     return datetime.datetime.now().isoformat()

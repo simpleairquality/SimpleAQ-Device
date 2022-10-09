@@ -8,9 +8,7 @@ class SyncTimeSource(TimeSource):
 
   def set_time(self, time):
     self.time = time
-    pass
 
-  @abstractmethod
   def get_time(self)
     if self.time is None:
       self.time = datetime.datetime.now()

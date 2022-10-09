@@ -154,6 +154,7 @@ def main(args):
             stack.enter_context(sensor)
  
           while True:
+            timesource.set_time(datetime.datetime.now())
             result_failure = [sensor.publish() for sensor in sensors]
             if any(result_failure):
               logging.warning("Failed to write some results.  Switching to hostap mode.")
