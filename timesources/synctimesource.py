@@ -13,4 +13,4 @@ class SyncTimeSource(TimeSource):
     if self.time is None:
       self.time = datetime.datetime.now()
  
-    return self.time.isoformat()
+    return self.time.astimezone().isoformat()

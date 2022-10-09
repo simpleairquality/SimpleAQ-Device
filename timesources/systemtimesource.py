@@ -10,4 +10,4 @@ class SystemTimeSource(TimeSource):
     pass
 
   def get_time(self):
-    return datetime.datetime.now().isoformat()
+    return datetime.datetime.now().astimezone().isoformat()
