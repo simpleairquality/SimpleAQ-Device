@@ -116,6 +116,13 @@ class Gps(Sensor):
 
           logging.warning('GPS has no lat/lon data.')
       else:
+        if self.send_last_known_gps:
+          # If desired, send the last-known GPS values.
+          if self.latitude is not None and self.longitude is not None:
+            result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
+            result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
+            result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
+
         logging.warning('GPS has no fix.')
     except Exception as err:
       logging.error("Error getting data from GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
