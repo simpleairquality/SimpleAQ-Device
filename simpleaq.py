@@ -56,6 +56,7 @@ priority_devices = ['gps']
 # Find the set of devices that are installed in this system.
 def detect_devices(env_file):
   detected_devices = set()
+  test_timesource = SystemTimeSource()
 
   # Figure out what devices are connected.
   with contextlib.closing(LocalDummy()) as local_storage:
@@ -63,7 +64,7 @@ def detect_devices(env_file):
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
         for name, device in device_map.items():
           try:
-            device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver).publish()
+            device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource).publish()
             detected_devices.add(name)
             logging.info("Detected device: {}".format(name))
           except Exception:
