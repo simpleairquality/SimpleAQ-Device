@@ -71,9 +71,17 @@ class Gps(Sensor):
         if self.gps.timestamp_utc:
           self._update_systime()
 
-          # It is actually important that the try_write_to_remote happens before the result, otherwise
-          # it will never be evaluated!
-          result = self._try_write_to_remote('GPS', 'timestamp_utc', calendar.timegm(self.gps.timestamp_utc)) or result
+          # Sometimes the GPS timestamp is invalid.  In that case, don't write it.
+          gps_timestamp = None
+          try:
+            gps_timestamp = calendar.timegm(self.gps.timestamp_utc)
+          except Exception as err:
+            logging.warning("Error converting GPS timestamp: " + str(err))
+
+          if gps_timestamp:
+            # It is actually important that the try_write_to_remote happens before the result, otherwise
+            # it will never be evaluated!
+            result = self._try_write_to_remote('GPS', 'timestamp_utc', gps_timestamp) or result
         else:
           logging.warning('GPS has no timestamp data')
 
