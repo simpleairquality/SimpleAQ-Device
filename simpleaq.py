@@ -115,11 +115,11 @@ def main(args):
   send_last_known_gps = False
   if os.getenv('endpoint_type') == 'INFLUXDB':
     remote_storage_class = InfluxStorage
-    timesource = SystemTimeSource
+    timesource = SystemTimeSource()
     send_last_known_gps = False
   else:
     remote_storage_class = SimpleAQStorage
-    timesource = SyncTimeSource
+    timesource = SyncTimeSource()
     send_last_known_gps = True
 
   # This implicitly creates the database.
