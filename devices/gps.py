@@ -89,7 +89,7 @@ class Gps(Sensor):
             result = self._try_write_to_remote('GPS', 'gps_is_last_known', 0) or result
 
           # Save the last-known latitude and longitude if they're available.
-          if args.env_file:
+          if self.env_file:
             dotenv.set_key(
                 env_file,
                 'last_latitude',
