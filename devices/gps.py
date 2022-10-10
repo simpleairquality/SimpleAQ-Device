@@ -85,12 +85,16 @@ class Gps(Sensor):
         else:
           logging.warning('GPS has no timestamp data')
 
-        if self.gps.latitude and self.gps.longitude:
+        # Avoid flakes in case the reading changes.
+        gps_latitude = self.gps.latitude
+        gps_longitude = self.gps.longitude
+
+        if gps_latitude and gps_longitude and abs(gps_latitude) <= 90 and abs(gps_longitude) <= 180:
           # It is actually important that the try_write_to_remote happens before the result, otherwise
           # it will never be evaluated!
-          self.latitude = self.gps.latitude
+          self.latitude = gps_latitude
           result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
-          self.longitude = self.gps.longitude
+          self.longitude = gps_longitude
           result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
 
           if self.send_last_known_gps:
