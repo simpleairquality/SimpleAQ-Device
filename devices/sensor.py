@@ -7,9 +7,10 @@ from absl import logging
 
 
 class Sensor(object):
-  def __init__(self, remotestorage, localstorage, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
     self.remotestorage = remotestorage
     self.localstorage = localstorage
+    self.timesource = timesource
 
   # Even though we never explicitly create rows, InfluxDB assigns a type
   # when a row is first written.  Apparently, sometimes intended float values are incorrectly
@@ -22,10 +23,10 @@ class Sensor(object):
 
   def _try_write_to_remote(self, point, field, value):
     try:
-      self.remotestorage.write({'point': point, 'field': field, 'value': self._make_ints_to_float(value), 'time': datetime.datetime.now().isoformat()})
+      self.remotestorage.write({'point': point, 'field': field, 'value': self._make_ints_to_float(value), 'time': self.timesource.get_time()})
       return False
     except Exception as err:
-      logging.error("Could not write to InfluxDB: " + str(err))
+      logging.error("Could not write to remote: " + str(err))
 
       # If we failed to write, save to disk instead.
       # Need to make sure the path exists first.
@@ -34,7 +35,7 @@ class Sensor(object):
             'point': point,
             'field': field,
             'value': self._make_ints_to_float(value),
-            'time': datetime.datetime.now().astimezone().isoformat()
+            'time': self.timesource.get_time()
         }
 
         self.localstorage.writejson(data_json);
