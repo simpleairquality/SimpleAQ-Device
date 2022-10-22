@@ -75,7 +75,7 @@ jobs:
         echo KEYBOARD_KEYMAP=us                    >> config
         echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
         echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
-        echo "::set-output name=image::$IMAGE"
+        echo "image=$IMAGE"                        >> $GITHUB_OUTPUT
 
     # Greatly speed up our build because we don't need a desktop
     # or anything more advanced for our little IoT devices.
@@ -98,7 +98,7 @@ jobs:
         cd deploy
         ls
         IMAGE_FILE=$(ls *.img)
-        echo "::set-output name=imagefile::$IMAGE_FILE"
+        echo "imagefile=$IMAGE_FILE" >> $GITHUB_OUTPUT
 
     # The image now exists in deploy/.  Let's save it somewhere.
     - uses: actions/upload-artifact@v1
@@ -173,7 +173,7 @@ jobs:
         echo KEYBOARD_KEYMAP=us                    >> config
         echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
         echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
-        echo "::set-output name=image::$IMAGE"
+        echo "image=$IMAGE"                        >> $GITHUB_OUTPUT
 
     # Greatly speed up our build because we don't need a desktop
     # or anything more advanced for our little IoT devices.
@@ -196,7 +196,7 @@ jobs:
         cd deploy
         ls
         IMAGE_FILE=$(ls *.img)
-        echo "::set-output name=imagefile::$IMAGE_FILE"
+        echo "imagefile=$IMAGE_FILE" >> $GITHUB_OUTPUT
 
     # The image now exists in deploy/.  Let's save it somewhere.
     - uses: actions/upload-artifact@v1
