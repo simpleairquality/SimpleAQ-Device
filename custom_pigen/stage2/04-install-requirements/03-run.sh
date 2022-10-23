@@ -82,8 +82,9 @@ cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
 
 # The hostap is on ap0.
 cp files/wpa_supplicant-ap0.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant-ap0.conf"
-cp files/12-ap0.network   "${ROOTFS_DIR}/etc/systemd/network"
-cp files/resolved.conf    "${ROOTFS_DIR}/etc/systemd/resolved.conf"
+cp files/12-ap0.network          "${ROOTFS_DIR}/etc/systemd/network"
+cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
+cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # The hostap starts "off".  We'll switch it on if needed.
 on_chroot << EOF
