@@ -14,7 +14,7 @@ import adafruit_gps
 
 
 class Gps(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, display=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
 
     self.interval = interval
@@ -22,6 +22,7 @@ class Gps(Sensor):
     # If available, we will save last known GPS coordinates to environment variables.
     self.env_file = env_file
     self.send_last_known_gps = send_last_known_gps
+    self.display = None
 
     # Seed last_latitude and last_longitude from the environment variable, if available.
     self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None
@@ -97,6 +98,9 @@ class Gps(Sensor):
           self.longitude = gps_longitude
           result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
 
+          if self.display:
+            self.display.write_row("GPS: {:.3f}, {:.3f}".format(self.latitude, self.longitude))
+
           if self.send_last_known_gps:
             result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 0) or result
 
@@ -118,6 +122,9 @@ class Gps(Sensor):
               result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
               result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
 
+          if self.display:
+            self.display.write_row("GPS has no lat/lon data.")
+
           logging.warning('GPS has no lat/lon data.')
       else:
         if self.send_last_known_gps:
@@ -126,6 +133,9 @@ class Gps(Sensor):
             result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
             result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
             result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
+
+        if self.display:
+          self.display.write_row("GPS has no fix.")
 
         logging.warning('GPS has no fix.')
     except Exception as err:

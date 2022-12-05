@@ -16,3 +16,4 @@ requests-toolbelt
 inky
 pillow
 fonts
+font-fredoka-one

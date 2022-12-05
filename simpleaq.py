@@ -27,6 +27,9 @@ from timesources.synctimesource import SyncTimeSource
 
 from sensirion_i2c_driver import LinuxI2cTransceiver
 
+from display.inkyphat import InkyPhat
+
+
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
 
@@ -110,6 +113,10 @@ def main(args):
 
   device_objects = detect_devices(FLAGS.env)
 
+  display = None
+  if os.getenv('enable_display') == '1':
+    display = InkyPhat()
+
   remote_storage_class = None
   timesource = None
   send_last_known_gps = False
@@ -146,7 +153,8 @@ def main(args):
                                        interval=interval,
                                        i2c_transceiver=i2c_transceiver,
                                        env_file=FLAGS.env,
-                                       send_last_known_gps=send_last_known_gps))
+                                       send_last_known_gps=send_last_known_gps,
+                                       display=display))
 
         # This enteres a guaranteed-closing context manager for every sensors.
         # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
@@ -156,6 +164,9 @@ def main(args):
             stack.enter_context(sensor)
  
           while True:
+            if display:
+              display.reset()
+
             timesource.set_time(datetime.datetime.now())
             result_failure = [sensor.publish() for sensor in sensors]
             if any(result_failure):
@@ -164,10 +175,16 @@ def main(args):
               # Trigger hostapd mode.
               os.system("systemctl start " + os.getenv("ap_service"))
 
+              if display:
+                display.write_row("SimpleAQ: Disconnected")
+
               # Maybe touch a file to indicate the time that we did this.
               if not os.path.exists(os.getenv("hostap_status_file")):
                 os.system("touch " + os.getenv("hostap_status_file"))
             else:
+              if display:
+                display.write_row("SimpleAQ: Connected")
+
               # Write backlog files.
               files_written = 0
 
@@ -214,6 +231,9 @@ def main(args):
               logging.warning("Maintaining wlan mode.")
               os.system("systemctl start " + os.getenv("wlan_service"))
   
+            if display:
+              display.update()
+
             # TODO:  We should probably wait until a specific future time,  instead of sleep.
             time.sleep(interval)
  

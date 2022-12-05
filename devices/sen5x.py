@@ -10,9 +10,10 @@ from . import Sensor
 
 # Based on https://sensirion.github.io/python-i2c-sen5x/quickstart.html#linux-i2c-bus-example
 class Sen5x(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, display=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
 
+    self.display = display
     self.i2c_transceiver = i2c_transceiver
     self.device = Sen5xI2cDevice(I2cConnection(i2c_transceiver))
     self.has_transmitted_device_info = False
@@ -48,13 +49,21 @@ class Sen5x(Sensor):
         self.has_transmitted_device_info = True
 
       if data:
+        relative_humidity = "?"
+        temperature_celsius = "?"
+        pm10 = "?"
+        voc_index = "?"
+        nox_index = "?"
         # NAN values are NOT valid JSON.  We will not send anything if a nan value is ever found for any reason.
         if not math.isnan(data.ambient_humidity.percent_rh):
           result = self._try_write_to_remote('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
+          relative_humidity = data.ambient_humidity.percent_rh
         if not math.isnan(data.ambient_temperature.degrees_celsius):
           result = self._try_write_to_remote('SEN5X', 'temperature_C', data.ambient_temperature.degrees_celsius) or result
+          temperature_celsius = data.ambient_temperature.degrees_celsius
         if not math.isnan(data.mass_concentration_10p0.physical):
           result = self._try_write_to_remote('SEN5X', 'pm10.0_ug_m3', data.mass_concentration_10p0.physical) or result
+          pm10 = data.mass_concentration_10p0.physical
         if not math.isnan(data.mass_concentration_1p0.physical):
           result = self._try_write_to_remote('SEN5X', 'pm1.0_ug_m3', data.mass_concentration_1p0.physical) or result
         if not math.isnan(data.mass_concentration_2p5.physical):
@@ -63,10 +72,20 @@ class Sen5x(Sensor):
           result = self._try_write_to_remote('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
         if not math.isnan(data.nox_index.scaled):
           result = self._try_write_to_remote('SEN5X', 'nox_index', data.nox_index.scaled) or result
+          nox_index = data.nox_index.scaled
         if not math.isnan(data.voc_index.scaled):
           result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
+          voc_index = data.voc_index.scaled
+
+        if display:
+          display.write_row("{:.1} C {:.1} %RH {:.2} ug/m3 PM10".format(temperature_celsius, relative_humidity, pm10))
+          display.write_row("VOC index {}/500 NOX index {}/500".format(voc_index, nox_index))
       else:
         logging.info("Data was not ready for SEN5X.")
+
+        if display:
+          display.write_row("SEN5X Not Ready")
+
     except Exception as err:
       logging.error("Error getting data from SEN5X.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True
