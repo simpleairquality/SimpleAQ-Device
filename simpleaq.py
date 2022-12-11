@@ -27,7 +27,7 @@ from timesources.synctimesource import SyncTimeSource
 
 from sensirion_i2c_driver import LinuxI2cTransceiver
 
-from display.inkyphat import InkyPhat
+from display.waveshare import Waveshare
 
 
 FLAGS = flags.FLAGS
@@ -114,8 +114,11 @@ def main(args):
   device_objects = detect_devices(FLAGS.env)
 
   display = None
-  if os.getenv('enable_display') == '1':
-    display = InkyPhat()
+  if os.getenv('waveshare_display'):
+    display = Waveshare(
+        display_type=os.getenv('waveshare_display'),
+        display_height=os.getenv('waveshare_height'),
+        display_width=os.getenv('waveshare_width')) 
 
   remote_storage_class = None
   timesource = None
