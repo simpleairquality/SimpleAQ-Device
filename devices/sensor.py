@@ -49,5 +49,5 @@ class Sensor(object):
   def __enter__(self):
     pass
 
-  def __exit__(self):
+  def __exit__(self, exception_type, exception_value, traceback):
     pass
