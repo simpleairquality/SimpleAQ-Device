@@ -26,7 +26,7 @@ class Waveshare(object):
   def write_row(self, message):
     if (self.current_row < self.max_rows):
       draw = ImageDraw.Draw(self.img)
-      draw.text((1, 1 + self.row_height * self.current_row), message, fill=0, self.font)
+      draw.text((1, 1 + self.row_height * self.current_row), message, fill=0, font=self.font)
       self.current_row += 1
 
   def update():
