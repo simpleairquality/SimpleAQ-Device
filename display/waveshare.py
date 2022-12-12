@@ -20,7 +20,7 @@ class Waveshare(object):
     self.img = None
     self.font = ImageFont.truetype(FredokaOne, self.row_height - 2)
 
-  def reset():
+  def reset(self):
     self.current_row = 0
     self.img = Image.new("1", (self.display_width, self.display_height), 255)
 
@@ -30,6 +30,6 @@ class Waveshare(object):
       draw.text((1, 1 + self.row_height * self.current_row), message, fill=0, font=self.font)
       self.current_row += 1
 
-  def update():
+  def update(self):
     self.display.showImageFull(self.display.getbuffer(self.img))
 
