@@ -11,7 +11,6 @@ class Waveshare(object):
     epaper = importlib.import_module("." + display_type, "waveshare_epd")
     self.display = epaper.EPD()
     self.display.init()
-    self.display.Clear()
 
     self.current_row = 0
     self.max_rows = num_rows
