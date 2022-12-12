@@ -16,7 +16,7 @@ class Waveshare(object):
     self.max_rows = num_rows
     self.display_width = self.display.width
     self.display_height = self.display.height
-    self.row_height = int(display_height / num_rows)
+    self.row_height = int(self.display_height / num_rows)
     self.img = None
     self.font = ImageFont.truetype(FredokaOne, self.row_height - 2)
 
