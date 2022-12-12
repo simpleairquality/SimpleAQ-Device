@@ -17,4 +17,3 @@ pillow
 fonts
 font-fredoka-one
 spidev
-waveshare-epaper

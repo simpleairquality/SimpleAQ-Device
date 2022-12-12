@@ -7,6 +7,11 @@ on_chroot << EOF
         pip install -r /simpleaq/requirements.txt
 EOF
 
+# Also install Waveshare.
+on_chroot << EOF
+        pip install git+https://github.com/waveshare/e-Paper#egg=waveshare-epd\&subdirectory=RaspberryPi_JetsonNano/python
+EOF
+
 # Set up a system-scoped systemd service.
 # This is actually necessary because user-scoped services will not actually
 # run until the user first logs in, and by default will terminate when the

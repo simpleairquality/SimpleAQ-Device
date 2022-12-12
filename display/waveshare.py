@@ -1,12 +1,15 @@
 from PIL import Image, ImageFont, ImageDraw
 from fonts.ttf import FredokaOne
-import epaper
+import waveshare_epd  # Installed in stage2/03-run, not requirements. 
+import importlib
 
 # For now we have added tooling for a Waveshare display, but if desired we could
 # do a refactor where we support other types of e-ink or other displays.
 class Waveshare(object):
   def __init__(self, display_type, num_rows=5): 
-    self.display = epaper.epaper(display_type).EPD()
+
+    epaper = importlib.import_module("." + display_type, "waveshare_epd")
+    self.display = epaper.EPD()
     self.display.init()
     self.display.Clear()
 
