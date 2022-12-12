@@ -77,14 +77,14 @@ class Sen5x(Sensor):
           result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
           voc_index = data.voc_index.scaled
 
-        if display:
-          display.write_row("{:.1} C {:.1} %RH {:.2} ug/m3 PM10".format(temperature_celsius, relative_humidity, pm10))
-          display.write_row("VOC index {}/500 NOX index {}/500".format(voc_index, nox_index))
+        if self.display:
+          self.display.write_row("{:.1} C {:.1} %RH {:.2} ug/m3 PM10".format(temperature_celsius, relative_humidity, pm10))
+          self.display.write_row("VOC index {}/500 NOX index {}/500".format(voc_index, nox_index))
       else:
         logging.info("Data was not ready for SEN5X.")
 
-        if display:
-          display.write_row("SEN5X Not Ready")
+        if self.display:
+          self.display.write_row("SEN5X Not Ready")
 
     except Exception as err:
       logging.error("Error getting data from SEN5X.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
