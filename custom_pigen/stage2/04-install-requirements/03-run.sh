@@ -8,8 +8,12 @@ on_chroot << EOF
 EOF
 
 # Also install Waveshare.
+# This is an absolute hack.
+# It doetects the build environment as Jetson, not RPi, and we must remove that library after.
+# TODO:  Remove it:  https://github.com/yskoht/waveshare-epaper/issues/1
 on_chroot << EOF
         pip install git+https://github.com/waveshare/e-Paper#egg=waveshare-epd\&subdirectory=RaspberryPi_JetsonNano/python
+        pip uninstall Jetson.GPIO 
 EOF
 
 # Set up a system-scoped systemd service.
