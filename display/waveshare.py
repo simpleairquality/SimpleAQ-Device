@@ -1,4 +1,3 @@
-from includes.epd import Epd
 from PIL import Image, ImageFont, ImageDraw
 from fonts.ttf import FredokaOne
 import epaper
