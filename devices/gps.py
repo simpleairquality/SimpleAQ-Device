@@ -22,7 +22,7 @@ class Gps(Sensor):
     # If available, we will save last known GPS coordinates to environment variables.
     self.env_file = env_file
     self.send_last_known_gps = send_last_known_gps
-    self.display = None
+    self.display = display
 
     # Seed last_latitude and last_longitude from the environment variable, if available.
     self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None

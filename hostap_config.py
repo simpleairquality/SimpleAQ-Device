@@ -63,7 +63,8 @@ def main():
       hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
       max_backlog_writes=os.getenv('max_backlog_writes'),
       detected_devices=os.getenv('detected_devices'),
-      i2c_bus=os.getenv('i2c_bus'))
+      i2c_bus=os.getenv('i2c_bus'),
+      waveshare_display=os.getenv('waveshare_display'))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():
@@ -140,7 +141,7 @@ def update():
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
           'simpleaq_interval', 'simpleaq_hostapd_name', 'endpoint_type',
           'simpleaq_hostapd_password', 'hostap_retry_interval_sec',
-          'max_backlog_writes', 'i2c_bus']
+          'max_backlog_writes', 'i2c_bus', 'waveshare_display']
 
   no_quote_keys = ['simpleaq_hostapd_name', 'simpleaq_hostapd_password']
 

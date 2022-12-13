@@ -72,14 +72,15 @@ class Sen5x(Sensor):
           result = self._try_write_to_remote('SEN5X', 'pm4.0_ug_m3', data.mass_concentration_4p0.physical) or result
         if not math.isnan(data.nox_index.scaled):
           result = self._try_write_to_remote('SEN5X', 'nox_index', data.nox_index.scaled) or result
-          nox_index = data.nox_index.scaled
+          nox_index = int(data.nox_index.scaled)
         if not math.isnan(data.voc_index.scaled):
           result = self._try_write_to_remote('SEN5X', 'voc_index', data.voc_index.scaled) or result
-          voc_index = data.voc_index.scaled
+          voc_index = int(data.voc_index.scaled)
 
         if self.display:
-          self.display.write_row("{:.1} C {:.1} %RH {:.2} ug/m3 PM10".format(temperature_celsius, relative_humidity, pm10))
-          self.display.write_row("VOC index {}/500 NOX index {}/500".format(voc_index, nox_index))
+          self.display.write_row("{:.1f} C {:.1f} %RH".format(temperature_celsius, relative_humidity))
+          self.display.write_row("{:.0f} ug/m3 PM10".format(pm10))
+          self.display.write_row("VOC {}/500 NOX {}/500".format(voc_index, nox_index))
       else:
         logging.info("Data was not ready for SEN5X.")
 

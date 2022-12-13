@@ -1,35 +1,43 @@
 from PIL import Image, ImageFont, ImageDraw
 from fonts.ttf import FredokaOne
-import waveshare_epd  # Installed in stage2/03-run, not requirements. 
-import importlib
+import epaper 
 
 # For now we have added tooling for a Waveshare display, but if desired we could
 # do a refactor where we support other types of e-ink or other displays.
+# Note that the differences in the Waveshare drivers between displays are different
+# enough that we must treat each individually.
 class Waveshare(object):
-  def __init__(self, display_type, num_rows=5): 
+  def __init__(self, display_type, logging=None): 
 
-    epaper = importlib.import_module("." + display_type, "waveshare_epd")
-    self.display = epaper.EPD()
-    self.display.init()
+    self.display = epaper.epaper(display_type).EPD()
+    self.display_type = display_type
+
+    self.logging = logging
+
+    if display_type == "epd2in13_V3":
+      self.display.init()
+    else:
+      self.logging.warn("Unsupported Display Type: " + display_type)
 
     self.current_row = 0
-    self.max_rows = num_rows
     self.display_width = self.display.width
     self.display_height = self.display.height
-    self.row_height = int(self.display_height / num_rows)
+    self.row_height = 20
     self.img = None
-    self.font = ImageFont.truetype(FredokaOne, self.row_height - 2)
+    self.font = ImageFont.truetype(FredokaOne, 16)
 
   def reset(self):
     self.current_row = 0
-    self.img = Image.new("1", (self.display_width, self.display_height), 255)
+    self.img = Image.new("1", (self.display_height, self.display_width), 255)
 
   def write_row(self, message):
-    if (self.current_row < self.max_rows):
-      draw = ImageDraw.Draw(self.img)
-      draw.text((1, 1 + self.row_height * self.current_row), message, fill=0, font=self.font)
-      self.current_row += 1
+    draw = ImageDraw.Draw(self.img)
+    draw.text((1, 1 + self.row_height * self.current_row), message, fill=0, font=self.font)
+    self.current_row += 1
 
   def update(self):
-    self.display.showImageFull(self.display.getbuffer(self.img))
+    if self.display_type == "epd2in13_V3":
+      self.display.display(self.display.getbuffer(self.img))
+
+      
 

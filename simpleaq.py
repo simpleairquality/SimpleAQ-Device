@@ -115,7 +115,7 @@ def main(args):
 
   display = None
   if os.getenv('waveshare_display'):
-    display = Waveshare(os.getenv('waveshare_display'))
+    display = Waveshare(os.getenv('waveshare_display'), logging=logging)
 
   remote_storage_class = None
   timesource = None
