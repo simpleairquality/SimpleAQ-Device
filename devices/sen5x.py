@@ -76,5 +76,5 @@ class Sen5x(Sensor):
   def __enter__(self):
     self.device.start_measurement()
 
-  def __exit__(self):
+  def __exit__(self, exception_type, exception_value, traceback):
     self.device.stop_measurement()
