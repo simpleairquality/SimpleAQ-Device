@@ -4,7 +4,7 @@ on:
   repository_dispatch:
   push:
   schedule: 
-    - cron: '0 0 * * *'
+    - cron: '0 0 1 * *'
 
 # TODO:  These jobs are so similar except for just ssh.
 #        I'd love to find a way to not have so much repetition between these configurations.
