@@ -14,13 +14,13 @@ Attached to the Raspberry Pi will be a GPS unit and a suite of other optional se
 
 While the SimpleAQ firmware is designed primarily to support [I2C](https://en.wikipedia.org/wiki/I%C2%B2C) devices, we can theoretically support any device through the Raspberry Pi's [GPIO](https://en.wikipedia.org/wiki/General-purpose_input/output) pins.
 At the time of this writing, we support:
--[Adafruit's GPS unit](devices/gps.py)
--[Adafruit's PM25 unit](devices/pm25.py)
--[Adafruit's BME688 unit](devices/bme688.py)
--[Sensirion SEN54 and SEN55](devices/sen5xply)
+-[Adafruit's GPS unit](../devices/gps.py)
+-[Adafruit's PM25 unit](../devices/pm25.py)
+-[Adafruit's BME688 unit](../devices/bme688.py)
+-[Sensirion SEN54 and SEN55](../devices/sen5xply)
 
 We welcome pull requests that add support for additional I2C devices, and will consider pull requests adding GPIO devices.
-Devices are automatically detected by the [SimpleAQ service](simpleaq.py), so no additional configuration is necessary beyond simply attaching the devices to the Raspberry Pi through I2C and inserting a MicroSD card with the firmware image on it.
+Devices are automatically detected by the [SimpleAQ service](../simpleaq.py), so no additional configuration is necessary beyond simply attaching the devices to the Raspberry Pi through I2C and inserting a MicroSD card with the firmware image on it.
 
 # SimpleAQ Service
 
@@ -30,7 +30,7 @@ In particular, our system is designed to tolerate several common points of failu
 -Uninterrupted data collection even if the SimpleAQ website or InfluxDB database goes down.
 -Continued data collection even if a sensor fails.
 
-The [SimpleAQ service](simpleaq.py) is designed to support several different use cases:
+The [SimpleAQ service](../simpleaq.py) is designed to support several different use cases:
 -Data collection where no internet connection is possible.
 -Data collection from a device that is not always in the same place.
 -Data collection to the public [SimpleAQ website](https://www.simpleaq.org).
@@ -58,5 +58,5 @@ The same configuration page also offers the opportunity to:
 
 Quality data leads to quality science, and quality science leads to action.
 We believe that you can't have quality data or quality science without transparency.
-In the spirit of transparency, the SimpleAQ device firmware is provided to you for free as an open-source project with an [MIT license](LICENSE.md) so you can modify the firmware to suit your purposes with few restrictions.
+In the spirit of transparency, the SimpleAQ device firmware is provided to you for free as an open-source project with an [MIT license](../LICENSE.md) so you can modify the firmware to suit your purposes with few restrictions.
 We hope that you will submit your improvements to our firmware as pull requests so that we can help others in turn.
