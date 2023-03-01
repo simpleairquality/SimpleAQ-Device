@@ -1,6 +1,7 @@
 # SimpleAQ-Device
 
 Generic firmware for a Raspberry Pi based SimpleAQ device.
+If you want a more detailed overview of the design, see our [design Document](docs/how_it_works.md) here.
 
 # I Just Want to Image My Device
 
