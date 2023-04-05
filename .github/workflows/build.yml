@@ -44,7 +44,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: 66255495f29be5d09b765d081aff6fc0f11e59b4
+        ref: 9249e146d2e3987adf2ea0e5e19e295d37f3f886
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -141,7 +141,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: 66255495f29be5d09b765d081aff6fc0f11e59b4
+        ref: 9249e146d2e3987adf2ea0e5e19e295d37f3f886
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
