@@ -1,0 +1,7 @@
+01-useradd.diff
+02-swap.diff
+04-inputrc.diff
+05-path.diff
+07-resize-init.diff
+90-regenerate_ssh_host_keys.diff
+90-firstboot.diff

@@ -15,6 +15,7 @@ EOF
 # https://github.com/torfsen/python-systemd-tutorial is awesome.
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.

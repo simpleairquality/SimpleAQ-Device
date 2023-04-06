@@ -12,6 +12,7 @@ import dotenv
 
 from devices.system import System
 from devices.bme688 import Bme688
+from devices.bmp3xx import Bmp3xx
 from devices.gps import Gps
 from devices.pm25 import Pm25
 from devices.sen5x import Sen5x
@@ -46,6 +47,7 @@ def switch_to_wlan():
 device_map = {
     'system': System,
     'bme688': Bme688,
+    'bmp3xx': Bmp3xx,
     'gps': Gps,
     'pm25': Pm25,
     'sen5x': Sen5x

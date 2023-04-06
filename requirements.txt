@@ -3,6 +3,7 @@ adafruit-python-shell
 adafruit-circuitpython-gps
 adafruit-circuitpython-pm25
 adafruit-circuitpython-bme680
+adafruit-circuitpython-bmp3xx
 influxdb_client
 python-dotenv
 sensirion-i2c-sen5x
