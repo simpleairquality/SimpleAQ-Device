@@ -20,14 +20,14 @@
   <td>Local Wifi Network</td>
   <td>
     <input name="original_local_wifi_network" type="hidden" value="{{local_wifi_network}}"/>
-    <input name="local_wifi_network" type="text" value="{{local_wifi_network}}"/>
+    <input name="local_wifi_network" type="text" value="{{local_wifi_network}}" size="42"/>
   </td>
 </tr>
 <tr>
   <td>Local Wifi Password</td>
   <td>
     <input name="original_local_wifi_password" type="hidden" value="{{local_wifi_password}}"/>
-    <input name="local_wifi_password" type="text" value="{{local_wifi_password}}"/>
+    <input name="local_wifi_password" type="text" value="{{local_wifi_password}}" size="42"/>
   </td>
 </tr>
 <tr>
@@ -41,34 +41,34 @@
 </tr>
 <tr>
   <td>InfluxDB Organization</td>
-  <td><input id="influx_org" name="influx_org" type="text" value="{{influx_org}}" {{influx_options_disabled}}/></td>
+  <td><input id="influx_org" name="influx_org" type="text" value="{{influx_org}}" {{influx_options_disabled}} size="42"/></td>
 </tr>
 <tr>
   <td>SimpleAQ Device or InfluxDB Bucket</td>
-  <td><input name="influx_bucket" type="text" value="{{influx_bucket}}"/></td>
+  <td><input name="influx_bucket" type="text" value="{{influx_bucket}}" size="42"/></td>
 </tr>
 <tr>
   <td>Access Token</td>
-  <td><input name="influx_token" type="text" value="{{influx_token}}"/></td>
+  <td><input name="influx_token" type="text" value="{{influx_token}}" size="42"/></td>
 </tr>
 <tr>
   <td>Server</td>
-  <td><input name="influx_server" type="text" value="{{influx_server}}"/></td>
+  <td><input name="influx_server" type="text" value="{{influx_server}}" size="42"/></td>
 </tr>
 <tr>
 <td colspan=2>Advanced Settings</td>
 </tr>
 <tr>
   <td>Data Collection Interval (seconds)</td>
-  <td><input name="simpleaq_interval" type="number" value="{{simpleaq_interval}}"/></td>
+  <td><input name="simpleaq_interval" type="number" value="{{simpleaq_interval}}" size="42"/></td>
 </tr>
 <tr>
   <td>Anypoint Network Host Name</td>
-  <td><input name="simpleaq_hostapd_name" type="text" value="{{simpleaq_hostapd_name}}"/></td>
+  <td><input name="simpleaq_hostapd_name" type="text" value="{{simpleaq_hostapd_name}}" size="42"/></td>
 </tr>
 <tr>
   <td>Anypoint Network Host Password</td>
-  <td><input name="simpleaq_hostapd_password" type="text" value="{{simpleaq_hostapd_password}}"/></td>
+  <td><input name="simpleaq_hostapd_password" type="text" value="{{simpleaq_hostapd_password}}" size="42"/></td>
 </tr>
 <tr>
   <td>Hide Anypoint Network SSID</td>
@@ -76,15 +76,15 @@
 </tr>
 <tr>
   <td>Remote Server Connection Retry Interval (seconds)</td>
-  <td><input name="hostap_retry_interval_sec" type="number" value="{{hostap_retry_interval_sec}}"/></td>
+  <td><input name="hostap_retry_interval_sec" type="number" value="{{hostap_retry_interval_sec}}" size="42"/></td>
 </tr>
 <tr>
   <td>Max Writes Per Interval</td>
-  <td><input name="max_backlog_writes" type="number" value="{{max_backlog_writes}}"/></td>
+  <td><input name="max_backlog_writes" type="number" value="{{max_backlog_writes}}" size="42"/></td>
 </tr>
 <tr>
   <td>I2C Bus</td>
-  <td><input name="i2c_bus" type="text" value="{{i2c_bus}}"/></td>
+  <td><input name="i2c_bus" type="text" value="{{i2c_bus}}" size="42"/></td>
 </tr>
 <tr>
   <td><button type="submit">Submit Changes and Reboot</button></td>
