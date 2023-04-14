@@ -106,5 +106,5 @@ EOF
 
 # Don't let logs get too big.
 on_chroot << EOF
-         journalctl --vacuum-size=1G
+         journalctl --vacuum-size=10M
 EOF
