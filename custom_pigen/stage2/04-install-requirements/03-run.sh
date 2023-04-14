@@ -108,3 +108,10 @@ EOF
 on_chroot << EOF
          journalctl --vacuum-size=10M
 EOF
+
+# Don't allow any incoming traffic on wlan0, except if we specifically asked for it.
+# This will protect us from many different vulnerabilities, since we can't push firmware updates at this time.
+on_chroot << EOF
+        iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+        iptables -A INPUT -i wlan0 -j DROP
+EOF
