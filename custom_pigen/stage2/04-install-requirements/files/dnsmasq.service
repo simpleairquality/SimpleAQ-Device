@@ -10,7 +10,7 @@ Type=forking
 PIDFile=/run/dnsmasq/dnsmasq.pid
 
 # Automatically restart the service if it flakes.
-Restart=on-failure
+Restart=always
 RestartSec=15s
 
 # Test the config file and refuse starting if it is not valid.
