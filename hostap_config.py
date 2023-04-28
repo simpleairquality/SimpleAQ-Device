@@ -118,11 +118,11 @@ def download():
 
   return Response(generate(db_conn, cursor), mimetype='application/x-ndjson')
 
-@app.route('/update/', methods=('POST',))
+@app.route('/update/', methods=('GET',))
 def update():
   # Maybe update local wifi from a template.
-  if (request.form['local_wifi_network'] != request.form['original_local_wifi_network'] or
-      request.form['local_wifi_password'] != request.form['original_local_wifi_password']):
+  if (request.args.get('local_wifi_network') != request.args.get('original_local_wifi_network') or
+      request.args.get('local_wifi_password') != request.args.get('original_local_wifi_password')):
     # Generate a new wlan configuration.
     # Note that this in no way respects the default configuration set in custom_pigen.
     # If for any reason that changes, this will have to also.
@@ -132,8 +132,8 @@ def update():
       wlan_file.write('ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n')
       wlan_file.write('update_config=1\n')
       wlan_file.write('network={\n')
-      wlan_file.write('    ssid="{}"\n'.format(request.form['local_wifi_network']))
-      wlan_file.write('    psk="{}"\n'.format(request.form['local_wifi_password']))
+      wlan_file.write('    ssid="{}"\n'.format(request.args.get('local_wifi_network')))
+      wlan_file.write('    psk="{}"\n'.format(request.args.get('local_wifi_password')))
       wlan_file.write('}\n')
 
   # Update environment variables.
@@ -145,15 +145,15 @@ def update():
   no_quote_keys = ['simpleaq_hostapd_name', 'simpleaq_hostapd_password']
 
   for key in keys:
-    if key in request.form.keys():
-      dotenv.set_key(os.getenv('env_file'), key, request.form[key],
+    if key in request.args.keys():
+      dotenv.set_key(os.getenv('env_file'), key, request.args.get(key),
                      quote_mode='never' if key in no_quote_keys else 'always')
 
   # Checkbox needs to be handled separately.
   dotenv.set_key(
       os.getenv('env_file'),
       'simpleaq_hostapd_hide_ssid',
-      request.form.get('simpleaq_hostapd_hide_ssid', '0'),
+      request.args.get('simpleaq_hostapd_hide_ssid', '0'),
       quote_mode='never')
 
   # Remove the HostAP status file so we retry connections on reboot.
