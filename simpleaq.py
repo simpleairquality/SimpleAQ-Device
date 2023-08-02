@@ -16,6 +16,10 @@ from devices.bmp3xx import Bmp3xx
 from devices.gps import Gps
 from devices.pm25 import Pm25
 from devices.sen5x import Sen5x
+from devices.dfrobot_multigassensor import DFRobotMultiGas00 
+from devices.dfrobot_multigassensor import DFRobotMultiGas01
+from devices.dfrobot_multigassensor import DFRobotMultiGas10
+from devices.dfrobot_multigassensor import DFRobotMultiGas11
 
 from localstorage.localdummy import LocalDummy
 from localstorage.localsqlite import LocalSqlite 
@@ -50,7 +54,11 @@ device_map = {
     'bmp3xx': Bmp3xx,
     'gps': Gps,
     'pm25': Pm25,
-    'sen5x': Sen5x
+    'sen5x': Sen5x,
+    'dfrobotmultigas00': DFRobotMultiGas00,
+    'dfrobotmultigas01': DFRobotMultiGas01,
+    'dfrobotmultigas10': DFRobotMultiGas10,
+    'dfrobotmultigas11': DFRobotMultiGas11
 }
 
 priority_devices = ['gps']
