@@ -553,7 +553,6 @@ class DFRobot_MultiGasSensor(object):
       
 
 class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
-
   def __init__(self ,bus ,addr):
     self.__addr = addr
     super(DFRobot_MultiGasSensor_I2C, self).__init__(bus,0)
