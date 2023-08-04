@@ -5,6 +5,6 @@ i2c-tools
 iptables-persistent
 libi2c-dev
 libgpiod-dev
+iptables
 iw
-rpi-update
 userconf-pi
