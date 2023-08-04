@@ -386,7 +386,8 @@ class DFRobot_MultiGasSensor(object):
         self.gasconcentration = self.gasconcentration * 0.01
 
     else: # Checksum failed.
-      return 0.0
+      logging.error("Checksum failed on DFRobot sensor {}".format(self.gastype))
+      Con = None
 
     # Update sensor type from info in response (byte 4).
     self.__set_gastype(recvbuf[4])
@@ -396,7 +397,8 @@ class DFRobot_MultiGasSensor(object):
       self.temp = self.read_temp()
 
     # Perform temperature correction of the value if enabled.
-    Con = self.__temp_correction(self.gasconcentration)
+    if Con is not None:
+      Con = self.__temp_correction(self.gasconcentration)
 
     return Con
 
@@ -680,7 +682,10 @@ class DFRobotMultiGas(Sensor):
       # It is actually important that the try_write_to_remote happens before the result, otherwise
       # it will never be evaluated!
       if self.sensor.gastype and self.sensor.gasunits:
-        result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_'.format(self.sensor.gastype, self.sensor.gasunits), self.sensor.read_gas_concentration()) or result
+        gas_concentration = self.sensor.read_gas_concentration()
+        if gas_concentration:
+          result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), self.sensor.read_gas_concentration()) or result
+
         result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
       else:
         logging.error("Unable to determine gas type or units on DFRobot Multi-Gas sensor on {}".format(self.address))
