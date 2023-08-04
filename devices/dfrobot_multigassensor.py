@@ -387,7 +387,7 @@ class DFRobot_MultiGasSensor(object):
 
     else: # Checksum failed.
       logging.error("Checksum failed on DFRobot sensor {}".format(self.gastype))
-      Con = None
+      self.gasconcentration = None
 
     # Update sensor type from info in response (byte 4).
     self.__set_gastype(recvbuf[4])
@@ -397,10 +397,10 @@ class DFRobot_MultiGasSensor(object):
       self.temp = self.read_temp()
 
     # Perform temperature correction of the value if enabled.
-    if Con is not None:
-      Con = self.__temp_correction(self.gasconcentration)
+    if self.gasconcentration is not None:
+      self.gasconcentration = self.__temp_correction(self.gasconcentration)
 
-    return Con
+    return self.gasconcentration
 
   def read_gas_type(self):
     '''!
