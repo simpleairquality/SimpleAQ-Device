@@ -6,4 +6,5 @@ iptables-persistent
 libi2c-dev
 libgpiod-dev
 iw
+rpi-update
 userconf-pi
