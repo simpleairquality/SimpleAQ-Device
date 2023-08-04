@@ -679,8 +679,12 @@ class DFRobotMultiGas(Sensor):
     try:
       # It is actually important that the try_write_to_remote happens before the result, otherwise
       # it will never be evaluated!
-      result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_'.format(self.sensor.gastype, self.sensor.gasunits), self.sensor.read_gas_concentration()) or result
-      result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
+      if self.sensor.gastype and self.sensor.gasunits:
+        result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_'.format(self.sensor.gastype, self.sensor.gasunits), self.sensor.read_gas_concentration()) or result
+        result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
+      else:
+        logging.error("Unable to determine gas type or units on DFRobot Multi-Gas sensor on {}".format(self.address))
+        result = True
     except Exception as err:
       logging.error("Error getting data from DFRobot Multi-Gas.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = True
