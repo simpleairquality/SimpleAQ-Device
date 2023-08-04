@@ -664,7 +664,7 @@ class DFRobotMultiGas(Sensor):
     time_waited = 0
 
     # This is how we'll detect whether the device is present and functional.
-    while False == self.sensor.change_acquire_mode(self.sensor.PASSIVITY and time_waited < max_wait_time_sec):
+    while False == self.sensor.change_acquire_mode(self.sensor.PASSIVITY) and time_waited < max_wait_time_sec:
       time_waited += 1
       time.sleep(1)
 
