@@ -113,7 +113,7 @@ EOF
 # This will protect us from many different vulnerabilities, since we can't push firmware updates at this time.
 # Do not do this on debug builds, where SSH is enabled.
 on_chroot << EOF
-        if [ ${ENABLE_SSH} -eq 0]
+        if [ ${ENABLE_SSH} -eq 0 ]
         then
                 iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
                 iptables -A INPUT -i wlan0 -j DROP
