@@ -681,8 +681,8 @@ class DFRobotMultiGas(Sensor):
     try:
       # It is actually important that the try_write_to_remote happens before the result, otherwise
       # it will never be evaluated!
+      gas_concentration = self.sensor.read_gas_concentration()
       if self.sensor.gastype and self.sensor.gasunits:
-        gas_concentration = self.sensor.read_gas_concentration()
         if gas_concentration:
           result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), self.sensor.read_gas_concentration()) or result
 
