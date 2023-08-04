@@ -114,14 +114,12 @@ EOF
 # This will protect us from many different vulnerabilities, since we can't push firmware updates at this time.
 # Do not do this on debug builds, where SSH is enabled.
 
-# Reboot first to avoid "failed to initialize nft" error?  TODO:  Remove if the below works.
+# Reboot first to avoid "failed to initialize nft" error
 # reboot
 
 on_chroot << EOF
         if [ ${ENABLE_SSH} -eq 0 ]
         then
-                modprobe ip_tables
-                echo 'ip_tables' >> /etc/modules
                 iptables-legacy -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
                 iptables-legacy -A INPUT -i wlan0 -j DROP
         fi
