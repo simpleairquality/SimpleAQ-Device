@@ -684,7 +684,9 @@ class DFRobotMultiGas(Sensor):
       gas_concentration = self.sensor.read_gas_concentration()
       if self.sensor.gastype and self.sensor.gasunits:
         if gas_concentration:
-          result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), self.sensor.read_gas_concentration()) or result
+          result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), gas_concentration) or result
+        else:
+          logging.warning("DFRobot Multi Gas {} failed to get gas concentration!".format(self.sensor.gastype))
 
         result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
       else:
