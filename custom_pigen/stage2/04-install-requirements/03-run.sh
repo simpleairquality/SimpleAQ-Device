@@ -47,10 +47,11 @@ EOF
 
 # Unmask hostapd, which will be useful for configuration.
 # A script will be responsible for turning it on or off.
-on_chroot << EOF
-        systemctl unmask hostapd
-        systemctl disable hostapd.service
-EOF
+# TODO:  Remove this if it appears to work without it.  I don't believe we actually use hostapd.
+# on_chroot << EOF
+#         systemctl unmask hostapd
+#         systemctl disable hostapd.service
+# EOF
 
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
@@ -112,10 +113,15 @@ EOF
 # Don't allow any incoming traffic on wlan0, except if we specifically asked for it.
 # This will protect us from many different vulnerabilities, since we can't push firmware updates at this time.
 # Do not do this on debug builds, where SSH is enabled.
+# Reboot first to avoid "failed to initialize nft" error.
+on_chroot << EOF
+        reboot
+EOF
+
 on_chroot << EOF
         if [ ${ENABLE_SSH} -eq 0 ]
         then
-                iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-                iptables -A INPUT -i wlan0 -j DROP
+                iptables-legacy -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+                iptables-legacy -A INPUT -i wlan0 -j DROP
         fi
 EOF
