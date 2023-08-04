@@ -116,10 +116,14 @@ EOF
 
 modprobe ip_tables
 modprobe nf_conntrack
+service iptables restart
+lsmod | grep -E 'ip_tables|nf_conntrack'
 
 on_chroot << EOF
         if [ ${ENABLE_SSH} -eq 0 ]
         then
+                which iptables-legacy
+                iptables-legacy --version
                 iptables-legacy -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
                 iptables-legacy -A INPUT -i wlan0 -j DROP
         fi
