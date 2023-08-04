@@ -2,6 +2,7 @@ python3-pip
 bootlogd
 dnsmasq
 i2c-tools
+iptables-persistent
 libi2c-dev
 libgpiod-dev
 iw
