@@ -394,10 +394,11 @@ class DFRobot_MultiGasSensor(object):
       self.temp = self.read_temp()
 
     # Perform temperature correction of the value if enabled.
+    self.uncorrectedgasconcentration = self.gasconcentration
     if self.gasconcentration is not None:
       self.gasconcentration = self.__temp_correction(self.gasconcentration)
 
-    return self.gasconcentration
+    return self.uncorrectedgasconcentration, self.gasconcentration
 
   def read_gas_type(self):
     '''!
@@ -617,14 +618,12 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       @param reg register address
       @param value written data
     '''  
-    while 1:
-      try:
-        self.i2cbus.write_i2c_block_data(self.__addr ,reg ,data)
-        return
-      except:
-        print("please check connect!")
-        time.sleep(1)
-        return
+    try:
+      self.i2cbus.write_i2c_block_data(self.__addr ,reg ,data)
+      return
+    except:
+      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}".format(reg)) 
+      return
 
   def read_data(self, reg ,data,length):
     '''
@@ -635,8 +634,10 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     global recvbuf
     try:
       rslt = self.i2cbus.read_i2c_block_data(self.__addr ,reg , length)
-    except:
+    except Exception as err:
+      logging.error("Failed to read data from DFRobot MultiGas Sensor on {}".format(reg))
       rslt = 0
+      raise err
     recvbuf=rslt
     return length
 
@@ -676,10 +677,13 @@ class DFRobotMultiGas(Sensor):
     logging.info('Publishing DFRobot Multi-Gas on I2C {} to remote.'.format(self.address))
     result = False
     try:
-      # It is actually important that the try_write_to_remote happens before the result, otherwise
-      # it will never be evaluated!
-      gas_concentration = self.sensor.read_gas_concentration()
+      uncorrected_gas_concentration, gas_concentration = self.sensor.read_gas_concentration()
       if self.sensor.gastype and self.sensor.gasunits:
+        if uncorrected_gas_concentration is not None:
+          result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), uncorrected_gas_concentration) or result
+        else:
+          logging.warning("DFRobot Multi Gas {} failed to get uncorrected gas concentration!".format(self.sensor.gastype))
+
         if gas_concentration is not None:
           result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), gas_concentration) or result
         else:
