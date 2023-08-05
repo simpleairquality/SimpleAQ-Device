@@ -622,7 +622,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       self.i2cbus.write_i2c_block_data(self.__addr ,reg ,data)
       return
     except:
-      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}".format(reg)) 
+      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}".format(self.__addr)) 
       return
 
   def read_data(self, reg ,data,length):
@@ -635,7 +635,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     try:
       rslt = self.i2cbus.read_i2c_block_data(self.__addr ,reg , length)
     except Exception as err:
-      logging.error("Failed to read data from DFRobot MultiGas Sensor on {}".format(reg))
+      logging.error("Failed to read data from DFRobot MultiGas Sensor on {}".format(self.__addr))
       rslt = 0
       raise err
     recvbuf=rslt
