@@ -41,7 +41,7 @@ def switch_to_wlan():
       logging.info("Will retry wifi connection in {} seconds ({}/{} waited).".format(
           int(os.getenv("hostap_retry_interval_sec")) - (time.time() - os.path.getmtime(os.getenv("hostap_status_file"))),
           time.time() - os.path.getmtime(os.getenv("hostap_status_file")),
-          int(os.getenv("hostap_retry_interval_sec")))
+          int(os.getenv("hostap_retry_interval_sec"))))
       return False
   else:
     return True
