@@ -34,10 +34,14 @@ flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired
 
 def switch_to_wlan():
   if os.path.exists(os.getenv("hostap_status_file")):
-    if time.time() - os.path.getmtime(os.getenv("hostap_status_file")) >= int(os.getenv("hostap_retry_interval_sec")):
+    if time.time() - os.path.getmtime(os.getenv("hostap_status_file")) >= int(os.getenv("hostap_retry_interval_sec")) or time.time() < os.path.getmtime(os.getenv("hostap_status_file")):
       os.remove(os.getenv("hostap_status_file"))
       return True
     else:
+      logging.info("Will retry wifi connection in {} seconds ({}/{} waited).".format(
+          int(os.getenv("hostap_retry_interval_sec")) - (time.time() - os.path.getmtime(os.getenv("hostap_status_file"))),
+          time.time() - os.path.getmtime(os.getenv("hostap_status_file")),
+          int(os.getenv("hostap_retry_interval_sec")))
       return False
   else:
     return True
