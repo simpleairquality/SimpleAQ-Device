@@ -35,8 +35,4 @@ else
   sed -i -s "s/^\s*ignore_broadcast_ssid=.*/     ignore_broadcast_ssid=$_SIMPLEAQ_HOSTAPD_HIDE_SSID/" /etc/wpa_supplicant/wpa_supplicant-ap0.conf
 fi
 
-# Don't allow any connections we didn't explicitly request.
-iptables-legacy -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-iptables-legacy -A INPUT -i wlan0 -j DROP
-
 exit 0

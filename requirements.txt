@@ -8,6 +8,7 @@ influxdb_client
 python-dotenv
 sensirion-i2c-sen5x
 setuptools
+smbus
 RPi.GPIO
 adafruit-blinka
 psutil

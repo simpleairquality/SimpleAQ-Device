@@ -45,13 +45,6 @@ on_chroot << EOF
         SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
 EOF
 
-# Unmask hostapd, which will be useful for configuration.
-# A script will be responsible for turning it on or off.
-on_chroot << EOF
-        systemctl unmask hostapd
-        systemctl disable hostapd.service
-EOF
-
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
 
@@ -96,6 +89,7 @@ EOF
 cp files/wpa_supplicant@ap0.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
+# This file also has firewall safeguards.
 cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
 
 # Add AP setup endpoint to /etc/hosts
@@ -109,13 +103,8 @@ on_chroot << EOF
          journalctl --vacuum-size=10M
 EOF
 
-# Don't allow any incoming traffic on wlan0, except if we specifically asked for it.
-# This will protect us from many different vulnerabilities, since we can't push firmware updates at this time.
-# Do not do this on debug builds, where SSH is enabled.
-on_chroot << EOF
-        if [ ${ENABLE_SSH} -eq 0]
-        then
-                iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-                iptables -A INPUT -i wlan0 -j DROP
-        fi
-EOF
+# Disable firewall safeguards for debug builds.
+if [ ${ENABLE_SSH} -eq 1 ]
+then
+  cp files/rc.local.debug "${ROOTFS_DIR}/etc/rc.local"
+fi 
