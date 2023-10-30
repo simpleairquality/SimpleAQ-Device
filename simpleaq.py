@@ -225,7 +225,11 @@ def main(args):
  
             # Maybe trigger wlan mode.
             if switch_to_wlan():
-              logging.warning("Maintaining wlan mode.")
+              logging.warning("Switching to wlan mode.")
+              # This shouldn't be necessary, but we found that sometimes the systemd-networkd DHCP server stalls
+              # when we're bringing the wlan up and down.  This brings it back.  See issue #55.
+              os.system("service systemd-networkd restart")
+              time.sleep(15)  # 15 second cooldown for systemd-networkd to restart.
               os.system("systemctl start " + os.getenv("wlan_service"))
   
             # TODO:  We should probably wait until a specific future time,  instead of sleep.
