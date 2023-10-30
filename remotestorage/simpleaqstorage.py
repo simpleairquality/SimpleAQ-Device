@@ -18,10 +18,14 @@ class SimpleAQStorage(RemoteStorage):
             'file': ('file', json.dumps(data_json), 'application/ndjson')
         })
 
+    # We do not catch requests.exceptions.Timeout here because we expect it will be captured by
+    # the caller.
+    # TODO:  Configurable request timeout?
     response = requests.post(
         self.endpoint,
         data=encoder,
-        headers={'Content-Type': encoder.content_type}
+        headers={'Content-Type': encoder.content_type},
+        timeout=10
     )
 
     if response.status_code >= 400:
