@@ -5,6 +5,7 @@ import datetime
 import dotenv
 import os
 import time
+import smbus
 
 from absl import logging
 from . import Sensor
@@ -103,6 +104,7 @@ class DfrobotGps(Sensor):
     # i2cbus takes only the integer bus ID.
     self.i2cbus = smbus.SMBus(int(os.getenv('i2c_bus')[-1]))
     self.__uart_i2c = I2C_MODE
+    self.__addr = GNSS_DEVICE_ADDR
 
     self.interval = interval
     self.has_set_time = False
@@ -122,9 +124,9 @@ class DfrobotGps(Sensor):
     rslt = self.read_reg(I2C_ID, 1)
     time.sleep(0.1)
     if rslt == -1:
-      raise("DFRobot GPS not detected.")
+      raise Exception("DFRobot GPS not detected.")
     if rslt[0] != GNSS_DEVICE_ADDR:
-      raise("DFRobot GPS not detected.")
+      raise Exception("DFRobot GPS not detected.")
 
     # Use all available satellites.
     set_gnss(GPS_BeiDou_GLONASS)
@@ -169,19 +171,20 @@ class DfrobotGps(Sensor):
     time.sleep(0.1)
 
   def write_reg(self, reg, data):
-    while 1:
+    max_retries = 5
+    for i in range(max_retries):
       try:
         self.i2cbus.write_i2c_block_data(self.__addr, reg, data)
         return
       except:
-        logging.error("Write to DFRobot GPS failed.")
+        logging.error("Write to DFRobot GPS failed: " + str(err))
         time.sleep(1)
 
   def read_reg(self, reg, len):
     try:
       rslt = self.i2cbus.read_i2c_block_data(self.__addr, reg, len)
-    except:
-      logging.error("Read from DFRobot GPS failed.")
+    except Exception as err:
+      logging.error("Read from DFRobot GPS failed: " + str(err))
       rslt = -1
       
     return rslt
