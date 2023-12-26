@@ -129,14 +129,14 @@ class DfrobotGps(Sensor):
       raise Exception("DFRobot GPS not detected.")
 
     # Use all available satellites.
-    set_gnss(GPS_BeiDou_GLONASS)
+    self.set_gnss(GPS_BeiDou_GLONASS)
 
     # Enable power.
-    enable_power()
+    self.enable_power()
 
     # Enable the RGB LED.
     # Yes, this wastes a trivial amount of power but will be good for debugging.
-    rgb_on()
+    self.rgb_on()
 
   def set_gnss(self, mode):
     '''!
