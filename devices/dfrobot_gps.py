@@ -290,7 +290,7 @@ class DfrobotGps(Sensor):
           return
 
         if abs(time.time() - epoch_seconds) > self.interval:
-          gpstime = self.get_gps_time() 
+          gps_time = self.get_gps_time() 
 
           logging.warning('Setting system clock to ' + gps_time.isoformat() +
                           ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
