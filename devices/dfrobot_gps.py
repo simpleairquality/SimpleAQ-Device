@@ -226,7 +226,13 @@ class DfrobotGps(Sensor):
       self.lat_lon.lat_direction = chr(rslt[5])
       self.lat_lon.latitude = self.lat_lon.lat_dd*100.0 + self.lat_lon.lat_mm + self.lat_lon.lat_mmmmm/100000.0
       self.lat_lon.latitude_degree = self.lat_lon.lat_dd + self.lat_lon.lat_mm/60.0 + self.lat_lon.lat_mmmmm/100000.0/60.0
-      self.latitude = self.lat_lon.latitude_degree
+      if self.lat_lon.lat_direction == 'S':
+        # I am unsure whether the latitude_degree will automatically be negative for southern degrees.
+        # It does not for Western longitude so I assume it is not.  This is purely defensive coding.
+        self.latitude = -1.0 * abs(self.lat_lon.latitude_degree)
+      else:
+        self.latitude = self.lat_lon.latitude_degree
+ 
     return self.latitude
 
   def get_lon(self):
@@ -242,7 +248,11 @@ class DfrobotGps(Sensor):
       self.lat_lon.lon_direction = chr(rslt[5])
       self.lat_lon.lonitude = self.lat_lon.lon_ddd*100.0 + self.lat_lon.lon_mm + self.lat_lon.lon_mmmmm/100000.0
       self.lat_lon.lonitude_degree = self.lat_lon.lon_ddd + self.lat_lon.lon_mm/60.0 + self.lat_lon.lon_mmmmm/100000.0/60.0
-      self.longitude = self.lat_lon.lonitude_degree
+      if self.lat_lon.lon_direction == 'W':
+        self.longitude = -1.0 * abs(self.lat_lon.lonitude_degree)
+      else:
+        self.longitude = self.lat_lon.lonitude_degree
+
     return self.longitude
 
   def get_num_sta_used(self):
