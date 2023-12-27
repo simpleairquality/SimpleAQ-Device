@@ -284,7 +284,7 @@ class DfrobotGps(Sensor):
         gps_time = self.get_gps_time() 
 
         try:
-          epoch_seconds = calendar.timegm(gps_time)
+          epoch_seconds = calendar.timegm(gps_time.timetuple())
         except Exception as err:
           logging.warning("Error converting GPS timestamp: " + str(err))
           return
@@ -319,7 +319,7 @@ class DfrobotGps(Sensor):
 
         gps_time = self.get_gps_time()
 
-        if gps_timestamp:
+        if gps_time:
           # It is actually important that the try_write_to_remote happens before the result, otherwise
           # it will never be evaluated!
           result = self._try_write_to_remote('GPS', 'timestamp_utc', gps_time) or result
