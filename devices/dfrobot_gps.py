@@ -318,17 +318,18 @@ class DfrobotGps(Sensor):
         self._update_systime()
 
         gps_time = self.get_gps_time()
+        gps_timestamp = calendar.timegm(gps_time.timetuple())
 
-        if gps_time:
+        if gps_timestamp:
           # It is actually important that the try_write_to_remote happens before the result, otherwise
           # it will never be evaluated!
-          result = self._try_write_to_remote('GPS', 'timestamp_utc', gps_time) or result
+          result = self._try_write_to_remote('GPS', 'timestamp_utc', gps_timestamp) or result
         else:
           logging.warning('GPS has no timestamp data')
 
         # Avoid flakes in case the reading changes.
-        gps_latitude = self.get_latitude()
-        gps_longitude = self.get_longitude()
+        gps_latitude = self.get_lat()
+        gps_longitude = self.get_lon()
 
         if gps_latitude and gps_longitude and abs(gps_latitude) <= 90 and abs(gps_longitude) <= 180:
           # It is actually important that the try_write_to_remote happens before the result, otherwise
