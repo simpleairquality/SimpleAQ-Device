@@ -213,47 +213,53 @@ class DfrobotGps(Sensor):
       self.utc.second = rslt[2]
     return self.utc
 
-  def get_lat(self):
-    '''!
-      @brief Get latitude 
-      @return struct_lat_lon type, represents the returned latitude 
-    '''
+  def get_lat_lon(self):
+    update = True
+
     rslt = self.read_reg(I2C_LAT_1, 6)
     if rslt != -1:
       self.lat_lon.lat_dd = rslt[0]
       self.lat_lon.lat_mm = rslt[1]
       self.lat_lon.lat_mmmmm = rslt[2]*65536 + rslt[3]*256 + rslt[4]
-      self.lat_lon.lat_direction = chr(rslt[5])
+      # This next line seems very much wrong, doesn't it?
+      # No, it is right.  https://github.com/DFRobot/DFRobot_GNSS/issues/2
+      self.lat_lon.lon_direction = chr(rslt[5]) 
       self.lat_lon.latitude = self.lat_lon.lat_dd*100.0 + self.lat_lon.lat_mm + self.lat_lon.lat_mmmmm/100000.0
       self.lat_lon.latitude_degree = self.lat_lon.lat_dd + self.lat_lon.lat_mm/60.0 + self.lat_lon.lat_mmmmm/100000.0/60.0
-      if self.lat_lon.lat_direction == 'S':
-        # I am unsure whether the latitude_degree will automatically be negative for southern degrees.
-        # It does not for Western longitude so I assume it is not.  This is purely defensive coding.
-        self.latitude = -1.0 * abs(self.lat_lon.latitude_degree)
-      else:
-        self.latitude = self.lat_lon.latitude_degree
- 
-    return self.latitude
+    else:
+      update = False
 
-  def get_lon(self):
-    '''!
-      @brief Get longitude 
-      @return struct_lat_lon type, represents the returned longitude 
-    '''
     rslt = self.read_reg(I2C_LON_1, 6)
     if rslt != -1:
       self.lat_lon.lon_ddd = rslt[0]
       self.lat_lon.lon_mm = rslt[1]
       self.lat_lon.lon_mmmmm = rslt[2]*65536 + rslt[3]*256 + rslt[4]
-      self.lat_lon.lon_direction = chr(rslt[5])
+      # This next line seems very much wrong, doesn't it?
+      # No, it is right.  https://github.com/DFRobot/DFRobot_GNSS/issues/2
+      self.lat_lon.lat_direction = chr(rslt[5])
       self.lat_lon.lonitude = self.lat_lon.lon_ddd*100.0 + self.lat_lon.lon_mm + self.lat_lon.lon_mmmmm/100000.0
       self.lat_lon.lonitude_degree = self.lat_lon.lon_ddd + self.lat_lon.lon_mm/60.0 + self.lat_lon.lon_mmmmm/100000.0/60.0
       if self.lat_lon.lon_direction == 'W':
         self.longitude = -1.0 * abs(self.lat_lon.lonitude_degree)
       else:
         self.longitude = self.lat_lon.lonitude_degree
+    else:
+      update = False
 
-    return self.longitude
+    if update:
+      if self.lat_lon.lat_direction == 'S':
+        # I am unsure whether the latitude_degree will automatically be negative for southern degrees.
+        # It does not for Western longitude so I assume it is not.  This is purely defensive coding.
+        self.latitude = -1.0 * abs(self.lat_lon.latitude_degree)
+      else:
+        self.latitude = self.lat_lon.latitude_degree
+
+      if self.lat_lon.lon_direction == 'W':
+        self.longitude = -1.0 * abs(self.lat_lon.lonitude_degree)
+      else:
+        self.longitude = self.lat_lon.lonitude_degree
+
+    return self.latitude, self.longitude
 
   def get_num_sta_used(self):
     '''!
@@ -338,8 +344,7 @@ class DfrobotGps(Sensor):
           logging.warning('GPS has no timestamp data')
 
         # Avoid flakes in case the reading changes.
-        gps_latitude = self.get_lat()
-        gps_longitude = self.get_lon()
+        gps_latitude, gps_longitude = self.get_lat_lon()
 
         if gps_latitude and gps_longitude and abs(gps_latitude) <= 90 and abs(gps_longitude) <= 180:
           # It is actually important that the try_write_to_remote happens before the result, otherwise
