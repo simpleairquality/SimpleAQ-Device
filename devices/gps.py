@@ -27,6 +27,8 @@ class Gps(Sensor):
     self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None
     self.longitude = float(os.getenv('last_longitude')) if os.getenv('last_longitude') else None
 
+    self.has_transmitted_device_info = False
+
     try:
       self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
       # Turn on everything the module collects.
@@ -67,6 +69,10 @@ class Gps(Sensor):
     self.gps.update()
     result = False
     try:
+      if not self.has_transmitted_device_info:
+        result = self._try_write_to_remote('GPS', 'Model', 'Adafruit Mini GPS PA1010D Stemma QT 1528-4415-ND')
+        self.has_transmitted_device_info = True
+
       if self.gps.has_fix:
         if self.gps.timestamp_utc:
           self._update_systime()
