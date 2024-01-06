@@ -64,7 +64,8 @@ class UartGps(Sensor):
 
   # Close the port when we shut down.
   def __del__(self):
-    self.stream.close()
+    if self.stream:
+      self.stream.close()
 
   # Look that keeps latitude and longitude up-to-date.
   # TODO:  We no longer auto-set system time from GPS time.  We should re-add that maybe.
