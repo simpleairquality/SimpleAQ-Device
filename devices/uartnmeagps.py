@@ -81,7 +81,7 @@ class UartNmeaGps(Sensor):
     result = False
     try:
       if not self.has_transmitted_device_info:
-        result = self._try_write_to_remote('GPS', 'Model', self.device)
+        result = self._try_write_to_remote('GPS', 'Model', 'Generic UART NMEA GPS')
         self.has_transmitted_device_info = True
 
       if self.latitude and self.longitude and abs(gps_latitude) <= 90 and abs(gps_longitude) <= 180:
