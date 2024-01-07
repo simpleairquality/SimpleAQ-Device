@@ -6,17 +6,16 @@ import dotenv
 import io
 import os
 import re
-import subprocess
 import time
 import threading
 
 from absl import logging
 from serial import Serial
-from pyubx2 import UBXReader
+from pynmeagps import NMEAReader 
 from . import Sensor
 
 
-class UartGps(Sensor):
+class UartNmeaGps(Sensor):
   def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
     # Stream represents our connection to the UART.
@@ -32,33 +31,21 @@ class UartGps(Sensor):
     self.last_good_reading = 0
     self.has_transmitted_device_info = False
 
-    # We will call out to gpsctl to try to auto-detect the port and baud.
+    self.has_read_data = False
+
+    # We will try to confirm whether we are getting NMEA data on serial0.
     try:
-      result = subprocess.run('gpsctl', stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+      self.stream = Serial(os.getenv('uart_serial_port'), int(os.getenv('uart_serial_baud', '9600')), timeout=5)
+      self.nmea = NMEAReader(stream)
 
-      if result.returncode == 0:
-        output = result.stdout
+      self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
+      self.read_thread.start()
 
-        # Define a regular expression pattern.
-        # We will try to autodetect the UART GPS settings.
-        pattern = r"(?P<port>.*?) identified as a (?P<device>.*?) at (?P<baud>\d+) baud."
-        autodetected = re.search(pattern, output)
+      # Wait and see if we read any data on the serial port.
+      time.sleep(2)
 
-        if autodetected:
-          self.port = port
-          self.device = device
-          self.baud = baud
-
-          self.stream = Serial(self.port, self.baud, timeout=5)
-          self.ubr = UBXReader(stream, protfilter=2)
-
-          self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
-          self.read_thread.start()
-        else:
-          raise Exception("Failed to parse UART GPS found from gpsctl result.")
-      else:
-        # Obviously it doesn't exit.
-        raise Exception("gpsctl returned status {}".format(result.returncode))
+      if not self.has_read_data:
+        raise Exception("No NMEA GPS data could be read on port {} at baud {}".format(os.getenv('uart_serial_port'), int(os.getenv('uart_serial_baud', '9600'))))
     except Exception as err:
       # We raise here because if GPS fails, we're probably getting unuseful data entirely.
       logging.error("Error setting up UART GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
@@ -75,14 +62,16 @@ class UartGps(Sensor):
   def _read_gps_data(self):
     while True:
       try:
-        (raw_data, parsed_data) = self.ubr.read()
+        (raw_data, parsed_data) = self.name.read()
+        self.has_read_data = True
+
+        # TODO:  pynmeagps does have 'time', from which we should be able to set system time as before.
         if hasattr(parsed_data, 'lon') and parsed_data.lon:
           self.longitude = parsed_data.lon
           self.last_good_reading = time.time()
         if hasattr(parsed_data, 'lat') and parsed_data.lat:
           self.latitude = parsed_data.lat
           self.last_good_reading = time.time()
-
       except Exception as err:
         logging.error("UART GPS Error: {}".format(str(err)))
 

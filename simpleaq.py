@@ -21,7 +21,7 @@ from devices.dfrobot_multigassensor import DFRobotMultiGas00
 from devices.dfrobot_multigassensor import DFRobotMultiGas01
 from devices.dfrobot_multigassensor import DFRobotMultiGas10
 from devices.dfrobot_multigassensor import DFRobotMultiGas11
-from devices.uartgps import UartGps
+from devices.uartnmeagps import UartNmeaGps
 
 from localstorage.localdummy import LocalDummy
 from localstorage.localsqlite import LocalSqlite 
@@ -59,7 +59,7 @@ device_map = {
     'bme688': Bme688,
     'bmp3xx': Bmp3xx,
     'dfrobotgps': DfrobotGps,
-    'uartgps': UartGps,
+    'uartnmeagps': UartNmeaGps,
     'gps': Gps,
     'pm25': Pm25,
     'sen5x': Sen5x,
@@ -69,7 +69,7 @@ device_map = {
     'dfrobotmultigas11': DFRobotMultiGas11
 }
 
-priority_devices = ['gps', 'dfrobotgps', 'uartgps']
+priority_devices = ['gps', 'dfrobotgps', 'uartnmeagps']
 
 # Find the set of devices that are installed in this system.
 def detect_devices(env_file):
