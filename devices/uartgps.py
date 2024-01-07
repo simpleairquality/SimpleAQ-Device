@@ -19,6 +19,8 @@ from . import Sensor
 class UartGps(Sensor):
   def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
+    # Stream represents our connection to the UART.
+    self.stream = None
 
     # If available, we will save last known GPS coordinates to environment variables.
     self.env_file = env_file
