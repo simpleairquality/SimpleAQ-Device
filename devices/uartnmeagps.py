@@ -20,6 +20,7 @@ class UartNmeaGps(Sensor):
     super().__init__(remotestorage, localstorage, timesource)
     # Stream represents our connection to the UART.
     self.stream = None
+    self.last_error = ''
 
     # If available, we will save last known GPS coordinates to environment variables.
     self.env_file = env_file
@@ -36,7 +37,7 @@ class UartNmeaGps(Sensor):
     # We will try to confirm whether we are getting NMEA data on serial0.
     try:
       self.stream = Serial(os.getenv('uart_serial_port'), int(os.getenv('uart_serial_baud', '9600')), timeout=5)
-      self.nmea = NMEAReader(stream)
+      self.nmea = NMEAReader(self.stream)
 
       self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
       self.read_thread.start()
@@ -62,7 +63,7 @@ class UartNmeaGps(Sensor):
   def _read_gps_data(self):
     while True:
       try:
-        (raw_data, parsed_data) = self.name.read()
+        (raw_data, parsed_data) = self.nmea.read()
         self.has_read_data = True
 
         # TODO:  pynmeagps does have 'time', from which we should be able to set system time as before.
@@ -73,7 +74,9 @@ class UartNmeaGps(Sensor):
           self.latitude = parsed_data.lat
           self.last_good_reading = time.time()
       except Exception as err:
-        logging.error("UART GPS Error: {}".format(str(err)))
+        if str(err) != self.last_error:
+          logging.error("UART GPS Error (duplicates will be suppressed): {}".format(str(err)))
+          self.last_error = str(err)
 
   def publish(self):
     logging.info('Publishing GPS data to remote')
@@ -84,7 +87,7 @@ class UartNmeaGps(Sensor):
         result = self._try_write_to_remote('GPS', 'Model', 'Generic UART NMEA GPS')
         self.has_transmitted_device_info = True
 
-      if self.latitude and self.longitude and abs(gps_latitude) <= 90 and abs(gps_longitude) <= 180:
+      if self.latitude and self.longitude and abs(self.latitude) <= 90 and abs(self.longitude) <= 180:
         result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
         result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
 
