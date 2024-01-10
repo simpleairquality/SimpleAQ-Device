@@ -31,8 +31,11 @@ class UartNmeaGps(Sensor):
     self.longitude = float(os.getenv('last_longitude')) if os.getenv('last_longitude') else None
     self.last_good_reading = 0
     self.has_transmitted_device_info = False
-
+    self.gpsdate = None
+    self.gpstime = None
+    self.has_set_time = False
     self.has_read_data = False
+    self.interval = interval
 
     # We will try to confirm whether we are getting NMEA data on serial0.
     try:
@@ -66,13 +69,29 @@ class UartNmeaGps(Sensor):
         (raw_data, parsed_data) = self.nmea.read()
         self.has_read_data = True
 
-        # TODO:  pynmeagps does have 'time', from which we should be able to set system time as before.
         if hasattr(parsed_data, 'lon') and parsed_data.lon:
           self.longitude = parsed_data.lon
           self.last_good_reading = time.time()
         if hasattr(parsed_data, 'lat') and parsed_data.lat:
           self.latitude = parsed_data.lat
           self.last_good_reading = time.time()
+        if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
+          # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
+          self.gpsdate = parsed_data.date
+          self.gpstime = parsed_data.time
+
+          if not self.has_set_time:
+            if self.interval:
+              epoch_seconds = None
+              epoch_seconds = calendar.timegm((self.date.year, self.date.month, self.date.day, self.time.hour, self.time.minute, self.time.second))
+
+              if abs(time.time() - epoch_seconds) > self.interval:
+                logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                                ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                                ' exceeds interval time of ' + str(self.interval))
+                os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(epoch_seconds)).isoformat())
+                self.timesource.set_time(datetime.datetime.now())
+                self.has_set_time = True
       except Exception as err:
         if str(err) != self.last_error:
           logging.error("UART GPS Error (duplicates will be suppressed): {}".format(str(err)))
