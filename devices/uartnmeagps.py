@@ -27,6 +27,7 @@ class UartNmeaGps(Sensor):
     self.send_last_known_gps = send_last_known_gps
 
     # Seed last_latitude and last_longitude from the environment variable, if available.
+    self.altitude = None
     self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None
     self.longitude = float(os.getenv('last_longitude')) if os.getenv('last_longitude') else None
     self.last_good_reading = 0
@@ -61,14 +62,15 @@ class UartNmeaGps(Sensor):
       self.stream.close()
 
   # Look that keeps latitude and longitude up-to-date.
-  # TODO:  We no longer auto-set system time from GPS time.  We should re-add that maybe.
-  # TODO:  There is other data here too.  Maybe also save that.  hMSL in particular seems interesting.
   def _read_gps_data(self):
     while True:
       try:
         (raw_data, parsed_data) = self.nmea.read()
         self.has_read_data = True
 
+        if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
+          if parsed_data.altUnit in ['m', 'M']:
+            self.altitude = parsed_data.alt
         if hasattr(parsed_data, 'lon') and parsed_data.lon:
           self.longitude = parsed_data.lon
           self.last_good_reading = time.time()
@@ -105,6 +107,9 @@ class UartNmeaGps(Sensor):
       if not self.has_transmitted_device_info:
         result = self._try_write_to_remote('GPS', 'Model', 'Generic UART NMEA GPS')
         self.has_transmitted_device_info = True
+
+      if self.altitude:
+        result = self._try_write_to_remote('GPS', 'altitude_meters', self.latitude) or result
 
       if self.latitude and self.longitude and abs(self.latitude) <= 90 and abs(self.longitude) <= 180:
         result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
