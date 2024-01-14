@@ -12,6 +12,7 @@ smbus
 RPi.GPIO
 adafruit-blinka
 psutil
+pynmeagps
 flask==2.3.2
 requests
 requests-toolbelt

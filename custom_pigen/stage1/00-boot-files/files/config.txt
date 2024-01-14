@@ -79,3 +79,4 @@ arm_boost=1
 
 [all]
 dtoverlay=dwc2
+enable_uart=1
