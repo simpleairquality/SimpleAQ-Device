@@ -38,23 +38,35 @@ class UartNmeaGps(Sensor):
     self.has_read_data = False
     self.interval = interval
 
+    # Start the read thread before the NMEA reader.  
+    # It will only try to read if nmea is set.
+    self.nmea = None
+    self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
+    self.read_thread.start()
+
     # We will try to confirm whether we are getting NMEA data on serial0.
-    try:
-      self.stream = Serial(os.getenv('uart_serial_port'), int(os.getenv('uart_serial_baud', '9600')), timeout=5)
-      self.nmea = NMEAReader(self.stream)
+    for baud in os.getenv('uart_serial_baud', '9600').split(','):
+      try:
+        self.stream = Serial(os.getenv('uart_serial_port'), int(baud), timeout=5)
+        self.nmea = NMEAReader(self.stream)
 
-      self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
-      self.read_thread.start()
+        # Wait and see if we read any data on the serial port.
+        time.sleep(8)
 
-      # Wait and see if we read any data on the serial port.
-      time.sleep(2)
+        if self.has_read_data:
+          break
 
-      if not self.has_read_data:
-        raise Exception("No NMEA GPS data could be read on port {} at baud {}".format(os.getenv('uart_serial_port'), int(os.getenv('uart_serial_baud', '9600'))))
-    except Exception as err:
-      # We raise here because if GPS fails, we're probably getting unuseful data entirely.
-      logging.error("Error setting up UART GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
+        self.nmea = None 
+        self.stream.close()
+      except Exception as err:
+        # We raise here because if GPS fails, we're probably getting unuseful data entirely.
+        logging.error("Error setting up UART GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
+
+
+    if not self.has_read_data:
+      logging.error("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600')))
       raise err
+
 
   # Close the port when we shut down.
   def __del__(self):
@@ -64,40 +76,43 @@ class UartNmeaGps(Sensor):
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
     while True:
-      try:
-        (raw_data, parsed_data) = self.nmea.read()
-        self.has_read_data = True
+      if self.nmea:
+        try:
+          (raw_data, parsed_data) = self.nmea.read()
+          self.has_read_data = True
 
-        if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
-          if parsed_data.altUnit in ['m', 'M']:
-            self.altitude = parsed_data.alt
-        if hasattr(parsed_data, 'lon') and parsed_data.lon:
-          self.longitude = parsed_data.lon
-          self.last_good_reading = time.time()
-        if hasattr(parsed_data, 'lat') and parsed_data.lat:
-          self.latitude = parsed_data.lat
-          self.last_good_reading = time.time()
-        if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
-          # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
-          self.gpsdate = parsed_data.date
-          self.gpstime = parsed_data.time
+          if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
+            if parsed_data.altUnit in ['m', 'M']:
+              self.altitude = parsed_data.alt
+          if hasattr(parsed_data, 'lon') and parsed_data.lon:
+            self.longitude = parsed_data.lon
+            self.last_good_reading = time.time()
+          if hasattr(parsed_data, 'lat') and parsed_data.lat:
+            self.latitude = parsed_data.lat
+            self.last_good_reading = time.time()
+          if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
+            # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
+            self.gpsdate = parsed_data.date
+            self.gpstime = parsed_data.time
 
-          if not self.has_set_time:
-            if self.interval:
-              epoch_seconds = None
-              epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
+            if not self.has_set_time:
+              if self.interval:
+                epoch_seconds = None
+                epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
 
-              if abs(time.time() - epoch_seconds) > self.interval:
-                logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                                ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                                ' exceeds interval time of ' + str(self.interval))
-                os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(epoch_seconds)).isoformat())
-                self.timesource.set_time(datetime.datetime.now())
-                self.has_set_time = True
-      except Exception as err:
-        if str(err) != self.last_error:
-          logging.error("UART GPS Error (duplicates will be suppressed): {}".format(str(err)))
-          self.last_error = str(err)
+                if abs(time.time() - epoch_seconds) > self.interval:
+                  logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                                  ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                                  ' exceeds interval time of ' + str(self.interval))
+                  os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(epoch_seconds)).isoformat())
+                  self.timesource.set_time(datetime.datetime.now())
+                  self.has_set_time = True
+        except Exception as err:
+          if str(err) != self.last_error:
+            logging.error("UART GPS Error (duplicates will be suppressed): {}".format(str(err)))
+            self.last_error = str(err)
+      else:
+        time.sleep(1)
 
   def publish(self):
     logging.info('Publishing GPS data to remote')
