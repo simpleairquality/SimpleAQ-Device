@@ -56,7 +56,7 @@ class UartNmeaGps(Sensor):
         time.sleep(8)
 
         if self.has_read_data:
-          logging.info("Found NMEA GPS on {} with baud rate {}!").format(os.getenv('uart_serial_port'), int(baud)))
+          logging.info("Found NMEA GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), int(baud)))
           break
 
         self.nmea = None 
