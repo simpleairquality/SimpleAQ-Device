@@ -8,6 +8,7 @@ import os
 import re
 import time
 import threading
+import sys
 
 from absl import logging
 from serial import Serial
@@ -47,6 +48,7 @@ class UartNmeaGps(Sensor):
     # We will try to confirm whether we are getting NMEA data on serial0.
     for baud in os.getenv('uart_serial_baud', '9600').split(','):
       try:
+        logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
         self.stream = Serial(os.getenv('uart_serial_port'), int(baud), timeout=5)
         self.nmea = NMEAReader(self.stream)
 
@@ -54,6 +56,7 @@ class UartNmeaGps(Sensor):
         time.sleep(8)
 
         if self.has_read_data:
+          logging.info("Found NMEA GPS on {} with baud rate {}!").format(os.getenv('uart_serial_port'), int(baud)))
           break
 
         self.nmea = None 
@@ -61,7 +64,6 @@ class UartNmeaGps(Sensor):
       except Exception as err:
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
         logging.error("Error setting up UART GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-
 
     if not self.has_read_data:
       logging.error("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600')))
@@ -109,7 +111,9 @@ class UartNmeaGps(Sensor):
                   self.has_set_time = True
         except Exception as err:
           if str(err) != self.last_error:
-            logging.error("UART GPS Error (duplicates will be suppressed): {}".format(str(err)))
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logging.error("UART GPS Error (duplicates will be suppressed) {}:{}: {}".format(fname, exc_tb.tb_lineno, str(err)))
             self.last_error = str(err)
       else:
         time.sleep(1)
