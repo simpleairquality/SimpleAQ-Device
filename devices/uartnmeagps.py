@@ -53,7 +53,8 @@ class UartNmeaGps(Sensor):
         self.nmea = NMEAReader(self.stream)
 
         # Wait and see if we read any data on the serial port.
-        time.sleep(8)
+        # In practice, 8 seconds isn't enough time to wait to reliably detect the GPS.
+        time.sleep(15)
 
         if self.has_read_data:
           logging.info("Found NMEA GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), int(baud)))
@@ -61,9 +62,10 @@ class UartNmeaGps(Sensor):
 
         self.nmea = None 
         self.stream.close()
+        time.sleep(1)
       except Exception as err:
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
-        logging.error("Error setting up UART GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
+        logging.error("Unexpected error setting up UART GPS:  " + str(err));
 
     if not self.has_read_data:
       logging.error("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600')))
