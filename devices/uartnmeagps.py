@@ -12,7 +12,7 @@ import sys
 
 from absl import logging
 from serial import Serial
-from pynmeagps import NMEAReader 
+from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
 from . import Sensor
 
 
@@ -50,11 +50,10 @@ class UartNmeaGps(Sensor):
       try:
         logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
         self.stream = Serial(os.getenv('uart_serial_port'), int(baud), timeout=5)
-        self.nmea = NMEAReader(self.stream)
+        self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL)
 
         # Wait and see if we read any data on the serial port.
-        # In practice, 8 seconds isn't enough time to wait to reliably detect the GPS.
-        time.sleep(15)
+        time.sleep(10)
 
         if self.has_read_data:
           logging.info("Found NMEA GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), int(baud)))
@@ -62,6 +61,7 @@ class UartNmeaGps(Sensor):
 
         self.nmea = None 
         self.stream.close()
+        self.stream = None
         time.sleep(1)
       except Exception as err:
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
@@ -83,22 +83,25 @@ class UartNmeaGps(Sensor):
       if self.nmea:
         try:
           (raw_data, parsed_data) = self.nmea.read()
-          self.has_read_data = True
 
           if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
             if parsed_data.altUnit in ['m', 'M']:
               self.altitude = parsed_data.alt
+              self.has_read_data = True
           if hasattr(parsed_data, 'lon') and parsed_data.lon:
             self.longitude = parsed_data.lon
             self.last_good_reading = time.time()
+            self.has_read_data = True
           if hasattr(parsed_data, 'lat') and parsed_data.lat:
             self.latitude = parsed_data.lat
             self.last_good_reading = time.time()
+            self.has_read_data = True
           if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
             # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
             self.gpsdate = parsed_data.date
             self.gpstime = parsed_data.time
-
+            self.has_read_data = True
+ 
             if not self.has_set_time:
               if self.interval:
                 epoch_seconds = None
@@ -126,7 +129,7 @@ class UartNmeaGps(Sensor):
     result = False
     try:
       if not self.has_transmitted_device_info:
-        result = self._try_write_to_remote('GPS', 'Model', 'Generic UART NMEA GPS')
+        result = self._try_write_to_remote('GPS', 'Model', 'Generic UART NMEA/UBX GPS')
         self.has_transmitted_device_info = True
 
       if self.altitude:
