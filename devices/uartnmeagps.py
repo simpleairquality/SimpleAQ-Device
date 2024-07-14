@@ -76,7 +76,7 @@ class UartNmeaGps(Sensor):
     self.shutdown()
 
   def shutdown(self):
-    self.stop_reading().set()
+    self.stop_reading.set()
     if self.stream:
       self.stream.close()
 
