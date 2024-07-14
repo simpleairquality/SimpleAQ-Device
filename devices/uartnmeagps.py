@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import calendar
 import datetime
 import dotenv
 import io
@@ -69,8 +68,7 @@ class UartNmeaGps(Sensor):
 
     if not self.has_read_data:
       logging.error("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600')))
-      raise err
-
+      raise Exception("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600'))) 
 
   # Close the port when we shut down.
   def __del__(self):
@@ -111,7 +109,7 @@ class UartNmeaGps(Sensor):
                   logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
                                   ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
                                   ' exceeds interval time of ' + str(self.interval))
-                  os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(epoch_seconds)).isoformat())
+                  os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
                   self.timesource.set_time(datetime.datetime.now())
                   self.has_set_time = True
         except Exception as err:
