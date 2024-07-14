@@ -81,12 +81,19 @@ def detect_devices(env_file):
     with DummyStorage() as remote_storage:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
         for name, device in device_map.items():
+          device_object = None
           try:
-            device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file).publish()
+            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file)
+            device_object.publish()
             detected_devices.add(name)
             logging.info("Detected device: {}".format(name))
           except Exception:
             logging.info("Device not detected: {}".format(name))
+          finally:
+            if device_object:
+              if hasattr(device_object, 'shutdown'):
+                device_object.shutdown()
+              del device_object
 
   # Get the existing devices
   current_devices = set(os.getenv('detected_devices').split(','))
