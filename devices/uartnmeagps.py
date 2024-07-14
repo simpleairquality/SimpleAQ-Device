@@ -82,7 +82,7 @@ class UartNmeaGps(Sensor):
 
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
-    while not self.stop_reading().is_set():
+    while not self.stop_reading.is_set():
       if self.nmea:
         try:
           (raw_data, parsed_data) = self.nmea.read()
