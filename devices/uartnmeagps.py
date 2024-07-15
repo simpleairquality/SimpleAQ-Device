@@ -52,6 +52,10 @@ class UartNmeaGps(Sensor):
         self.stream = Serial(os.getenv('uart_serial_port'), int(baud), timeout=5)
         self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL)
 
+        # Flush the serial port buffer
+        self.stream.reset_input_buffer()
+        self.stream.reset_output_buffer()
+
         # Wait and see if we read any data on the serial port.
         time.sleep(10)
 
@@ -87,23 +91,20 @@ class UartNmeaGps(Sensor):
         try:
           (raw_data, parsed_data) = self.nmea.read()
 
+          self.has_read_data = True
           if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
             if parsed_data.altUnit in ['m', 'M']:
               self.altitude = parsed_data.alt
-              self.has_read_data = True
           if hasattr(parsed_data, 'lon') and parsed_data.lon:
             self.longitude = parsed_data.lon
             self.last_good_reading = time.time()
-            self.has_read_data = True
           if hasattr(parsed_data, 'lat') and parsed_data.lat:
             self.latitude = parsed_data.lat
             self.last_good_reading = time.time()
-            self.has_read_data = True
           if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
             # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
             self.gpsdate = parsed_data.date
             self.gpstime = parsed_data.time
-            self.has_read_data = True
  
             if not self.has_set_time:
               if self.interval:
