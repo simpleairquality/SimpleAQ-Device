@@ -42,30 +42,38 @@ class UartNmeaGps(Sensor):
     # It will only try to read if nmea is set.
     self.nmea = None
     self.stop_reading = threading.Event()
+    self.serial_lock = threading.Lock()
     self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
     self.read_thread.start()
 
     # We will try to confirm whether we are getting NMEA data on serial0.
     for baud in os.getenv('uart_serial_baud', '9600').split(','):
       try:
-        logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
-        self.stream = Serial(os.getenv('uart_serial_port'), int(baud), timeout=5)
-        self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL)
-
-        # Flush the serial port buffer
-        self.stream.reset_input_buffer()
-        self.stream.reset_output_buffer()
+        with self.serial_lock:
+          logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
+          self.stream = Serial(os.getenv('uart_serial_port'), int(baud), timeout=1)
+          # Flush the serial port buffer
+          self.stream.reset_input_buffer()
+          self.stream.reset_output_buffer()
+          self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL)
 
         # Wait and see if we read any data on the serial port.
-        time.sleep(10)
+        max_retry_count = 15
+
+        for _ in range(max_retry_count):
+          if self.has_read_data:
+            logging.info("Found NMEA GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), int(baud)))
+            break
+          time.sleep(1)
 
         if self.has_read_data:
-          logging.info("Found NMEA GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), int(baud)))
           break
 
-        self.nmea = None 
-        self.stream.close()
-        self.stream = None
+        with self.serial_lock:
+          self.nmea = None 
+          self.stream.close()
+          self.stream = None
+
         time.sleep(1)
       except Exception as err:
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
@@ -82,7 +90,8 @@ class UartNmeaGps(Sensor):
   def shutdown(self):
     self.stop_reading.set()
     if self.stream:
-      self.stream.close()
+      with self.serial_lock:
+        self.stream.close()
 
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
