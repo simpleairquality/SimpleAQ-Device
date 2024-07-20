@@ -214,7 +214,7 @@ class DFRobot_MultiGasSensor(object):
       if (self.temp > -20) and (self.temp <= 0):
         Con = ((Con / (0.005 * (self.temp) + 0.9) - (-0.0025 * (self.temp))))
       elif (self.temp > 0) and (self.temp <= 20):
-        Con = ((Con / (0.005 * (self.temp) + 0.9) - (0.005 * (_temp) + 0.005)))
+        Con = ((Con / (0.005 * (self.temp) + 0.9) - (0.005 * (self.temp) + 0.005)))
       elif (self.temp > 20) and (self.temp <= 40):
         Con = ((Con / (0.005 * (self.temp) + 0.9) - (0.0025 * (self.temp) + 0.1)));
       else:
@@ -622,7 +622,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       self.i2cbus.write_i2c_block_data(self.__addr ,reg ,data)
       return
     except:
-      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}".format(self.__addr)) 
+      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: {}".format(self.__addr, str(err))) 
       return
 
   def read_data(self, reg ,data,length):
@@ -635,7 +635,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     try:
       rslt = self.i2cbus.read_i2c_block_data(self.__addr ,reg , length)
     except Exception as err:
-      logging.error("Failed to read data from DFRobot MultiGas Sensor on {}".format(self.__addr))
+      logging.error("Failed to read data from DFRobot MultiGas Sensor on {}: {}".format(self.__addr, str(err)))
       rslt = 0
       raise err
     recvbuf=rslt
