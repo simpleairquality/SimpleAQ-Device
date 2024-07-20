@@ -198,7 +198,7 @@ class DFRobot_MultiGasSensor(object):
       elif (self.temp > 20) and (self.temp <= 40):
         Con = Con / (0.005 * self.temp + 0.9) - (0.3 *self.temp - 6)
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.H2S:
@@ -207,7 +207,7 @@ class DFRobot_MultiGasSensor(object):
       elif (self.temp > 20) and (self.temp < 40):
         Con = (Con / (0.006 * (self.temp) + 0.92) - (0.015 * (self.temp) + 2.4))
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range. (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.NO2:
@@ -218,7 +218,7 @@ class DFRobot_MultiGasSensor(object):
       elif (self.temp > 20) and (self.temp <= 40):
         Con = ((Con / (0.005 * (self.temp) + 0.9) - (0.0025 * (self.temp) + 0.1)));
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.O3:
@@ -229,7 +229,7 @@ class DFRobot_MultiGasSensor(object):
       elif (self.temp > 20) and (self.temp <= 40):
         Con = ((Con / 1.1 - (-0.05 * (self.temp) + 0.3)));
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.CL2:
@@ -240,7 +240,7 @@ class DFRobot_MultiGasSensor(object):
       elif (self.temp > 20) and (self.temp < 40):
         Con = ((Con / 1.1 - (0.06 * (self.temp)-0.12)));
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.NH3:
@@ -251,14 +251,14 @@ class DFRobot_MultiGasSensor(object):
       elif (self.temp > 20) and (self.temp < 40):
         Con = (Con / (0.004 * (self.temp) + 1.08) - (-0.1 * (self.temp) + 2));
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.H2:
       if (self.temp > -20) and (self.temp < 40):
         Con = (Con / (0.74 * (self.temp) + 0.007) - 5);
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.HCL:
@@ -277,14 +277,14 @@ class DFRobot_MultiGasSensor(object):
       elif (self.temp>20) and (self.temp < 40):
         Con = ((Con / 1 - (0.0375 * (self.temp)-0.85)));
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     elif self.gastype == DFRobot_GasType.PH3:
       if (self.temp > -20) and (self.temp < 40):
         Con = Con / (0.005 * self.temp + 0.9)
       else:
-        logging.info("DFRobot MultiGas {} out of nominal operating temperature range.".format(self.gastype))
+        logging.info("DFRobot MultiGas {} out of nominal operating temperature range (currently {}C).".format(self.gastype, self.temp))
         Con = None
 
     else: # Do not modify values for unknown sensors.
@@ -292,7 +292,7 @@ class DFRobot_MultiGasSensor(object):
 
     # No sensor measurements are ever below zero, so it makes little sense
     # for the corrected version to be so.
-    if Con < 0:
+    if Con and Con < 0:
       return 0.0
 
     return Con
