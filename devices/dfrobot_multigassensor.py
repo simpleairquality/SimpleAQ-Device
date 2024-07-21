@@ -7,7 +7,6 @@ from absl import logging
 from . import Sensor
 
 import time
-import smbus
 import spidev
 import os
 import math
@@ -94,15 +93,11 @@ class DFRobot_MultiGasSensor(object):
   tempSwitch = OFF
   
   def __init__(self, bus):
-    self.i2cbus = smbus.SMBus(bus)
+    self.i2cbus = bus
     time.sleep(1)  # Avoids 121 IO Error
                    # See: https://stackoverflow.com/questions/52735862/getting-ioerror-errno-121-remote-i-o-error-with-smbus-on-python-raspberry-w
     self.__uart_i2c = I2C_MODE
         
-  def __del__(self):
-    if self.i2cbus:
-      self.i2cbus.close()
-
   def __set_gastype(self, probe_type):
     '''!
       @brief   Sets instance gas type and units based on type read from sensor.
@@ -642,7 +637,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
 
 
 class DFRobotMultiGas(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
 
     # An additional kwarg, 'address', should be provided.
@@ -655,7 +650,7 @@ class DFRobotMultiGas(Sensor):
     # So, we need to try each of 0x74, 0x75, 0x76 and 0x77.
 
     self.sensor = DFRobot_MultiGasSensor_I2C(
-        0x01,  # I2C_1.  TODO:  Support changing to another I2C bus?
+        bus,
         kwargs['address'])
     
     self.address = kwargs['address']
@@ -706,19 +701,19 @@ class DFRobotMultiGas(Sensor):
 class DFRobotMultiGas00(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, **kwargs):
     self.dip = "00"
-    super().__init__(remotestorage, localstorage, timesource, address=0x74)
+    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x74)
 
 class DFRobotMultiGas01(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, **kwargs):
     self.dip = "01"
-    super().__init__(remotestorage, localstorage, timesource, address=0x75)
+    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x75)
 
 class DFRobotMultiGas10(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, **kwargs):
     self.dip = "10"
-    super().__init__(remotestorage, localstorage, timesource, address=0x76)
+    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x76)
 
 class DFRobotMultiGas11(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, **kwargs):
     self.dip = "11"
-    super().__init__(remotestorage, localstorage, timesource, address=0x77)
+    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x77)
