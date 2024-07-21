@@ -521,7 +521,6 @@ class DFRobot_MultiGasSensor(object):
                    OFF Turn off temperature compensation
     '''  
     self.tempSwitch = tempswitch
-    temp = self.read_temp()
     
   def read_volatage_data(self):
     '''!
@@ -664,7 +663,13 @@ class DFRobotMultiGas(Sensor):
     time_waited = 0
 
     # This is how we'll detect whether the device is present and functional.
-    while False == self.sensor.change_acquire_mode(self.sensor.PASSIVITY) and time_waited < max_wait_time_sec:
+    change_success = False
+    while not change_success and time_waited < max_wait_time_sec:
+      try:
+        change_success = self.sensor.change_acquire_mode(self.sensor.PASSIVITY)
+      except OSError as err:
+        # Retry OSError 121.
+        logging.info("Error trying to change acquire mode for multi-gas sensor on {}: {}".format(kwargs['address'], str(err)))
       time_waited += 1
       time.sleep(1)
 
