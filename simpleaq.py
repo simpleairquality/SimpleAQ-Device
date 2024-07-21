@@ -86,7 +86,7 @@ def detect_devices(env_file):
             device_object = None
             try:
               device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file, bus=i2cbus)
-              device_object.publish()`/Li
+              device_object.publish()
               detected_devices.add(name)
               logging.info("Detected device: {}".format(name))
             except Exception:
