@@ -156,7 +156,7 @@ class DFRobot_MultiGasSensor(object):
     Vpd3=float(temp_ADC/1024.0)*3
     Rth = Vpd3*10000/(3-Vpd3)
 
-    if Rth == 0:
+    if Rth <= 0:
       return 1/(1/(273.15+25))-273.15
     else:
       return 1/(1/(273.15+25)+1/3380.13*(math.log(Rth/10000)))-273.15
