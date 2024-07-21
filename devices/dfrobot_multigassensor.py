@@ -14,12 +14,10 @@ import math
 import RPi.GPIO as GPIO
 
 I2C_MODE  = 0x01
-global sendbuf
-global recvbuf 
-sendbuf = [0]*9  
-recvbuf = [0]*9
 tempSwitch = 0
 temp = 0.0
+SEND_WAIT = 0.5
+
 def fuc_check_sum(i,ln):
   '''!
     @brief CRC check function
@@ -101,11 +99,6 @@ class DFRobot_MultiGasSensor(object):
                    # See: https://stackoverflow.com/questions/52735862/getting-ioerror-errno-121-remote-i-o-error-with-smbus-on-python-raspberry-w
     self.__uart_i2c = I2C_MODE
         
-  def __getitem__(self, k):
-    global recvbuf
-    if k == recvbuf:
-      return recvbuf
-
   def __del__(self):
     if self.i2cbus:
       self.i2cbus.close()
@@ -337,8 +330,8 @@ class DFRobot_MultiGasSensor(object):
       @retval True   change success
       @retval False  change fail
     '''
-    global sendbuf
-    global recvbuf
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x78
@@ -349,8 +342,8 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     self.write_data(0,sendbuf,9)
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     if(recvbuf[2]==1):
       return True
     else:
@@ -360,9 +353,9 @@ class DFRobot_MultiGasSensor(object):
     '''!
       @brief Get the gas concentration or type obtained by the sensor
       @return if data is transmitted normally, return gas concentration; otherwise, return 0xffff
-    '''  
-    global sendbuf
-    global recvbuf    
+    '''
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
@@ -374,8 +367,8 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     self.write_data(0,sendbuf,9)
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     if(fuc_check_sum(recvbuf,8) == recvbuf[8]):
       self.gasconcentration = ((recvbuf[2]<<8)+recvbuf[3])*1.0
 
@@ -421,9 +414,9 @@ class DFRobot_MultiGasSensor(object):
       @n  SO2  0X2B
       @n  HF   0x33
       @n  PH3  0x45
-    '''  
-    global sendbuf
-    global recvbuf
+    '''
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
@@ -435,8 +428,8 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     self.write_data(0,sendbuf,9)
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     if(fuc_check_sum(recvbuf,8) == recvbuf[8]):
       return (recvbuf[4])
     else:
@@ -453,9 +446,9 @@ class DFRobot_MultiGasSensor(object):
       @return Whether setting threshold alarm succeed
       @retval True   change success
       @retval False  change fail
-    '''  
-    global sendbuf
-    global recvbuf
+    '''
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     if self.gastype == DFRobot_GasType.O2:
       threshold *= 10
     elif self.gastype == DFRobot_GasType.NO2:
@@ -472,8 +465,6 @@ class DFRobot_MultiGasSensor(object):
       threshold *= 10
     elif self.gastype == DFRobot_GasType.PH3:
       threshold *= 10
-    global sendbuf
-    global recvbuf  
     clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
@@ -485,8 +476,8 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     self.write_data(0,sendbuf,9)
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     if (recvbuf[8]!=fuc_check_sum(recvbuf,8)):
       return False
     if(recvbuf[2]==1):
@@ -499,8 +490,8 @@ class DFRobot_MultiGasSensor(object):
       @brief Get sensor onboard temperature
       @return Board temperature, unit °C
     '''
-    global sendbuf
-    global recvbuf
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
@@ -512,8 +503,8 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     self.write_data(0,sendbuf,9)
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     temp_ADC=(recvbuf[2]<<8)+recvbuf[3]
     return self.__adc_to_temp(temp_ADC)
     
@@ -535,8 +526,8 @@ class DFRobot_MultiGasSensor(object):
       @param  vopin Pin for receiving the original voltage output from sensor probe
       @return The original voltage output of sensor gas concentration
     '''
-    global sendbuf
-    global recvbuf
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
@@ -548,8 +539,8 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     self.write_data(0,sendbuf,9)
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     if (recvbuf[8] != fuc_check_sum(recvbuf, 8)):
       return 0.0
     else:
@@ -560,8 +551,8 @@ class DFRobot_MultiGasSensor(object):
       @brief Change I2C address group
       @param  group The group number that the sensor is supposed to be
     '''   
-    global sendbuf
-    global recvbuf
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
@@ -572,9 +563,9 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)      
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)  
+    self.write_data(0,sendbuf,9)
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     if (recvbuf[8] != fuc_check_sum(recvbuf, 8)):
       return False
     else:
@@ -594,8 +585,8 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       * @retval False  error is unavailable
       *
     ''' 
-    global sendbuf
-    global recvbuf
+    sendbuf = [0] * 9
+    recvbuf = [0] * 9
     clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
@@ -607,8 +598,8 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     self.write_data(0,sendbuf,9)
-    time.sleep(0.1)
-    self.read_data(0,recvbuf,9)  
+    time.sleep(SEND_WAIT)
+    recvbuf = self.read_data(0, 9)
     for i in range(0,8):
       print("%#x"%recvbuf[i])
     if (recvbuf[8] == fuc_check_sum(recvbuf, 8)):
@@ -630,13 +621,13 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: {}".format(self.__addr, str(err))) 
       return
 
-  def read_data(self, reg ,data,length):
+  def read_data(self, reg, length):
     '''
       @brief read the data from the register
       @param reg register address
       @param value read data
     '''
-    global recvbuf
+    recvbuf = [0] * 9
     try:
       rslt = self.i2cbus.read_i2c_block_data(self.__addr ,reg , length)
     except Exception as err:
@@ -644,7 +635,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       rslt = 0
       raise err
     recvbuf=rslt
-    return length
+    return recvbuf
 
 
 class DFRobotMultiGas(Sensor):
