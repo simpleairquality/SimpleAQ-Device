@@ -567,9 +567,11 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       return False
 
   def transcieve(self, data, length_recv, read_delay, timeout=0):
-    status, error, rx_data = bus.transceive(self._addr, data, length_recv, read_delay, timeout)
+    byte_data = bytes(data)
 
-    if status == bus.STATUS_OK:
+    status, error, rx_data = self.i2cbus.transceive(self.__addr, byte_data, length_recv, read_delay, timeout)
+
+    if status == self.i2cbus.STATUS_OK:
       return rx_data
     else:
       logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: {}".format(self.__addr, error)) 
@@ -641,19 +643,19 @@ class DFRobotMultiGas(Sensor):
 class DFRobotMultiGas00(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "00"
-    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x74)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x74))
 
 class DFRobotMultiGas01(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver=i2c_transceiver, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "01"
-    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x75)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x75))
 
 class DFRobotMultiGas10(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver=i2c_transceiver, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "10"
-    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x76)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x76))
 
 class DFRobotMultiGas11(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver=i2c_transceiver, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "11"
-    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x77)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x77))
