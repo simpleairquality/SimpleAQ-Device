@@ -73,7 +73,7 @@ device_map = {
 priority_devices = ['gps', 'dfrobotgps', 'uartnmeagps']
 
 # Find the set of devices that are installed in this system.
-def detect_devices(env_file):
+def detect_devices(env_file, i2cbus):
   detected_devices = set()
   test_timesource = SystemTimeSource()
 
@@ -130,12 +130,16 @@ def detect_devices(env_file):
 # If the environment variables change for any reason, the systemd service
 # will have to be restarted.
 def main(args):
+  # TODO:  Allow this to be configurable.
+  #        Also, it would be better if we just used i2c_transceiver everywhere instead of this.
+  i2cbus = smbus.SMBus(0x01)
+
   if (FLAGS.env):
     dotenv.load_dotenv(FLAGS.env)
   else:
     dotenv.load_dotenv()
 
-  device_objects = detect_devices(FLAGS.env)
+  device_objects = detect_devices(FLAGS.env, i2cbus)
 
   remote_storage_class = None
   timesource = None
@@ -164,91 +168,90 @@ def main(args):
 
     with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
-        with smbus.SMBus(0x01) as i2cbus:  # TODO:  Allow this to be configurable.
-          sensors = []
+        sensors = []
 
-          for device_object in device_objects:
-            sensors.append(device_object(remotestorage=remote,
-                                         localstorage=local_storage,
-                                         timesource=timesource,
-                                         interval=interval,
-                                         i2c_transceiver=i2c_transceiver,
-                                         env_file=FLAGS.env,
-                                         bus=i2cbus,
-                                         send_last_known_gps=send_last_known_gps))
+        for device_object in device_objects:
+          sensors.append(device_object(remotestorage=remote,
+                                       localstorage=local_storage,
+                                       timesource=timesource,
+                                       interval=interval,
+                                       i2c_transceiver=i2c_transceiver,
+                                       env_file=FLAGS.env,
+                                       bus=i2cbus,
+                                       send_last_known_gps=send_last_known_gps))
 
-          # This enteres a guaranteed-closing context manager for every sensors.
-          # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
-          # Most of the others are no-ops.
-          with contextlib.ExitStack() as stack:
-            for sensor in sensors:
-              stack.enter_context(sensor)
+        # This enteres a guaranteed-closing context manager for every sensors.
+        # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
+        # Most of the others are no-ops.
+        with contextlib.ExitStack() as stack:
+          for sensor in sensors:
+            stack.enter_context(sensor)
  
-            while True:
-              timesource.set_time(datetime.datetime.now())
-              result_failure = [sensor.publish() for sensor in sensors]
-              if any(result_failure):
-                logging.warning("Failed to write some results.  Switching to hostap mode.")
+          while True:
+            timesource.set_time(datetime.datetime.now())
+            result_failure = [sensor.publish() for sensor in sensors]
+            if any(result_failure):
+              logging.warning("Failed to write some results.  Switching to hostap mode.")
 
-                # Trigger hostapd mode.
-                os.system("systemctl start " + os.getenv("ap_service"))
+              # Trigger hostapd mode.
+              os.system("systemctl start " + os.getenv("ap_service"))
 
-                # Maybe touch a file to indicate the time that we did this.
-                if not os.path.exists(os.getenv("hostap_status_file")):
-                  os.system("touch " + os.getenv("hostap_status_file"))
-              else:
-                # Write backlog files.
-                files_written = 0
+              # Maybe touch a file to indicate the time that we did this.
+              if not os.path.exists(os.getenv("hostap_status_file")):
+                os.system("touch " + os.getenv("hostap_status_file"))
+            else:
+              # Write backlog files.
+              files_written = 0
 
-                logging.info("Checking for backlog files to write.")
-                count = local_storage.countrecords()
+              logging.info("Checking for backlog files to write.")
+              count = local_storage.countrecords()
 
-                logging.info("Found {} backlog files!".format(count))
+              logging.info("Found {} backlog files!".format(count))
  
-                with contextlib.closing(local_storage.getcursor()) as cursor:
-                  # We iterate over the cursor to avoid loading everything into memory at once.
-                  for data_point in cursor:
-                    try:
-                      data_json = json.loads(data_point[1])
+              with contextlib.closing(local_storage.getcursor()) as cursor:
+                # We iterate over the cursor to avoid loading everything into memory at once.
+                for data_point in cursor:
+                  try:
+                    data_json = json.loads(data_point[1])
 
-                      if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
-                        try:
-                          remote.write(data_json)
-                        except Exception as err:
-                          # Immediately break on Influx errors -- if the connection was lost,
-                          # we don't need to retry every file forever.
-                          logging.error("Error writing saved data point with id [{}] to Influx: {}".format(data_point[0], str(err)))
-                          break
+                    if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
+                      try:
+                        remote.write(data_json)
+                      except Exception as err:
+                        # Immediately break on Influx errors -- if the connection was lost,
+                        # we don't need to retry every file forever.
+                        logging.error("Error writing saved data point with id [{}] to Influx: {}".format(data_point[0], str(err)))
+                        break
 
-                        # Delete the file once written successfully.
-                        local_storage.deleterecord(data_point[0])
+                      # Delete the file once written successfully.
+                      local_storage.deleterecord(data_point[0])
 
-                        files_written += 1
-                      else:
-                        # Eventually, very many malformed files in this directory would cause unacceptable slowness.
-                        logging.warning("Data point with id [{}] has missing fields.".format(data_point[0]))
+                      files_written += 1
+                    else:
+                      # Eventually, very many malformed files in this directory would cause unacceptable slowness.
+                      logging.warning("Data point with id [{}] has missing fields.".format(data_point[0]))
 
-                    except Exception as err:
-                      logging.error("Error writing saved data point with id [{}]: {}".format(data_point[0], str(err)))
+                  except Exception as err:
+                    logging.error("Error writing saved data point with id [{}]: {}".format(data_point[0], str(err)))
 
-                    # We spread out our writing of backlogs, so as not to spend a long time writing
-                    # many backups after a long downtime.  We'll catch up eventually.
-                    if files_written >= int(os.getenv("max_backlog_writes")):
-                      break
+                  # We spread out our writing of backlogs, so as not to spend a long time writing
+                  # many backups after a long downtime.  We'll catch up eventually.
+                  if files_written >= int(os.getenv("max_backlog_writes")):
+                    break
 
-                  logging.info("Wrote {} backlog files.".format(files_written))
+                logging.info("Wrote {} backlog files.".format(files_written))
  
-              # Maybe trigger wlan mode.
-              if switch_to_wlan():
-                logging.warning("Switching to wlan mode.")
-                # This shouldn't be necessary, but we found that sometimes the systemd-networkd DHCP server stalls
-                # when we're bringing the wlan up and down.  This brings it back.  See issue #55.
-                os.system("service systemd-networkd restart")
-                time.sleep(15)  # 15 second cooldown for systemd-networkd to restart.
-                os.system("systemctl start " + os.getenv("wlan_service"))
+            # Maybe trigger wlan mode.
+            if switch_to_wlan():
+              logging.warning("Switching to wlan mode.")
+              # This shouldn't be necessary, but we found that sometimes the systemd-networkd DHCP server stalls
+              # when we're bringing the wlan up and down.  This brings it back.  See issue #55.
+              os.system("service systemd-networkd restart")
+              time.sleep(15)  # 15 second cooldown for systemd-networkd to restart.
+              os.system("systemctl start " + os.getenv("wlan_service"))
   
-              # TODO:  We should probably wait until a specific future time,  instead of sleep.
-              time.sleep(interval)
+            # TODO:  We should probably wait until a specific future time,  instead of sleep.
+            time.sleep(interval)
  
 
 if __name__ == '__main__':
