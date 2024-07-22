@@ -12,6 +12,7 @@ import sys
 from absl import logging
 from serial import Serial
 from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
+from pyubx2.ubxtypes_core import ERR_RAISE
 from . import Sensor
 
 
@@ -55,7 +56,7 @@ class UartNmeaGps(Sensor):
           # Flush the serial port buffer
           self.stream.reset_input_buffer()
           self.stream.reset_output_buffer()
-          self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL)
+          self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL, quitonerror=ERR_RAISE)
 
         # Wait and see if we read any data on the serial port.
         max_retry_count = 15
@@ -98,7 +99,8 @@ class UartNmeaGps(Sensor):
     while not self.stop_reading.is_set():
       if self.nmea:
         try:
-          (raw_data, parsed_data) = self.nmea.read()
+          with self.serial_lock:
+            (raw_data, parsed_data) = self.nmea.read()
 
           self.has_read_data = True
           if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
