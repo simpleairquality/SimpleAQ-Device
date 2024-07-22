@@ -81,21 +81,20 @@ def detect_devices(env_file, i2cbus):
   with contextlib.closing(LocalDummy()) as local_storage:
     with DummyStorage() as remote_storage:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
-        with smbus.SMBus(0x01) as i2cbus:  # TODO:  Allow this to be configurable.  Actually, it would be even better if we could just use LinuxI2cTransceiver which seems to be more robust than smbus.
-          for name, device in device_map.items():
-            device_object = None
-            try:
-              device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file, bus=i2cbus)
-              device_object.publish()
-              detected_devices.add(name)
-              logging.info("Detected device: {}".format(name))
-            except Exception:
-              logging.info("Device not detected: {}".format(name))
-            finally:
-              if device_object:
-                if hasattr(device_object, 'shutdown'):
-                  device_object.shutdown()
-                del device_object
+        for name, device in device_map.items():
+          device_object = None
+          try:
+            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file, bus=i2cbus)
+            device_object.publish()
+            detected_devices.add(name)
+            logging.info("Detected device: {}".format(name))
+          except Exception:
+            logging.info("Device not detected: {}".format(name))
+          finally:
+            if device_object:
+              if hasattr(device_object, 'shutdown'):
+                device_object.shutdown()
+              del device_object
 
   # Get the existing devices
   current_devices = set(os.getenv('detected_devices').split(','))
