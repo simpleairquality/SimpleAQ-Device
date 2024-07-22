@@ -5,7 +5,6 @@ import datetime
 import json
 import os
 import time
-import smbus
 
 from absl import app, flags, logging
 
@@ -73,7 +72,7 @@ device_map = {
 priority_devices = ['gps', 'dfrobotgps', 'uartnmeagps']
 
 # Find the set of devices that are installed in this system.
-def detect_devices(env_file, i2cbus):
+def detect_devices(env_file):
   detected_devices = set()
   test_timesource = SystemTimeSource()
 
@@ -84,7 +83,7 @@ def detect_devices(env_file, i2cbus):
         for name, device in device_map.items():
           device_object = None
           try:
-            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file, bus=i2cbus)
+            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file)
             device_object.publish()
             detected_devices.add(name)
             logging.info("Detected device: {}".format(name))
@@ -131,14 +130,12 @@ def detect_devices(env_file, i2cbus):
 def main(args):
   # TODO:  Allow this to be configurable.
   #        Also, it would be better if we just used i2c_transceiver everywhere instead of this.
-  i2cbus = smbus.SMBus(0x01)
-
   if (FLAGS.env):
     dotenv.load_dotenv(FLAGS.env)
   else:
     dotenv.load_dotenv()
 
-  device_objects = detect_devices(FLAGS.env, i2cbus)
+  device_objects = detect_devices(FLAGS.env)
 
   remote_storage_class = None
   timesource = None
@@ -176,7 +173,6 @@ def main(args):
                                        interval=interval,
                                        i2c_transceiver=i2c_transceiver,
                                        env_file=FLAGS.env,
-                                       bus=i2cbus,
                                        send_last_known_gps=send_last_known_gps))
 
         # This enteres a guaranteed-closing context manager for every sensors.

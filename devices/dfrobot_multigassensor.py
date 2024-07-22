@@ -30,15 +30,6 @@ def fuc_check_sum(i,ln):
   tempq=(((~tempq)&0xff)+1)
   return tempq
 
-def clear_buffer(buf,length):
-  '''!
-    @brief List values are reset
-    @param buf List to be cleared
-    @param length Length
-  '''
-  for i in range(0,length):
-    buf[i]=0
-
 
 class DFRobot_GasType(object):
   '''!
@@ -330,7 +321,6 @@ class DFRobot_MultiGasSensor(object):
       @retval False  change fail
     '''
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x78
@@ -340,9 +330,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     if(recvbuf[2]==1):
       return True
     else:
@@ -354,8 +342,6 @@ class DFRobot_MultiGasSensor(object):
       @return if data is transmitted normally, return gas concentration; otherwise, return 0xffff
     '''
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
-    clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x86
@@ -365,9 +351,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     if(fuc_check_sum(recvbuf,8) == recvbuf[8]):
       self.gasconcentration = ((recvbuf[2]<<8)+recvbuf[3])*1.0
 
@@ -415,8 +399,6 @@ class DFRobot_MultiGasSensor(object):
       @n  PH3  0x45
     '''
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
-    clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x86
@@ -426,9 +408,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     if(fuc_check_sum(recvbuf,8) == recvbuf[8]):
       return (recvbuf[4])
     else:
@@ -447,7 +427,6 @@ class DFRobot_MultiGasSensor(object):
       @retval False  change fail
     '''
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
     if self.gastype == DFRobot_GasType.O2:
       threshold *= 10
     elif self.gastype == DFRobot_GasType.NO2:
@@ -464,7 +443,6 @@ class DFRobot_MultiGasSensor(object):
       threshold *= 10
     elif self.gastype == DFRobot_GasType.PH3:
       threshold *= 10
-    clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x89
@@ -474,9 +452,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     if (recvbuf[8]!=fuc_check_sum(recvbuf,8)):
       return False
     if(recvbuf[2]==1):
@@ -490,8 +466,6 @@ class DFRobot_MultiGasSensor(object):
       @return Board temperature, unit °C
     '''
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
-    clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x87
@@ -501,9 +475,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     temp_ADC=(recvbuf[2]<<8)+recvbuf[3]
     return self.__adc_to_temp(temp_ADC)
     
@@ -525,8 +497,6 @@ class DFRobot_MultiGasSensor(object):
       @return The original voltage output of sensor gas concentration
     '''
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
-    clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x91
@@ -536,9 +506,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     if (recvbuf[8] != fuc_check_sum(recvbuf, 8)):
       return 0.0
     else:
@@ -550,8 +518,6 @@ class DFRobot_MultiGasSensor(object):
       @param  group The group number that the sensor is supposed to be
     '''   
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
-    clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x92
@@ -561,9 +527,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     if (recvbuf[8] != fuc_check_sum(recvbuf, 8)):
       return False
     else:
@@ -584,8 +548,6 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       *
     ''' 
     sendbuf = [0] * 9
-    recvbuf = [0] * 9
-    clear_buffer(recvbuf,9)
     sendbuf[0]=0xff
     sendbuf[1]=0x01
     sendbuf[2]=0x88
@@ -595,9 +557,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    self.write_data(0,sendbuf,9)
-    time.sleep(SEND_WAIT)
-    recvbuf = self.read_data(0, 9)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     for i in range(0,8):
       print("%#x"%recvbuf[i])
     if (recvbuf[8] == fuc_check_sum(recvbuf, 8)):
@@ -606,34 +566,14 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     else:
       return False
 
-  def write_data(self, reg, data , length):
-    '''
-      @brief writes data to a register
-      @param reg register address
-      @param value written data
-    '''  
-    try:
-      self.i2cbus.write_i2c_block_data(self.__addr ,reg ,data)
-      return
-    except:
-      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: {}".format(self.__addr, str(err))) 
-      return
+  def transcieve(self, data, length_recv, read_delay, timeout=0):
+    status, error, rx_data = bus.transceive(self._addr, data, length_recv, read_delay, timeout)
 
-  def read_data(self, reg, length):
-    '''
-      @brief read the data from the register
-      @param reg register address
-      @param value read data
-    '''
-    recvbuf = [0] * 9
-    try:
-      rslt = self.i2cbus.read_i2c_block_data(self.__addr ,reg , length)
-    except Exception as err:
-      logging.error("Failed to read data from DFRobot MultiGas Sensor on {}: {}".format(self.__addr, str(err)))
-      rslt = 0
-      raise err
-    recvbuf=rslt
-    return recvbuf
+    if status == bus.STATUS_OK:
+      return rx_data
+    else:
+      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: {}".format(self.__addr, error)) 
+      raise Exception(error)
 
 
 class DFRobotMultiGas(Sensor):
@@ -699,21 +639,21 @@ class DFRobotMultiGas(Sensor):
     return result
 
 class DFRobotMultiGas00(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "00"
-    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x74)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x74)
 
 class DFRobotMultiGas01(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver=i2c_transceiver, **kwargs):
     self.dip = "01"
-    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x75)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x75)
 
 class DFRobotMultiGas10(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver=i2c_transceiver, **kwargs):
     self.dip = "10"
-    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x76)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x76)
 
 class DFRobotMultiGas11(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver=i2c_transceiver, **kwargs):
     self.dip = "11"
-    super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x77)
+    super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=0x77)
