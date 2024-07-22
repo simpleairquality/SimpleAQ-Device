@@ -699,21 +699,21 @@ class DFRobotMultiGas(Sensor):
     return result
 
 class DFRobotMultiGas00(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
     self.dip = "00"
     super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x74)
 
 class DFRobotMultiGas01(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
     self.dip = "01"
     super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x75)
 
 class DFRobotMultiGas10(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
     self.dip = "10"
     super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x76)
 
 class DFRobotMultiGas11(DFRobotMultiGas):
-  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, bus, **kwargs):
     self.dip = "11"
     super().__init__(remotestorage, localstorage, timesource, bus=bus, address=0x77)
