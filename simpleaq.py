@@ -16,7 +16,6 @@ from devices.bmp3xx import Bmp3xx
 from devices.gps import Gps
 from devices.pm25 import Pm25
 from devices.sen5x import Sen5x
-from devices.dfrobot_gps import DfrobotGps 
 from devices.dfrobot_multigassensor import DFRobotMultiGas00 
 from devices.dfrobot_multigassensor import DFRobotMultiGas01
 from devices.dfrobot_multigassensor import DFRobotMultiGas10
@@ -58,7 +57,6 @@ device_map = {
     'system': System,
     'bme688': Bme688,
     'bmp3xx': Bmp3xx,
-    'dfrobotgps': DfrobotGps,
     'uartnmeagps': UartNmeaGps,
     'gps': Gps,
     'pm25': Pm25,
