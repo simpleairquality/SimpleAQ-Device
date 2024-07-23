@@ -52,11 +52,8 @@ class UartNmeaGps(Sensor):
       try:
         with self.serial_lock:
           logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
-          self.stream = Serial(os.getenv('uart_serial_port'), int(baud), timeout=1)
-          # Flush the serial port buffer
-          self.stream.reset_input_buffer()
-          self.stream.reset_output_buffer()
-          self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL, quitonerror=ERR_RAISE)
+          self.baud = int(baud)
+          self._restart_serial();
 
         # Wait and see if we read any data on the serial port.
         max_retry_count = 15
@@ -84,59 +81,76 @@ class UartNmeaGps(Sensor):
       logging.error("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600')))
       raise Exception("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600'))) 
 
+  def _restart_serial(self):
+    with self.serial_lock:
+      self.stream = Serial(os.getenv('uart_serial_port'), int(self.baud), timeout=1)
+      # Flush the serial port buffer
+      self.stream.reset_input_buffer()
+      self.stream.reset_output_buffer()
+      # Wait a second for it to equilibrate.
+      time.sleep(1)
+      self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL, quitonerror=ERR_RAISE)
+
   # Close the port when we shut down.
   def __del__(self):
     self.shutdown()
 
   def shutdown(self):
     self.stop_reading.set()
-    if self.stream:
-      with self.serial_lock:
+    with self.serial_lock:
+      if self.stream and self.stream.is_open:
         self.stream.close()
 
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
     while not self.stop_reading.is_set():
-      if self.nmea:
-        try:
-          with self.serial_lock:
+      try:
+        with self.serial_lock:
+          # Race condition where we're waiting to read but the serial lock above closes the stream.
+          if self.nmea:
             (raw_data, parsed_data) = self.nmea.read()
+          else:
+            time.sleep(1)
+            continue
 
-          self.has_read_data = True
-          if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
-            if parsed_data.altUnit in ['m', 'M']:
-              self.altitude = parsed_data.alt
-          if hasattr(parsed_data, 'lon') and parsed_data.lon:
-            self.longitude = parsed_data.lon
-            self.last_good_reading = time.time()
-          if hasattr(parsed_data, 'lat') and parsed_data.lat:
-            self.latitude = parsed_data.lat
-            self.last_good_reading = time.time()
-          if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
-            # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
-            self.gpsdate = parsed_data.date
-            self.gpstime = parsed_data.time
- 
-            if not self.has_set_time:
-              if self.interval:
-                epoch_seconds = None
-                epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
+        self.has_read_data = True
+        if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
+          if parsed_data.altUnit in ['m', 'M']:
+            self.altitude = parsed_data.alt
+        if hasattr(parsed_data, 'lon') and parsed_data.lon:
+          self.longitude = parsed_data.lon
+          self.last_good_reading = time.time()
+        if hasattr(parsed_data, 'lat') and parsed_data.lat:
+          self.latitude = parsed_data.lat
+          self.last_good_reading = time.time()
+        if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
+          # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
+          self.gpsdate = parsed_data.date
+          self.gpstime = parsed_data.time
 
-                if abs(time.time() - epoch_seconds) > self.interval:
-                  logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                                  ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                                  ' exceeds interval time of ' + str(self.interval))
-                  os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
-                  self.timesource.set_time(datetime.datetime.now())
-                  self.has_set_time = True
-        except Exception as err:
-          if str(err) != self.last_error:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logging.error("UART GPS Error (duplicates will be suppressed) {}:{}: {}".format(fname, exc_tb.tb_lineno, str(err)))
-            self.last_error = str(err)
-      else:
-        time.sleep(1)
+        if not self.has_set_time:
+          if self.interval:
+            epoch_seconds = None
+            epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
+
+            if abs(time.time() - epoch_seconds) > self.interval:
+              logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                              ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                              ' exceeds interval time of ' + str(self.interval))
+              os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
+              self.timesource.set_time(datetime.datetime.now())
+              self.has_set_time = True
+      except Exception as err:
+        if str(err) != self.last_error:
+          exc_type, exc_obj, exc_tb = sys.exc_info()
+          fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+          logging.error("UART GPS Error (duplicates will be suppressed) {}:{}: {}".format(fname, exc_tb.tb_lineno, str(err)))
+          self.last_error = str(err)
+
+        # This error seems to be a death sentence.  Restart the serial if it happens.
+        if 'device reports readiness to read but returned no data' in str(err):
+          with self.serial_lock:
+            self._restart_serial()
 
   def publish(self):
     logging.info('Publishing GPS data to remote')
