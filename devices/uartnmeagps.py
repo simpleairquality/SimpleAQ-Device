@@ -50,10 +50,9 @@ class UartNmeaGps(Sensor):
     # We will try to confirm whether we are getting NMEA data on serial0.
     for baud in os.getenv('uart_serial_baud', '9600').split(','):
       try:
-        with self.serial_lock:
-          logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
-          self.baud = int(baud)
-          self._restart_serial();
+        logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
+        self.baud = int(baud)
+        self._restart_serial()
 
         # Wait and see if we read any data on the serial port.
         max_retry_count = 15
@@ -149,8 +148,7 @@ class UartNmeaGps(Sensor):
 
         # This error seems to be a death sentence.  Restart the serial if it happens.
         if 'device reports readiness to read but returned no data' in str(err):
-          with self.serial_lock:
-            self._restart_serial()
+          self._restart_serial()
 
   def publish(self):
     logging.info('Publishing GPS data to remote')
