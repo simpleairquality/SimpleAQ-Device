@@ -50,9 +50,10 @@ class UartNmeaGps(Sensor):
     # We will try to confirm whether we are getting NMEA data on serial0.
     for baud in os.getenv('uart_serial_baud', '9600').split(','):
       try:
-        logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
-        self.baud = int(baud)
-        self._restart_serial()
+        with self.serial_lock:
+          logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
+          self.baud = int(baud)
+          self._restart_serial()
 
         # Wait and see if we read any data on the serial port.
         max_retry_count = 15
@@ -81,14 +82,16 @@ class UartNmeaGps(Sensor):
       raise Exception("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600'))) 
 
   def _restart_serial(self):
-    with self.serial_lock:
-      self.stream = Serial(os.getenv('uart_serial_port'), int(self.baud), timeout=1)
-      # Flush the serial port buffer
-      self.stream.reset_input_buffer()
-      self.stream.reset_output_buffer()
-      # Wait a second for it to equilibrate.
-      time.sleep(1)
-      self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL, quitonerror=ERR_RAISE)
+    if self.stream and self.stream.is_open:
+      self.stream.close()
+
+    self.stream = Serial(os.getenv('uart_serial_port'), int(self.baud), timeout=1)
+    # Flush the serial port buffer
+    self.stream.reset_input_buffer()
+    self.stream.reset_output_buffer()
+    # Wait a second for it to equilibrate.
+    time.sleep(1)
+    self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL, quitonerror=ERR_RAISE)
 
   # Close the port when we shut down.
   def __del__(self):
@@ -148,7 +151,8 @@ class UartNmeaGps(Sensor):
 
         # This error seems to be a death sentence.  Restart the serial if it happens.
         if 'device reports readiness to read but returned no data' in str(err):
-          self._restart_serial()
+          with self.serial_lock:
+            self._restart_serial()
 
   def publish(self):
     logging.info('Publishing GPS data to remote')
