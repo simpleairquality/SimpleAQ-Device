@@ -48,11 +48,19 @@ class UartNmeaGps(Sensor):
     self.read_thread.start()
 
     # We will try to confirm whether we are getting NMEA data on serial0.
-    for baud in os.getenv('uart_serial_baud', '9600').split(','):
+    for setting in os.getenv('uart_serial_baud', '9600;NMEA').split(','):
       try:
         with self.serial_lock:
-          logging.info("Attempting to connect to NMEA GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
+          baud, mode = setting.split(';')
+          logging.info("Attempting to connect to {} GPS on {} with baud rate {}".format(mode, os.getenv('uart_serial_port'), int(baud)))
           self.baud = int(baud)
+          if mode == 'NMEA'
+            self.mode = NMEA_PROTOCOL
+          elif mode == 'UBX'
+            self.mode = UBX_PROTOCOL
+          else
+            raise Exception("Unsupported GPS protocol:  {}".format(mode))
+          
           self._restart_serial()
 
         # Wait and see if we read any data on the serial port.
@@ -60,7 +68,7 @@ class UartNmeaGps(Sensor):
 
         for _ in range(max_retry_count):
           if self.has_read_data:
-            logging.info("Found NMEA GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), int(baud)))
+            logging.info("Found {} GPS on {} with baud rate {}!".format(self.mode, os.getenv('uart_serial_port'), self.baud))
             break
           time.sleep(1)
 
@@ -78,21 +86,21 @@ class UartNmeaGps(Sensor):
         logging.error("Unexpected error setting up UART GPS:  " + str(err));
 
     if not self.has_read_data:
-      logging.error("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600')))
-      raise Exception("Could not detect a UART GPS on {} at any baud in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600'))) 
+      logging.error("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA')))
+      raise Exception("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA'))) 
 
   def _restart_serial(self):
     if self.stream and self.stream.is_open:
       self.stream.close()
       time.sleep(1)  # https://stackoverflow.com/questions/33441579/io-error-errno-5-with-long-term-serial-connection-in-python
 
-    self.stream = Serial(os.getenv('uart_serial_port'), int(self.baud), timeout=1)
+    self.stream = Serial(os.getenv('uart_serial_port'), self.baud, timeout=1)
     # Flush the serial port buffer
     self.stream.reset_input_buffer()
     self.stream.reset_output_buffer()
     # Wait a second for it to equilibrate.
     time.sleep(1)
-    self.nmea = UBXReader(self.stream, protfilter=NMEA_PROTOCOL | UBX_PROTOCOL, quitonerror=ERR_RAISE)
+    self.nmea = UBXReader(self.stream, protfilter=self.mode, quitonerror=ERR_RAISE)
 
   # Close the port when we shut down.
   def __del__(self):
