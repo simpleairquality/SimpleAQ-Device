@@ -615,7 +615,7 @@ class DFRobotMultiGas(Sensor):
 
     self.sensor.set_temp_compensation(self.sensor.ON)
 
-  def retry_gas_concentration(max_retries=10):
+  def retry_gas_concentration(self, max_retries=10):
     remote_io_error = None
     for _ in range(max_retries):
       try:
