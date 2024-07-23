@@ -70,9 +70,9 @@ class UartNmeaGps(Sensor):
         with self.serial_lock:
           self.nmea = None 
           self.stream.close()
+          time.sleep(1)
           self.stream = None
-
-        time.sleep(1)
+ 
       except Exception as err:
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
         logging.error("Unexpected error setting up UART GPS:  " + str(err));
@@ -84,6 +84,7 @@ class UartNmeaGps(Sensor):
   def _restart_serial(self):
     if self.stream and self.stream.is_open:
       self.stream.close()
+      time.sleep(1)  # https://stackoverflow.com/questions/33441579/io-error-errno-5-with-long-term-serial-connection-in-python
 
     self.stream = Serial(os.getenv('uart_serial_port'), int(self.baud), timeout=1)
     # Flush the serial port buffer
@@ -102,6 +103,7 @@ class UartNmeaGps(Sensor):
     with self.serial_lock:
       if self.stream and self.stream.is_open:
         self.stream.close()
+        time.sleep(1)
 
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
