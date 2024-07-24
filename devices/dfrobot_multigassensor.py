@@ -574,7 +574,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     if status == self.i2cbus.STATUS_OK:
       return rx_data
     else:
-      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: {}".format(self.__addr, error)) 
+      logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: [{}] {}".format(self.__addr, status, error)) 
       raise Exception(error)
 
 
