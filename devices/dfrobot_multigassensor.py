@@ -604,9 +604,8 @@ class DFRobotMultiGas(Sensor):
     while not change_success and time_waited < max_wait_time_sec:
       try:
         change_success = self.sensor.change_acquire_mode(self.sensor.PASSIVITY)
-      except OSError as err:
-        # Retry OSError 121.
-        logging.info("Error trying to change acquire mode for multi-gas sensor on {}: {}".format(kwargs['address'], str(err)))
+      except Exception as err:
+        pass # Probably already logged.
       time_waited += 1
       time.sleep(1)
 
