@@ -8,7 +8,7 @@ import re
 import time
 import threading
 import sys
-import termios
+from serial import Serial
 
 from absl import logging
 from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
@@ -43,32 +43,35 @@ class UartNmeaGps(Sensor):
     # It will only try to read if nmea is set.
     self.nmea = None
     self.stop_reading = threading.Event()
+    self.serial_lock = treading.Lock()
     self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
     self.read_thread.start()
 
     # We will try to confirm whether we are getting NMEA data on serial0.
     for baud in os.getenv('uart_serial_baud', '9600').split(','):
       try:
-        logging.info("Attempting to connect to UART GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
-        self.baud = int(baud)
-        self._restart_serial()
+        with self.serial_lock:
+          logging.info("Attempting to connect to UART GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
+          self.baud = int(baud)
+          self._restart_serial()
 
-        # Wait and see if we read any data on the serial port.
-        max_retry_count = 15
+          # Wait and see if we read any data on the serial port.
+          max_retry_count = 15
 
-        for _ in range(max_retry_count):
-          if self.has_read_data:
-            logging.info("Found UART GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), self.baud))
-            break
-          time.sleep(1)
+          for _ in range(max_retry_count):
+            if self.has_read_data:
+              logging.info("Found UART GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), self.baud))
+              break
+            time.sleep(1)
 
         if self.has_read_data:
           break
 
-        self.nmea = None 
-        self.stream.close()
-        time.sleep(1)
-        self.stream = None
+        with self.serial_lock:
+          self.nmea = None 
+          self.stream.close()
+          time.sleep(1)
+          self.stream = None
  
       except Exception as err:
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
@@ -84,12 +87,12 @@ class UartNmeaGps(Sensor):
       self.stream = None
       time.sleep(0.1)  # https://stackoverflow.com/questions/33441579/io-error-errno-5-with-long-term-serial-connection-in-python
 
-    # Don't use PySerial.  It does not reliably respect my desired baud.
+    # PySerial does not reliably respect my desired baud.
     os.system('stty -F {} {}'.format(os.getenv('uart_serial_port'), self.baud))
     time.sleep(0.1)
-    self.stream = open(os.getenv('uart_serial_port'), 'rb')
-    # Clear any data that existed before.
-    termios.tcflush(self.stream, termios.TCIFLUSH)
+    self.stream = Serial(os.getenv('uart_serial_port'), self.baud, timeout=1)
+    self.stream.reset_input_buffer()
+    self.stream.reset_output_buffer()
     self.nmea = UBXReader(self.stream, quitonerror=ERR_RAISE)
 
   # Close the port when we shut down.
@@ -98,49 +101,52 @@ class UartNmeaGps(Sensor):
 
   def shutdown(self):
     self.stop_reading.set()
-    if self.stream:
-      self.stream.close()
-      self.stream = None
+    with self.serial_lock:
+      if self.stream and self.stream.is_open:
+        self.stream.close()
+        self.stream = None
 
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
     while not self.stop_reading.is_set():
       try:
         # We accept the possibility that we could get bad data if the stream is shut down while reading
-        if self.nmea and self.stream:
-          (raw_data, parsed_data) = self.nmea.read()
-        else:
-          time.sleep(1)
-          continue
+        parsed_data = None
+        with self.serial_lock:
+          if self.nmea and self.stream:
+            (raw_data, parsed_data) = self.nmea.read()
+          else:
+            time.sleep(1)
 
-        self.has_read_data = True
-        if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
-          if parsed_data.altUnit in ['m', 'M']:
-            self.altitude = parsed_data.alt
-        if hasattr(parsed_data, 'lon') and parsed_data.lon:
-          self.longitude = parsed_data.lon
-          self.last_good_reading = time.time()
-        if hasattr(parsed_data, 'lat') and parsed_data.lat:
-          self.latitude = parsed_data.lat
-          self.last_good_reading = time.time()
-        if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
-          # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
-          self.gpsdate = parsed_data.date
-          self.gpstime = parsed_data.time
+        if parsed_data:
+          self.has_read_data = True
+          if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
+            if parsed_data.altUnit in ['m', 'M']:
+              self.altitude = parsed_data.alt
+          if hasattr(parsed_data, 'lon') and parsed_data.lon:
+            self.longitude = parsed_data.lon
+            self.last_good_reading = time.time()
+          if hasattr(parsed_data, 'lat') and parsed_data.lat:
+            self.latitude = parsed_data.lat
+            self.last_good_reading = time.time()
+          if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
+            # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
+            self.gpsdate = parsed_data.date
+            self.gpstime = parsed_data.time
 
-        if not self.has_set_time:
-          if self.interval:
-            if self.gpsdate and self.gpstime:
-              epoch_seconds = None
-              epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
+          if not self.has_set_time:
+            if self.interval:
+              if self.gpsdate and self.gpstime:
+                epoch_seconds = None
+                epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
 
-              if abs(time.time() - epoch_seconds) > self.interval:
-                logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                                ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                                ' exceeds interval time of ' + str(self.interval))
-                os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
-                self.timesource.set_time(datetime.datetime.now())
-                self.has_set_time = True
+                if abs(time.time() - epoch_seconds) > self.interval:
+                  logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                                  ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                                  ' exceeds interval time of ' + str(self.interval))
+                  os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
+                  self.timesource.set_time(datetime.datetime.now())
+                  self.has_set_time = True
       except Exception as err:
         if str(err) != self.last_error:
           exc_type, exc_obj, exc_tb = sys.exc_info()
