@@ -142,16 +142,17 @@ class UartNmeaGps(Sensor):
 
         if not self.has_set_time:
           if self.interval:
-            epoch_seconds = None
-            epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
+            if self.gpsdate and self.gpstime:
+              epoch_seconds = None
+              epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
 
-            if abs(time.time() - epoch_seconds) > self.interval:
-              logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                              ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                              ' exceeds interval time of ' + str(self.interval))
-              os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
-              self.timesource.set_time(datetime.datetime.now())
-              self.has_set_time = True
+              if abs(time.time() - epoch_seconds) > self.interval:
+                logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                                ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                                ' exceeds interval time of ' + str(self.interval))
+                os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
+                self.timesource.set_time(datetime.datetime.now())
+                self.has_set_time = True
       except Exception as err:
         if str(err) != self.last_error:
           exc_type, exc_obj, exc_tb = sys.exc_info()
