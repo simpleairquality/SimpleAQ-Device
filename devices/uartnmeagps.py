@@ -10,7 +10,6 @@ import threading
 import sys
 
 from absl import logging
-from serial import Serial
 from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
 from pyubx2.ubxtypes_core import ERR_RAISE
 from . import Sensor
@@ -43,43 +42,32 @@ class UartNmeaGps(Sensor):
     # It will only try to read if nmea is set.
     self.nmea = None
     self.stop_reading = threading.Event()
-    self.serial_lock = threading.Lock()
     self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
     self.read_thread.start()
 
     # We will try to confirm whether we are getting NMEA data on serial0.
-    for setting in os.getenv('uart_serial_baud', '9600;NMEA').split(','):
+    for baud in os.getenv('uart_serial_baud', '9600').split(','):
       try:
-        with self.serial_lock:
-          baud, mode = setting.split(';')
-          logging.info("Attempting to connect to {} GPS on {} with baud rate {}".format(mode, os.getenv('uart_serial_port'), int(baud)))
-          self.baud = int(baud)
-          if mode == 'NMEA':
-            self.mode = NMEA_PROTOCOL
-          elif mode == 'UBX':
-            self.mode = UBX_PROTOCOL
-          else:
-            raise Exception("Unsupported GPS protocol:  {}".format(mode))
-          
-          self._restart_serial()
+        logging.info("Attempting to connect to UART GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
+        self.baud = int(baud)
+        self._restart_serial()
 
         # Wait and see if we read any data on the serial port.
         max_retry_count = 15
 
         for _ in range(max_retry_count):
           if self.has_read_data:
-            logging.info("Found {} GPS on {} with baud rate {}!".format(self.mode, os.getenv('uart_serial_port'), self.baud))
+            logging.info("Found UART GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), self.baud))
             break
           time.sleep(1)
 
         if self.has_read_data:
           break
 
-        with self.serial_lock:
-          self.nmea = None 
-          self.stream.close()
-          time.sleep(1)
-          self.stream = None
+        self.nmea = None 
+        self.stream.close()
+        time.sleep(1)
+        self.stream = None
  
       except Exception as err:
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
@@ -90,17 +78,16 @@ class UartNmeaGps(Sensor):
       raise Exception("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA'))) 
 
   def _restart_serial(self):
-    if self.stream and self.stream.is_open:
+    if self.stream:
       self.stream.close()
-      time.sleep(1)  # https://stackoverflow.com/questions/33441579/io-error-errno-5-with-long-term-serial-connection-in-python
+      self.stream = None
+      time.sleep(0.1)  # https://stackoverflow.com/questions/33441579/io-error-errno-5-with-long-term-serial-connection-in-python
 
-    self.stream = Serial(os.getenv('uart_serial_port'), self.baud, timeout=1)
-    # Flush the serial port buffer
-    self.stream.reset_input_buffer()
-    self.stream.reset_output_buffer()
-    # Wait a second for it to equilibrate.
-    time.sleep(1)
-    self.nmea = UBXReader(self.stream, protfilter=self.mode, quitonerror=ERR_RAISE)
+    # Don't use PySerial.  It does not reliably respect my desired baud.
+    os.system('stty -F {} {}'.format(os.getenv('uart_serial_port'), self.baud))
+    time.sleep(0.1)
+    self.stream = open(os.getenv('uart_serial_port'), 'rb')
+    self.nmea = UBXReader(self.stream, quitonerror=ERR_RAISE)
 
   # Close the port when we shut down.
   def __del__(self):
@@ -108,22 +95,20 @@ class UartNmeaGps(Sensor):
 
   def shutdown(self):
     self.stop_reading.set()
-    with self.serial_lock:
-      if self.stream and self.stream.is_open:
-        self.stream.close()
-        time.sleep(1)
+    if self.stream:
+      self.stream.close()
+      self.stream = None
 
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
     while not self.stop_reading.is_set():
       try:
-        with self.serial_lock:
-          # Race condition where we're waiting to read but the serial lock above closes the stream.
-          if self.nmea:
-            (raw_data, parsed_data) = self.nmea.read()
-          else:
-            time.sleep(1)
-            continue
+        # We accept the possibility that we could get bad data if the stream is shut down while reading
+        if self.nmea and self.stream:
+          (raw_data, parsed_data) = self.nmea.read()
+        else:
+          time.sleep(1)
+          continue
 
         self.has_read_data = True
         if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
@@ -159,11 +144,6 @@ class UartNmeaGps(Sensor):
           fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
           logging.error("UART GPS Error (duplicates will be suppressed) {}:{}: {}".format(fname, exc_tb.tb_lineno, str(err)))
           self.last_error = str(err)
-
-        # This error seems to be a death sentence.  Restart the serial if it happens.
-        if 'device reports readiness to read but returned no data' in str(err):
-          with self.serial_lock:
-            self._restart_serial()
 
   def publish(self):
     logging.info('Publishing GPS data to remote')
