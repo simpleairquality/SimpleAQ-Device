@@ -8,6 +8,7 @@ import re
 import time
 import threading
 import sys
+import termios
 
 from absl import logging
 from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
@@ -87,6 +88,8 @@ class UartNmeaGps(Sensor):
     os.system('stty -F {} {}'.format(os.getenv('uart_serial_port'), self.baud))
     time.sleep(0.1)
     self.stream = open(os.getenv('uart_serial_port'), 'rb')
+    # Clear any data that existed before.
+    termios.tcflush(self.stream, termios.TCIFLUSH)
     self.nmea = UBXReader(self.stream, quitonerror=ERR_RAISE)
 
   # Close the port when we shut down.
