@@ -54,11 +54,11 @@ class UartNmeaGps(Sensor):
           baud, mode = setting.split(';')
           logging.info("Attempting to connect to {} GPS on {} with baud rate {}".format(mode, os.getenv('uart_serial_port'), int(baud)))
           self.baud = int(baud)
-          if mode == 'NMEA'
+          if mode == 'NMEA':
             self.mode = NMEA_PROTOCOL
-          elif mode == 'UBX'
+          elif mode == 'UBX':
             self.mode = UBX_PROTOCOL
-          else
+          else:
             raise Exception("Unsupported GPS protocol:  {}".format(mode))
           
           self._restart_serial()
