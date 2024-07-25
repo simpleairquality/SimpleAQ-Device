@@ -51,7 +51,7 @@ EOF
 
 # Ensure that systemd-resolved is configured properly.
 on_chroot << EOF
-    apt-get install systemd-resolved
+    apt-get install -y systemd-resolved
     rm /etc/resolv.conf 
     ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 EOF
