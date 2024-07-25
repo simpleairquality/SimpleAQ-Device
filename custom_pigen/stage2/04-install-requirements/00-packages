@@ -8,4 +8,5 @@ libgpiod-dev
 libopenblas-dev
 iptables
 iw
+pipx
 userconf-pi
