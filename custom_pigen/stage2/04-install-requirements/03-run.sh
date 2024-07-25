@@ -4,7 +4,8 @@ cp -R /simpleaq "${ROOTFS_DIR}"
 
 # Install SimpleAQ requirements.
 on_chroot << EOF
-        cat /simpleaq/requirements.txt | xargs pipx inject <package>
+        pipx install cookiecutter
+        pipx runpip cookiecutter install -r requirements.txt
 EOF
 
 # Set up a system-scoped systemd service.
