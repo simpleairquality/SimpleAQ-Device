@@ -4,7 +4,7 @@ cp -R /simpleaq "${ROOTFS_DIR}"
 
 # Install SimpleAQ requirements.
 on_chroot << EOF
-        pipx install -r /simpleaq/requirements.txt
+        cat /simpleaq/requirements.txt | xargs pipx inject <package>
 EOF
 
 # Set up a system-scoped systemd service.
