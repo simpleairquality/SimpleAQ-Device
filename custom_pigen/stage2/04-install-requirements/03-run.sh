@@ -1,5 +1,12 @@
 #!/bin/bash -e
 
+# Ensure that systemd-resolved is configured properly.
+on_chroot << EOF
+    rm /etc/resolv.conf 
+    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    systemctl restart systemd-resolved.service
+EOF
+
 cp -R /simpleaq "${ROOTFS_DIR}"
 
 # Install SimpleAQ requirements.
