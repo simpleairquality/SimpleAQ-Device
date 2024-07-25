@@ -9,4 +9,5 @@ libopenblas-dev
 iptables
 iw
 pipx
+systemd-resolved
 userconf-pi
