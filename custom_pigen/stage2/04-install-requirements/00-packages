@@ -9,4 +9,5 @@ libopenblas-dev
 iptables
 iw
 pipx
+resolvconf
 userconf-pi
