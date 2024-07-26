@@ -7,6 +7,17 @@ on_chroot << EOF
         systemctl enable resize2fs_once
 EOF
 
+# Ensure that i2c and spi are enabled.
+# But still use our usual boot config, which has essential changes to i2c.
+on_chroot << EOF
+        cp /boot/firmware/config.txt /boot/firmware/temp
+	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
+        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
+        cp /boot/firmware/temp /boot/firmware/config.txt
+        rm /boot/firmware/temp
+EOF
+
+
 # Install SimpleAQ requirements.
 on_chroot << EOF
         pip install --break-system-packages -r /simpleaq/requirements.txt
