@@ -2,6 +2,11 @@
 
 cp -R /simpleaq "${ROOTFS_DIR}"
 
+# Enable resize2fs, which apparently isn't executing now?
+on_chroot << EOF
+        systemctl enable resize2fs_once
+EOF
+
 # Install SimpleAQ requirements.
 on_chroot << EOF
         cat /simpleaq/requirements.txt | xargs -I {} pipx install {}
