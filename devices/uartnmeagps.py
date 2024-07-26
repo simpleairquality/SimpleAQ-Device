@@ -43,7 +43,7 @@ class UartNmeaGps(Sensor):
     # It will only try to read if nmea is set.
     self.nmea = None
     self.stop_reading = threading.Event()
-    self.serial_lock = treading.Lock()
+    self.serial_lock = threading.Lock()
     self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
     self.read_thread.start()
 
@@ -101,10 +101,11 @@ class UartNmeaGps(Sensor):
 
   def shutdown(self):
     self.stop_reading.set()
-    with self.serial_lock:
-      if self.stream and self.stream.is_open:
-        self.stream.close()
-        self.stream = None
+    if self.serial_lock:
+      with self.serial_lock:
+        if self.stream and self.stream.is_open:
+          self.stream.close()
+          self.stream = None
 
   # Look that keeps latitude and longitude up-to-date.
   def _read_gps_data(self):
