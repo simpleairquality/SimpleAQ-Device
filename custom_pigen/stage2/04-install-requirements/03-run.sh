@@ -59,6 +59,8 @@ EOF
 
 # Enable systemd-networkd
 on_chroot << EOF
+        systemctl disable NetworkManager.service
+        systemctl disable NetworkManger-wait-online.service
         systemctl enable systemd-networkd.service
         systemctl enable systemd-resolved.service
         systemctl start systemd-networkd.service
