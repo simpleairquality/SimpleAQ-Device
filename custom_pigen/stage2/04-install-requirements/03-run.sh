@@ -7,9 +7,14 @@ on_chroot << EOF
         systemctl enable resize2fs_once
 EOF
 
+# Make sure pipx has the proper path.
+on_chroot << EOF
+        pipx ensurepath
+EOF
+
 # Install SimpleAQ requirements.
 on_chroot << EOF
-        cat /simpleaq/requirements.txt | xargs -I {} pipx install {}
+        cat /simpleaq/requirements.txt | xargs -I {} pipx install --include-deps {}
 EOF
 
 # Set up a system-scoped systemd service.
