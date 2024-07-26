@@ -4,6 +4,7 @@ cp -R /simpleaq "${ROOTFS_DIR}"
 
 # Install SimpleAQ requirements.
 on_chroot << EOF
+        pipx ensurepath
         pipx install cookiecutter
         pipx runpip cookiecutter install -r /simpleaq/requirements.txt
 EOF
