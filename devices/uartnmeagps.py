@@ -53,7 +53,6 @@ class GPSReader(object):
     self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None
     self.longitude = float(os.getenv('last_longitude')) if os.getenv('last_longitude') else None
     self.last_good_reading = 0
-    self.has_transmitted_device_info = False
     self.gpsdate = None
     self.gpstime = None
     self.has_set_time = False
@@ -120,6 +119,7 @@ class UartNmeaGps(Sensor):
     self.stream = None
     self.last_error = ''
     self.timesource = timesource
+    self.has_transmitted_device_info = False
 
     # If available, we will save last known GPS coordinates to environment variables.
     self.env_file = env_file
