@@ -94,8 +94,8 @@ class GPSReader(object):
 
             if not self.has_set_time:
               if self.interval:
-                if parsed_data.gpsdate and parsed_data.gpstime:
-                  epoch_seconds = calendar.timegm((parsed_data.year, parsed_data.month, parsed_data.day, parsed_data.hour, parsed_data.minute, parsed_data.second))
+                if self.gpsdate and self.gpstime:
+                  epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
 
                   if abs(time.time() - epoch_seconds) > self.interval:
                     logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
