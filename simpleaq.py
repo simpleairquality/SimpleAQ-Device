@@ -89,8 +89,6 @@ def detect_devices(env_file):
             logging.info("Device not detected: {}".format(name))
           finally:
             if device_object:
-              if hasattr(device_object, 'shutdown'):
-                device_object.shutdown()
               del device_object
 
   # Get the existing devices
