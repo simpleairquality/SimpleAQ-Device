@@ -133,6 +133,18 @@ def main(args):
   else:
     dotenv.load_dotenv()
 
+  # resize2fs_once doesn't appear to work reliably anymore.
+  # The raspi-config version does.
+  if os.getenv('first_boot') == 'true':
+    dotenv.set_key(
+        FLAGS.env,
+        'first_boot',
+        'false')
+    logging.info("First boot.  Resizing root file system and rebooting.")
+    os.system('raspi-config --expand-rootfs')
+    os.system('reboot')
+    exit(0)
+
   device_objects = detect_devices(FLAGS.env)
 
   remote_storage_class = None
