@@ -7,6 +7,7 @@ import os
 import re
 import time
 import threading
+import subprocess
 import sys
 from serial import Serial
 
@@ -14,6 +15,27 @@ from absl import logging
 from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
 from pyubx2.ubxtypes_core import ERR_RAISE
 from . import Sensor
+
+
+def get_baud_rate():
+  try:
+    # Run the stty command and capture the output
+    result = subprocess.run(['stty', '-F', '/dev/serial0'], capture_output=True, text=True)
+    # Check if the command was successful
+    if result.returncode != 0:
+      raise Exception(f"When checking baud, stty command failed with error: {result.stderr}")
+        
+    # Extract the baud rate using awk-like logic in Python
+    output = result.stdout
+    for line in output.splitlines():
+      if 'speed' in line:
+        # Split the line and return the second element
+        baud_rate = int(line.split()[1])
+        return baud_rate
+
+    raise Exception("When checking baud, no baud rate found in result.")
+  except Exception as e:
+    raise Exception(str(e))
 
 
 class GPSReader(object):
@@ -127,8 +149,19 @@ class UartNmeaGps(Sensor):
         self.baud = int(baud)
 
         # PySerial does not reliably respect my desired baud, or timeout apparently.
-        os.system('stty -F {} {}'.format(os.getenv('uart_serial_port'), self.baud))
-        time.sleep(0.1)
+        # We need to set the baud rate and make sure it took.
+        detected_baud = -1
+        retry_set_baud = 10
+
+        for _ in range(retry_set_baud):
+          os.system('stty -F {} {}'.format(os.getenv('uart_serial_port'), self.baud))
+          time.sleep(0.5)
+          detected_baud = get_baud_rate()
+          if detected_baud == self.baud:
+            break
+
+        if detected_baud != self.baud:
+          logging.error("Failed to set baud rate. UART NMEA GPS detection will probably fail.")
 
         self.stream = Serial(os.getenv('uart_serial_port'), self.baud, timeout=1)
         self.stream.reset_input_buffer()
