@@ -139,12 +139,12 @@ class UartNmeaGps(Sensor):
         max_retry_count = 15
 
         for _ in range(max_retry_count):
-          if self.has_read_data:
+          if self.gpsreader.has_read_data:
             logging.info("Found UART GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), self.baud))
             break
           time.sleep(1)
 
-        if self.has_read_data:
+        if self.gpsreader.has_read_data:
           break
 
         # Clean up if we didn't read anything.
@@ -157,7 +157,7 @@ class UartNmeaGps(Sensor):
         # We raise here because if GPS fails, we're probably getting unuseful data entirely.
         logging.error("Unexpected error setting up UART GPS:  " + str(err));
 
-    if not self.has_read_data:
+    if not self.gpsreader or not self.gpsreader.has_read_data:
       logging.error("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA')))
       raise Exception("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA'))) 
 
