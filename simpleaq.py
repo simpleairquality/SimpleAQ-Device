@@ -146,6 +146,8 @@ def attempt_reset_i2c_bus(bus_number, scl_pin, sda_pin):
         bus.close()
 
     time.sleep(0.5)  # Give some time for the bus to reset
+  else:
+    return
 
   logging.info("Checking for stuck bus condition.")
 
@@ -177,6 +179,8 @@ def attempt_reset_i2c_bus(bus_number, scl_pin, sda_pin):
       GPIO.cleanup()
     except Exception as err:
       logging.error("Error when attempting to clock stretch: {}".format(str(err)))
+  else:
+    return
 
   logging.info("Checking for stuck bus condition.")
 
