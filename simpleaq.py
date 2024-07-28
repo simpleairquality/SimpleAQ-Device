@@ -4,7 +4,9 @@ import contextlib
 import datetime
 import json
 import os
+import smbus
 import time
+import RPi.GPIO as GPIO
 
 from absl import app, flags, logging
 
@@ -120,6 +122,72 @@ def detect_devices(env_file):
   return device_objects
 
 
+def attempt_reset_i2c_bus(bus_number, scl_pin, sda_pin):
+  # Attempt to detect bus stuckness.
+  logging.info("Checking for stuck bus condition.")
+
+  start_time = time.time()
+  os.system('i2cdetect -y {}'.format(bus_number))
+  end_time = time.time()
+
+  # This generally completes almost immediately.  
+  # If it took longer than a second, we should try resetting.
+  if end_time - start_time > 1:
+    logging.info("Attempting to clear bus by sending general call zero.")
+   
+    bus = None 
+    try:
+      bus = smbus.SMBus(bus_number)
+      bus.write_quick(0x00)  # Send a general call
+    except Exception as err:
+      logging.error("Error when attempting to send general call: {}".format(str(err)))
+    finally:
+      if bus:
+        bus.close()
+
+    time.sleep(0.5)  # Give some time for the bus to reset
+
+  logging.info("Checking for stuck bus condition.")
+
+  start_time = time.time()
+  os.system('i2cdetect -y {}'.format(bus_number))
+  end_time = time.time()
+
+  if end_time - start_time > 1:
+    logging.info("Attempting to clear bus with clock stretching.")
+
+    try:
+      GPIO.setmode(GPIO.BCM)
+      GPIO.setup(scl_pin, GPIO.OUT)
+      GPIO.setup(sda_pin, GPIO.OUT)
+    
+      # Toggle SCL to release any stuck slaves
+      for _ in range(9):
+        GPIO.output(scl_pin, GPIO.HIGH)
+        time.sleep(0.01)
+        GPIO.output(scl_pin, GPIO.LOW)
+        time.sleep(0.01)
+    
+      # Generate a STOP condition
+      GPIO.output(sda_pin, GPIO.LOW)
+      GPIO.output(scl_pin, GPIO.HIGH)
+      time.sleep(0.01)
+      GPIO.output(sda_pin, GPIO.HIGH)
+      time.sleep(0.01)
+      GPIO.cleanup()
+    except Exception as err:
+      logging.error("Error when attempting to clock stretch: {}".format(str(err)))
+
+  logging.info("Checking for stuck bus condition.")
+
+  start_time = time.time()
+  os.system('i2cdetect -y {}'.format(bus_number))
+  end_time = time.time()
+
+  if end_time - start_time > 1:
+    logging.info("Failed to clear stuck bus condition.  Please try power cycling the SimpleAQ device.")
+
+
 # This program loads environment variables only on boot.
 # If the environment variables change for any reason, the systemd service
 # will have to be restarted.
@@ -131,6 +199,10 @@ def main(args):
   else:
     dotenv.load_dotenv()
 
+  # Attempt to avoid rare I2C bus error.
+  if os.getenv('i2c_bus_number') and os.getenv('scl_gpio_pin') and os.getenv('sda_gpio_pin'):
+    attempt_reset_i2c_bus(int(os.getenv('i2c_bus_number')), int(os.getenv('scl_gpio_pin')), int(os.getenv('sda_gpio_pin')))
+
   # resize2fs_once doesn't appear to work reliably anymore.
   # The raspi-config version does.
   if os.getenv('first_boot') == 'true':
@@ -141,7 +213,7 @@ def main(args):
     logging.info("First boot.  Resizing root file system and rebooting.")
     os.system('raspi-config --expand-rootfs')
     os.system('reboot')
-    exit(0)
+    return
 
   device_objects = detect_devices(FLAGS.env)
 
