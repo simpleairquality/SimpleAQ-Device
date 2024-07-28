@@ -237,7 +237,7 @@ class UartNmeaGps(Sensor):
         else:
           result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
       else:
-        if self.gpsreader.send_last_known_gps:
+        if self.send_last_known_gps:
           # If desired, send the last-known GPS values.
           if self.gpsreader.latitude is not None and self.gpsreader.longitude is not None:
             result = self._try_write_to_remote('GPS', 'latitude_degrees', self.gpsreader.latitude) or result
