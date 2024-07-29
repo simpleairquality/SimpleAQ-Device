@@ -42,9 +42,9 @@ hdmi_safe=1
 # SimpleAQ devices may require a lower baud rate because of the potentially
 # large number of devices on the bus, and because we flexibly allow many
 # different configurations.  
-dtparam=i2c_arm=on,i2c_arm_baudrate=50000
+dtparam=i2c_arm=on,i2c_arm_baudrate=10000
 #dtparam=i2s=on
-#dtparam=spi=on
+dtparam=spi=on
 
 # Uncomment this to enable infrared communication.
 #dtoverlay=gpio-ir,gpio_pin=17

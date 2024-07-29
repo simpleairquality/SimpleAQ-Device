@@ -15,3 +15,5 @@ pyubx2
 flask==2.3.2
 requests
 requests-toolbelt
+RPi.GPIO
+smbus

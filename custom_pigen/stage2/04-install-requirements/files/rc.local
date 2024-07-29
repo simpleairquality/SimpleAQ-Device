@@ -22,6 +22,9 @@ _SIMPLEAQ_HOSTAPD_NAME=$(grep "^simpleaq_hostapd_name=" /etc/environment | cut -
 _SIMPLEAQ_HOSTAPD_PASSWORD=$(grep "^simpleaq_hostapd_password=" /etc/environment | cut -c27-)
 _SIMPLEAQ_HOSTAPD_HIDE_SSID=$(grep "^simpleaq_hostapd_hide_ssid=" /etc/environment | cut -c28-)
 
+# Store the current SSID
+_CURRENT_SSID=$(grep "^\s*ssid=" /etc/wpa_supplicant/wpa_supplicant-ap0.conf | cut -d'"' -f2)
+
 if [ "$_SIMPLEAQ_HOSTAPD_NAME" = "SimpleAQ" ]; then
   _PI_SSID=SimpleAQ-$(cat /etc/machine-id | cut -c1-4)
   sed -i -s "s/^\s*ssid=.*/    ssid=\"$_PI_SSID\"/" /etc/wpa_supplicant/wpa_supplicant-ap0.conf
@@ -33,6 +36,15 @@ else
   sed -i -s "s/^\s*ssid=.*/    ssid=\"$_SIMPLEAQ_HOSTAPD_NAME\"/" /etc/wpa_supplicant/wpa_supplicant-ap0.conf
   sed -i -s "s/^\s*psk=.*/     psk=\"$_SIMPLEAQ_HOSTAPD_PASSWORD\"/" /etc/wpa_supplicant/wpa_supplicant-ap0.conf
   sed -i -s "s/^\s*ignore_broadcast_ssid=.*/     ignore_broadcast_ssid=$_SIMPLEAQ_HOSTAPD_HIDE_SSID/" /etc/wpa_supplicant/wpa_supplicant-ap0.conf
+fi
+
+# Check the new SSID
+_NEW_SSID=$(grep "^\s*ssid=" /etc/wpa_supplicant/wpa_supplicant-ap0.conf | cut -d'"' -f2)
+
+# Restart wpa_supplicant if the SSID has changed
+if [ "$_CURRENT_SSID" != "$_NEW_SSID" ]; then
+  echo "SSID has changed from $_CURRENT_SSID to $_NEW_SSID. Restarting wpa_supplicant..."
+  ssystemctl restart wpa_supplicant
 fi
 
 # Don't allow any connections we didn't explicitly request.
