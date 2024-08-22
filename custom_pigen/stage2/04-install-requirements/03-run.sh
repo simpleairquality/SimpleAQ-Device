@@ -2,10 +2,25 @@
 
 cp -R /simpleaq "${ROOTFS_DIR}"
 
+# Enable resize2fs, which apparently isn't executing now?
+on_chroot << EOF
+        systemctl enable resize2fs_once
+EOF
+
+# Ensure that i2c and spi are enabled.
+# But still use our usual boot config, which has essential changes to i2c.
+on_chroot << EOF
+        cp /boot/firmware/config.txt /boot/firmware/temp
+	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
+        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
+        cp /boot/firmware/temp /boot/firmware/config.txt
+        rm /boot/firmware/temp
+EOF
+
+
 # Install SimpleAQ requirements.
 on_chroot << EOF
-        pipx install cookiecutter
-        pipx runpip cookiecutter install -r /simpleaq/requirements.txt
+        pip install --break-system-packages -r /simpleaq/requirements.txt
 EOF
 
 # Set up a system-scoped systemd service.
@@ -40,12 +55,6 @@ on_chroot << EOF
         rm -rf /simpleaq/custom_pigen
 EOF
 
-# Set up i2c and spi, required for our scripts.
-on_chroot << EOF
-	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
-        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
-EOF
-
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
 
@@ -53,11 +62,18 @@ EOF
 on_chroot << EOF
         systemctl mask networking.service dhcpcd.service
         mv /etc/network/interfaces /etc/network/interfaces-
-        sed -i '1i resolvconf=NO' /etc/resolvconf.conf
+EOF
+
+# Ensure that systemd-resolved is configured properly.
+on_chroot << EOF
+    apt-get install -y systemd-resolved
+    rm /etc/resolv.conf 
+    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 EOF
 
 # Enable systemd-networkd
 on_chroot << EOF
+        systemctl disable NetworkManager.service
         systemctl enable systemd-networkd.service
         systemctl enable systemd-resolved.service
         systemctl start systemd-networkd.service

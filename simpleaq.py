@@ -4,7 +4,9 @@ import contextlib
 import datetime
 import json
 import os
+import smbus
 import time
+import RPi.GPIO as GPIO
 
 from absl import app, flags, logging
 
@@ -89,8 +91,6 @@ def detect_devices(env_file):
             logging.info("Device not detected: {}".format(name))
           finally:
             if device_object:
-              if hasattr(device_object, 'shutdown'):
-                device_object.shutdown()
               del device_object
 
   # Get the existing devices
@@ -122,6 +122,20 @@ def detect_devices(env_file):
   return device_objects
 
 
+def attempt_reset_i2c_bus(bus_number):
+  # Attempt to detect bus stuckness.
+  logging.info("Checking for stuck bus condition.")
+
+  start_time = time.time()
+  os.system('i2cdetect -y {}'.format(bus_number))
+  end_time = time.time()
+
+  # This generally completes almost immediately.  
+  # If it took longer than a second, we should try resetting.
+  if end_time - start_time > 1:
+    logging.info("The I2C bus appears to be stuck.  Device should be power cycled.")
+   
+
 # This program loads environment variables only on boot.
 # If the environment variables change for any reason, the systemd service
 # will have to be restarted.
@@ -132,6 +146,22 @@ def main(args):
     dotenv.load_dotenv(FLAGS.env)
   else:
     dotenv.load_dotenv()
+
+  # Attempt to avoid rare I2C bus error.
+  if os.getenv('i2c_bus_number'):
+    attempt_reset_i2c_bus(int(os.getenv('i2c_bus_number')))
+
+  # resize2fs_once doesn't appear to work reliably anymore.
+  # The raspi-config version does.
+  if os.getenv('first_boot') == 'true':
+    dotenv.set_key(
+        FLAGS.env,
+        'first_boot',
+        'false')
+    logging.info("First boot.  Resizing root file system and rebooting.")
+    os.system('raspi-config --expand-rootfs')
+    os.system('reboot')
+    return
 
   device_objects = detect_devices(FLAGS.env)
 
