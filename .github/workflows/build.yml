@@ -102,7 +102,7 @@ jobs:
         echo "imagefile=$IMAGE_FILE" >> $GITHUB_OUTPUT
 
     # The image now exists in deploy/.  Let's save it somewhere.
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.config.outputs.image }}
         path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
@@ -200,7 +200,7 @@ jobs:
         echo "imagefile=$IMAGE_FILE" >> $GITHUB_OUTPUT
 
     # The image now exists in deploy/.  Let's save it somewhere.
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.debugconfig.outputs.image }}
         path: PiGen/deploy/${{ steps.debugimagefile.outputs.imagefile }}
