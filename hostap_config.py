@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, make_response, Response, redirect
 import dotenv
+import getmac
 import os
 import json
 import re
 import subprocess
 import sqlite3
-
+from getmac import get_mac_address as gma
 from localstorage.localsqlite import LocalSqlite
 
 app = Flask(__name__)
@@ -63,7 +64,8 @@ def main():
       hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
       max_backlog_writes=os.getenv('max_backlog_writes'),
       detected_devices=os.getenv('detected_devices'),
-      i2c_bus=os.getenv('i2c_bus'))
+      i2c_bus=os.getenv('i2c_bus'),
+      mac_addr=str(gma()))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():
