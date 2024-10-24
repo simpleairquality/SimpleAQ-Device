@@ -6,14 +6,16 @@ import json
 import re
 import subprocess
 import sqlite3
-from getmac import get_mac_address as gma
 from localstorage.localsqlite import LocalSqlite
+import netifaces as ni
 
 app = Flask(__name__)
 
 def prevent_hostap_switch():
   subprocess.run(['touch', '/simpleaq/hostap_status_file'])
 
+def get_mac(interface='wlan0'):
+  return ni.ifaddresses(interface)[ni.AF_LINK][0]['addr']
 
 @app.route('/')
 def main():
@@ -65,7 +67,7 @@ def main():
       max_backlog_writes=os.getenv('max_backlog_writes'),
       detected_devices=os.getenv('detected_devices'),
       i2c_bus=os.getenv('i2c_bus'),
-      mac_addr=str(gma()))
+      mac_addr=str(get_mac()))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():

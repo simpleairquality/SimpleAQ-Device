@@ -14,6 +14,7 @@ adafruit-blinka
 psutil
 pyubx2
 flask==2.3.2
+netifaces
 requests
 requests-toolbelt
 RPi.GPIO
