@@ -1,18 +1,21 @@
 from flask import Flask, render_template, request, make_response, Response, redirect
 import dotenv
+import getmac
 import os
 import json
 import re
 import subprocess
 import sqlite3
-
 from localstorage.localsqlite import LocalSqlite
+import netifaces as ni
 
 app = Flask(__name__)
 
 def prevent_hostap_switch():
   subprocess.run(['touch', '/simpleaq/hostap_status_file'])
 
+def get_mac(interface='wlan0'):
+  return ni.ifaddresses(interface)[ni.AF_LINK][0]['addr']
 
 @app.route('/')
 def main():
@@ -63,7 +66,8 @@ def main():
       hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
       max_backlog_writes=os.getenv('max_backlog_writes'),
       detected_devices=os.getenv('detected_devices'),
-      i2c_bus=os.getenv('i2c_bus'))
+      i2c_bus=os.getenv('i2c_bus'),
+      mac_addr=str(get_mac()))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():

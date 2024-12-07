@@ -4,6 +4,7 @@ adafruit-circuitpython-gps
 adafruit-circuitpython-pm25
 adafruit-circuitpython-bme680
 adafruit-circuitpython-bmp3xx
+getmac
 influxdb_client
 python-dotenv
 sensirion-i2c-sen5x
@@ -13,6 +14,7 @@ adafruit-blinka
 psutil
 pyubx2
 flask==2.3.2
+netifaces
 requests
 requests-toolbelt
 RPi.GPIO
