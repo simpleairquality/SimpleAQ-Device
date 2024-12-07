@@ -117,7 +117,7 @@ EOF
 
 # Don't let logs get too big.
 on_chroot << EOF
-         journalctl --vacuum-size=10M
+         sed -i '/SystemMaxUse/c\SystemMaxUse=10M' /etc/systemd/journald.conf
 EOF
 
 # Disable firewall safeguards for debug builds.
