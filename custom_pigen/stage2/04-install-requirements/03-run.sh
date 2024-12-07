@@ -120,6 +120,11 @@ on_chroot << EOF
          sed -i '/SystemMaxUse/c\SystemMaxUse=10M' /etc/systemd/journald.conf
 EOF
 
+# Don't block wifi.
+on_chroot << EOF
+	rfkill unblock wifi
+EOF
+
 # Disable firewall safeguards for debug builds.
 if [ ${ENABLE_SSH} -eq 1 ]
 then
