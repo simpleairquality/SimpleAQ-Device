@@ -132,65 +132,49 @@ class UartNmeaGps(Sensor):
     # It will only try to read if nmea is set.
     self.gpsreader = None
 
-    # We will try to confirm whether we are getting NMEA data on serial0.
-    for baud in os.getenv('uart_serial_baud', '9600').split(','):
-      try:
-        # If somehow we threw an exception, make sure we clean up first.
-        if self.gpsreader:
-          self.gpsreader.kill()
-          self.gpsreader = None
+    # Let's start by ensuring the system baud rate is what we expect.
+    self.baud = int(os.getenv('uart_serial_baud', '9600'))
 
-        if self.stream:
-          self.stream.close()
-          self.stream = None
-          time.sleep(0.1)
+    # PySerial does not reliably respect my desired baud, or timeout apparently.
+    # We need to set the baud rate and make sure it took.
+    detected_baud = -1
+    retry_set_baud = 10
 
-        logging.info("Attempting to connect to UART GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), int(baud)))
-        self.baud = int(baud)
+    detected_baud = get_baud_rate()
+    for _ in range(retry_set_baud):
+      if detected_baud == self.baud:
+        break
+      else:
+        os.system('stty -F {} {}'.format(os.getenv('uart_serial_port'), self.baud))
+        time.sleep(0.5)
+      detected_baud = get_baud_rate()
 
-        # PySerial does not reliably respect my desired baud, or timeout apparently.
-        # We need to set the baud rate and make sure it took.
-        detected_baud = -1
-        retry_set_baud = 10
+    logging.info("Attempting to connect to UART GPS on {} with baud rate {}".format(os.getenv('uart_serial_port'), self.baud))
 
-        for _ in range(retry_set_baud):
-          os.system('stty -F {} {}'.format(os.getenv('uart_serial_port'), self.baud))
-          time.sleep(0.5)
-          detected_baud = get_baud_rate()
-          if detected_baud == self.baud:
-            break
+    if detected_baud != self.baud:
+      logging.error("Failed to set baud rate. UART NMEA GPS detection will probably fail.")
 
-        if detected_baud != self.baud:
-          logging.error("Failed to set baud rate. UART NMEA GPS detection will probably fail.")
-
-        self.stream = Serial(os.getenv('uart_serial_port'), self.baud, timeout=1)
-        self.stream.reset_input_buffer()
-        self.stream.reset_output_buffer()
-        self.gpsreader = GPSReader(self.stream, self.interval, self.timesource)
+    self.stream = Serial(os.getenv('uart_serial_port'), self.baud, timeout=1)
+    self.stream.reset_input_buffer()
+    self.stream.reset_output_buffer()
+    self.gpsreader = GPSReader(self.stream, self.interval, self.timesource)
  
-        # Wait and see if we read any data on the serial port.
-        max_retry_count = 15
+    # Wait and see if we read any data on the serial port.
+    max_retry_count = 15
 
-        for _ in range(max_retry_count):
-          if self.gpsreader.has_read_data:
-            logging.info("Found UART GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), self.baud))
-            break
-          time.sleep(1)
+    for _ in range(max_retry_count):
+      if self.gpsreader.has_read_data:
+        logging.info("Found UART GPS on {} with baud rate {}!".format(os.getenv('uart_serial_port'), self.baud))
+        break
+      time.sleep(1)
 
-        if self.gpsreader.has_read_data:
-          break
-
-        # Clean up if we didn't read anything.
-        self.gpsreader.kill()
-        self.gpsreader = None
-        self.stream.close()
-        time.sleep(1)
-        self.stream = None
-      except Exception as err:
-        # We raise here because if GPS fails, we're probably getting unuseful data entirely.
-        logging.error("Unexpected error setting up UART GPS:  " + str(err));
-
+    # If we didn't get any data, clean up to the best of our ability.
     if not self.gpsreader or not self.gpsreader.has_read_data:
+      self.gpsreader.kill()
+      self.gpsreader = None
+      self.stream.close()
+      time.sleep(1)
+      self.stream = None      
       logging.error("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA')))
       raise Exception("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA'))) 
 
