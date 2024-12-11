@@ -7,6 +7,7 @@ import re
 import subprocess
 import sqlite3
 from localstorage.localsqlite import LocalSqlite
+
 import netifaces as ni
 
 app = Flask(__name__)
@@ -165,8 +166,8 @@ def update():
   if os.path.exists('/simpleaq/hostap_status_file'):
     os.remove('/simpleaq/hostap_status_file')
 
-  # Reboot.
-  os.system('reboot')
+  # Schedule a Reboot.
+  os.system('touch {}'.format(os.getenv('reboot_status_file')))
 
   # The user may never see this before the system restarts.
   return render_template('update.html')

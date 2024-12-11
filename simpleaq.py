@@ -54,6 +54,13 @@ def switch_to_wlan():
     return True
 
 
+def do_graceful_reboot():
+  if os.path.exists(os.getenv("reboot_status_file")):
+    os.remove(os.getenv("reboot_status_file"))
+    return True
+  return False
+
+
 # Enumerate the list of supported devices here.
 device_map = {
     'system': System,
@@ -209,8 +216,9 @@ def main(args):
         with contextlib.ExitStack() as stack:
           for sensor in sensors:
             stack.enter_context(sensor)
- 
-          while True:
+
+          do_reboot = False
+          while not do_reboot:
             timesource.set_time(datetime.datetime.now())
             result_failure = [sensor.publish() for sensor in sensors]
             if any(result_failure):
@@ -275,7 +283,16 @@ def main(args):
   
             # TODO:  We should probably wait until a specific future time,  instead of sleep.
             time.sleep(interval)
- 
+
+            # We attempt to reboot gracefully, at a time when we've released all of the buses,
+            # to prevent inadvertently causing bus stuckness.
+            do_reboot = do_graceful_reboot()
+
+  # Now we've released all of the devices and finalized local storage.  It is safe to do a gracefull reboot.
+  if do_reboot:
+    os.system('reboot')
+    # Wait a minute, to make sure the service doesn't restart too soon.
+    time.sleep(60)
 
 if __name__ == '__main__':
   app.run(main)
