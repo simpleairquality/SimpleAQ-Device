@@ -12,16 +12,11 @@ import netifaces as ni
 
 app = Flask(__name__)
 
-def prevent_hostap_switch():
-  subprocess.run(['touch', '/simpleaq/hostap_status_file'])
-
 def get_mac(interface='wlan0'):
   return ni.ifaddresses(interface)[ni.AF_LINK][0]['addr']
 
 @app.route('/')
 def main():
-  prevent_hostap_switch()
-
   ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
   psk_re = re.compile("^\s*psk=\"(.*)\"\s*$")
 
@@ -73,8 +68,6 @@ def main():
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():
-  prevent_hostap_switch()
-
   touch_every = int(os.getenv('hostap_retry_interval_sec', '100'))
 
   def generate(connection, cursor):
@@ -86,7 +79,6 @@ def download():
         # Maybe prevent HostAP switching during a large download.
         count += 1
         if count > touch_every:
-          prevent_hostap_switch()
           count = 0
 
         # Make sure we only return valid JSON
@@ -180,13 +172,10 @@ def update():
 
 @app.route("/purge_warn/", methods=('GET',))
 def purge_warn():
-  prevent_hostap_switch()
   return render_template('purge_warn.html', simpleaq_logo='/static/simpleaq_logo.png')
 
 @app.route("/purge/", methods=('POST',))
 def purge():
-  prevent_hostap_switch()
-
   # Make sure there's a place to actually put the backlog database if necessary.
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
@@ -199,7 +188,6 @@ def purge():
 
 @app.route('/debug/dmesg/')
 def dmesg():
-  prevent_hostap_switch()
   result = subprocess.run(['dmesg'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
@@ -207,7 +195,6 @@ def dmesg():
 
 @app.route('/debug/simpleaq/')
 def simpleaq():
-  prevent_hostap_switch()
   result = subprocess.run(['journalctl', '-u', 'simpleaq.service'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
@@ -215,7 +202,6 @@ def simpleaq():
 
 @app.route('/debug/hostap/')
 def hostap():
-  prevent_hostap_switch()
   result = subprocess.run(['journalctl', '-u', 'hostap_config.service'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'

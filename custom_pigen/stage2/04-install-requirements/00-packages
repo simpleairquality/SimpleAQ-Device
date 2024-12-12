@@ -11,3 +11,5 @@ iw
 pipx
 userconf-pi
 urfkill
+rng-tools
+hostapd

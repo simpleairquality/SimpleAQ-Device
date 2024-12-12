@@ -39,32 +39,6 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
 
 
-def switch_to_wlan():
-  if os.path.exists(os.getenv("hostap_status_file")):
-    if time.time() - os.path.getmtime(os.getenv("hostap_status_file")) >= int(os.getenv("hostap_retry_interval_sec")) or time.time() < os.path.getmtime(os.getenv("hostap_status_file")):
-      os.remove(os.getenv("hostap_status_file"))
-      return True
-    else:
-      logging.info("Will retry wifi connection in {} seconds ({}/{} waited).".format(
-          int(os.getenv("hostap_retry_interval_sec")) - (time.time() - os.path.getmtime(os.getenv("hostap_status_file"))),
-          time.time() - os.path.getmtime(os.getenv("hostap_status_file")),
-          int(os.getenv("hostap_retry_interval_sec"))))
-      return False
-  else:
-    return True
-
-
-def start_wlan_service():
-  # This shouldn't be necessary, but we found that sometimes the systemd-networkd DHCP server stalls
-  # when we're bringing the wlan up and down.  This brings it back.  See issue #55.
-  os.system("service systemd-networkd restart")
-  time.sleep(15)  # 15 second cooldown for systemd-networkd to restart.
-  os.system("systemctl start " + os.getenv("wlan_service"))
-  # This sleep is essential, or we may switch right back to AP mode because
-  # we didn't manage to switch to wlan fast enough.
-  time.sleep(30)
-
-
 def do_graceful_reboot():
   if os.path.exists(os.getenv("reboot_status_file")):
     os.remove(os.getenv("reboot_status_file"))
@@ -206,11 +180,6 @@ def main(args):
 
     interval = int(os.getenv('simpleaq_interval'))
 
-    # Maybe trigger wlan mode
-    if switch_to_wlan():
-      logging.warning("Trying to connect on wlan.")
-      start_wlan_service()
-
     with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
         sensors = []
@@ -264,20 +233,12 @@ def main(args):
               except Exception as err:
                 logging.error("Failed to write data to remote: {}".format(str(err)))
 
-                # Trigger hostapd mode.
-                os.system("systemctl start " + os.getenv("ap_service"))
-
                 # Maybe touch a file to indicate the time that we did this.
                 if not os.path.exists(os.getenv("hostap_status_file")):
                   os.system("touch " + os.getenv("hostap_status_file"))
             else:
               logging.info("No data to write!")
 
-            # Maybe trigger wlan mode.
-            if switch_to_wlan():
-              logging.warning("Trying to connect to wlan.")
-              start_wlan_service()
-  
             # TODO:  We should probably wait until a specific future time,  instead of sleep.
             time.sleep(interval)
 
