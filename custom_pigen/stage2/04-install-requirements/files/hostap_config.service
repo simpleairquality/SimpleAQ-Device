@@ -5,4 +5,7 @@ Description=SimpleAQ HostAP Configuration Tool
 WorkingDirectory=/simpleaq
 EnvironmentFile=/etc/environment
 ExecStart=flask run --host=0.0.0.0 --port=80
-Restart=always
+Restart=alway0
+
+[Install]
+WantedBy=multi-user.target

@@ -82,7 +82,6 @@ EOF
 
 # Setup hostapd
 on_chroot << EOF
-         mkdir /etc/hostapd
          echo "interface=uap0"          >> /etc/hostapd/hostapd.conf
          echo "ssid=SimpleAQ"           >> /etc/hostapd/hostapd.conf
          echo "hw_mode=g"               >> /etc/hostapd/hostapd.conf
@@ -97,7 +96,7 @@ on_chroot << EOF
          sed -i 's|^DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
 
          systemctl enable hostapd
-        systemctl enable dnsmasq
+         systemctl enable dnsmasq
 EOF
 
 # Don't let logs get too big.
