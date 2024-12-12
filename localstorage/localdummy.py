@@ -13,6 +13,9 @@ class LocalDummy(LocalStorage):
   def getcursor(self):
     raise NotImplementedError("No cursor can be returned because the storage dummy is not a databaase.")
 
+  def getrecent(self, num):
+    raise NotImplementedError("No data can be returned because the storage dummy is not a databaase.")
+
   def deleteall(self):
     pass
 

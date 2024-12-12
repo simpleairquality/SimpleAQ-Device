@@ -17,6 +17,10 @@ class LocalStorage(ABC):
     pass
 
   @abstractmethod
+  def getrecent(self, num):
+    pass
+
+  @abstractmethod
   def deleteall(self):
     pass
 

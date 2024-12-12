@@ -163,11 +163,17 @@ def update():
       quote_mode='never')
 
   # Remove the HostAP status file so we retry connections on reboot.
-  if os.path.exists('/simpleaq/hostap_status_file'):
-    os.remove('/simpleaq/hostap_status_file')
+  if os.path.exists(os.getenv('hostap_status_file')):
+    os.remove(os.getenv('hostap_status_file'))
 
   # Schedule a Reboot.
-  os.system('touch {}'.format(os.getenv('reboot_status_file')))
+  if os.path.exists(os.getenv('reboot_status_file')):
+    # Force an immediate reboot.
+    os.remove(os.getenv('reboot_status_file'))
+    os.system('reboot')
+  else:
+    # Attempt a soft reboot.
+    os.system('touch {}'.format(os.getenv('reboot_status_file')))
 
   # The user may never see this before the system restarts.
   return render_template('update.html')

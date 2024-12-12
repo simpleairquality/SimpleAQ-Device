@@ -120,6 +120,7 @@ class UartNmeaGps(Sensor):
     self.last_error = ''
     self.timesource = timesource
     self.has_transmitted_device_info = False
+    self.name = "UARTNMEAGPS"
 
     # If available, we will save last known GPS coordinates to environment variables.
     self.env_file = env_file
@@ -194,19 +195,43 @@ class UartNmeaGps(Sensor):
     result = False
     try:
       if not self.has_transmitted_device_info:
-        result = self._try_write_to_remote('GPS', 'Model', 'Generic UART NMEA/UBX GPS')
+        try:
+          result = self._try_write('GPS', 'Model', 'Generic UART NMEA/UBX GPS') or result
+        except Exception as err:
+          self._try_write_error('GPS', 'Model', str(err))
+          raise err
+
         self.has_transmitted_device_info = True
 
       if self.gpsreader.altitude:
-        result = self._try_write_to_remote('GPS', 'altitude_meters', self.gpsreader.latitude) or result
+        try:
+          result = self._try_write('GPS', 'altitude_meters', self.gpsreader.latitude) or result
+        except Exception as err:
+          self._try_write_error('GPS', 'altitude_meters', str(err))
+          raise err
 
       if self.gpsreader.latitude and self.gpsreader.longitude and abs(self.gpsreader.latitude) <= 90 and abs(self.gpsreader.longitude) <= 180:
-        result = self._try_write_to_remote('GPS', 'latitude_degrees', self.gpsreader.latitude) or result
-        result = self._try_write_to_remote('GPS', 'longitude_degrees', self.gpsreader.longitude) or result
+        try:
+          result = self._try_write('GPS', 'latitude_degrees', self.gpsreader.latitude) or result
+        except Exception as err:
+          self._try_write_error('GPS', 'latitude_degrees', str(err))
+          raise err
+
+        try:
+          result = self._try_write('GPS', 'longitude_degrees', self.gpsreader.longitude) or result
+        except Exception as err:
+          self._try_write_error('GPS', 'longitude_degrees', str(err))
+          raise err
+
 
         # Choose 10 seconds as an acceptable staleness.
         if time.time() - self.gpsreader.last_good_reading < 10:
-          result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 0) or result
+          try:
+            result = self._try_write('GPS', 'last_known_gps_reading', 0) or result
+          except Exception as err:
+            self._try_write_error('GPS', 'last_known_gps_reading', str(err))
+            raise err
+
 
           # Save the last-known latitude and longitude if they're available.
           if self.env_file:
@@ -219,18 +244,22 @@ class UartNmeaGps(Sensor):
                 'last_longitude',
                 str(self.gpsreader.longitude))
         else:
-          result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
+          try:
+            result = self._try_write('GPS', 'last_known_gps_reading', 1) or result
+          except Exception as err:
+            self._try_write_error('GPS', 'last_known_gps_reading', str(err))
+            raise err
       else:
         if self.send_last_known_gps:
           # If desired, send the last-known GPS values.
           if self.gpsreader.latitude is not None and self.gpsreader.longitude is not None:
-            result = self._try_write_to_remote('GPS', 'latitude_degrees', self.gpsreader.latitude) or result
-            result = self._try_write_to_remote('GPS', 'longitude_degrees', self.gpsreader.longitude) or result
-            result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
+            result = self._try_write('GPS', 'latitude_degrees', self.gpsreader.latitude) or result
+            result = self._try_write('GPS', 'longitude_degrees', self.gpsreader.longitude) or result
+            result = self._try_write('GPS', 'last_known_gps_reading', 1) or result
 
         logging.warning('GPS has no lat/lon data.')
     except Exception as err:
       logging.error("Error getting data from GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
+      result = self.name
 
     return result

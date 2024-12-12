@@ -34,6 +34,14 @@ class LocalSqlite(LocalStorage):
 
     return cursor
 
+  # Get the most recent num records.
+  def getrecent(self, num):
+    with contextlib.closing(self.db_conn.cursor()) as cursor:
+      cursor.execute("SELECT * FROM data ORDER BY id DESC LIMIT ?", (num,))
+      rows = cursor.fetchall()
+
+      return rows
+
   def writejson(self, json_message):
     with contextlib.closing(self.db_conn.cursor()) as cursor:
       cursor.execute("INSERT INTO data (json) VALUES(?)", (json.dumps(json_message),))

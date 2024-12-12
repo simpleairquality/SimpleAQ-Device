@@ -17,6 +17,7 @@ class Gps(Sensor):
   def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
 
+    self.name = "GPS"
     self.interval = interval
     self.has_set_time = False
     # If available, we will save last known GPS coordinates to environment variables.
@@ -70,7 +71,13 @@ class Gps(Sensor):
     result = False
     try:
       if not self.has_transmitted_device_info:
-        result = self._try_write_to_remote('GPS', 'Model', 'Adafruit Mini GPS PA1010D Stemma QT 1528-4415-ND')
+        try:
+          result = self._try_write('GPS', 'Model', 'Adafruit Mini GPS PA1010D Stemma QT 1528-4415-ND')
+        except Exception as err:
+          self._try_write_error('GPS', 'Model', str(err))
+          result = self.name
+          raise err
+
         self.has_transmitted_device_info = True
 
       if self.gps.has_fix:
@@ -87,7 +94,13 @@ class Gps(Sensor):
           if gps_timestamp:
             # It is actually important that the try_write_to_remote happens before the result, otherwise
             # it will never be evaluated!
-            result = self._try_write_to_remote('GPS', 'timestamp_utc', gps_timestamp) or result
+            try:
+              result = self._try_write('GPS', 'timestamp_utc', gps_timestamp) or result
+            except Exception as err:
+              self._try_write_error('GPS', 'timestamp_utc', str(err))
+              result = self.name
+              raise err
+
         else:
           logging.warning('GPS has no timestamp data')
 
@@ -99,12 +112,29 @@ class Gps(Sensor):
           # It is actually important that the try_write_to_remote happens before the result, otherwise
           # it will never be evaluated!
           self.latitude = gps_latitude
-          result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
+          try:
+            result = self._try_write('GPS', 'latitude_degrees', self.latitude) or result
+          except Exception as err:
+            self._try_write_error('GPS', 'latitude_degrees', str(err))
+            result = self.name
+            raise err
+
           self.longitude = gps_longitude
-          result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
+          try:
+            result = self._try_write('GPS', 'longitude_degrees', self.longitude) or result
+          except Exception as err:
+            self._try_write_error('GPS', 'longitude_degrees', str(err))
+            result = self.name
+            raise err
 
           if self.send_last_known_gps:
-            result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 0) or result
+            try:
+              result = self._try_write('GPS', 'last_known_gps_reading', 0) or result
+            except Exception as err:
+              self._try_write_error('GPS', 'last_known_gps_reading', str(err))
+              result = self.name
+              raise err
+
 
           # Save the last-known latitude and longitude if they're available.
           if self.env_file:
@@ -120,22 +150,22 @@ class Gps(Sensor):
           if self.send_last_known_gps:
             # If desired, send the last-known GPS values.
             if self.latitude is not None and self.longitude is not None:
-              result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
-              result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
-              result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
+              result = self._try_write('GPS', 'latitude_degrees', self.latitude) or result
+              result = self._try_write('GPS', 'longitude_degrees', self.longitude) or result
+              result = self._try_write('GPS', 'last_known_gps_reading', 1) or result
 
           logging.warning('GPS has no lat/lon data.')
       else:
         if self.send_last_known_gps:
           # If desired, send the last-known GPS values.
           if self.latitude is not None and self.longitude is not None:
-            result = self._try_write_to_remote('GPS', 'latitude_degrees', self.latitude) or result
-            result = self._try_write_to_remote('GPS', 'longitude_degrees', self.longitude) or result
-            result = self._try_write_to_remote('GPS', 'last_known_gps_reading', 1) or result
+            result = self._try_write('GPS', 'latitude_degrees', self.latitude) or result
+            result = self._try_write('GPS', 'longitude_degrees', self.longitude) or result
+            result = self._try_write('GPS', 'last_known_gps_reading', 1) or result
 
         logging.warning('GPS has no fix.')
     except Exception as err:
       logging.error("Error getting data from GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
+      result = self.name
 
     return result

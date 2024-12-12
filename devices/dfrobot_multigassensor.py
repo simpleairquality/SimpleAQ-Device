@@ -627,46 +627,59 @@ class DFRobotMultiGas(Sensor):
     raise remote_io_error
 
   def publish(self):
-    logging.info('Publishing DFRobot Multi-Gas on I2C {} to remote.'.format(self.address))
+    logging.info('Publishing DFRobot Multi-Gas on I2C {} to.'.format(self.address))
     result = False
     try:
       uncorrected_gas_concentration, gas_concentration = self.retry_gas_concentration()
       if self.sensor.gastype and self.sensor.gasunits:
         if uncorrected_gas_concentration is not None:
-          result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), uncorrected_gas_concentration) or result
+          result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), uncorrected_gas_concentration) or result
         else:
+          self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), 'Failed to get uncorrected gas concentration.')
+          result = self.name
           logging.warning("DFRobot Multi Gas {} failed to get uncorrected gas concentration!".format(self.sensor.gastype))
 
         if gas_concentration is not None:
-          result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), gas_concentration) or result
+          result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), gas_concentration) or result
         else:
+          self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), 'Failed to get concentration.')
+          result = self.name
           logging.warning("DFRobot Multi Gas {} failed to get gas concentration!".format(self.sensor.gastype))
 
-        result = self._try_write_to_remote('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
+        try:
+          result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
+        except Exception as err:
+          self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C'.format(self.sensor.gastype, self.sensor.gasunits), str(err))
+          result = self.name
+          logging.err("DFRobot Multi Gas {} failed to get temperature!".format(self.sensor.gastype))
       else:
         logging.error("Unable to determine gas type or units on DFRobotMultiGas{} sensor on {}".format(self.dip, self.address))
-        result = True
+        result = self.name 
     except Exception as err:
       logging.error("Error getting data from DFRobotMultiGas{}.  Is this sensor correctly installed and the cable attached tightly: {}".format(self.dip, str(err)));
-      result = True
+      result = self.name 
     return result
 
 class DFRobotMultiGas00(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "00"
+    self.name = "DFRobotMultiGas00"
     super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x74))
 
 class DFRobotMultiGas01(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "01"
+    self.name = "DFRobotMultiGas01"
     super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x75))
 
 class DFRobotMultiGas10(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "10"
+    self.name = "DFRobotMultiGas10"
     super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x76))
 
 class DFRobotMultiGas11(DFRobotMultiGas):
   def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
     self.dip = "11"
+    self.name = "DFRobotMultiGas11"
     super().__init__(remotestorage, localstorage, timesource, bus=i2c_transceiver, address=int(0x77))

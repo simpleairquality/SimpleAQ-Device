@@ -54,6 +54,17 @@ def switch_to_wlan():
     return True
 
 
+def start_wlan_service():
+  # This shouldn't be necessary, but we found that sometimes the systemd-networkd DHCP server stalls
+  # when we're bringing the wlan up and down.  This brings it back.  See issue #55.
+  os.system("service systemd-networkd restart")
+  time.sleep(15)  # 15 second cooldown for systemd-networkd to restart.
+  os.system("systemctl start " + os.getenv("wlan_service"))
+  # This sleep is essential, or we may switch right back to AP mode because
+  # we didn't manage to switch to wlan fast enough.
+  time.sleep(30)
+
+
 def do_graceful_reboot():
   if os.path.exists(os.getenv("reboot_status_file")):
     os.remove(os.getenv("reboot_status_file"))
@@ -90,7 +101,7 @@ def detect_devices(env_file):
         for name, device in device_map.items():
           device_object = None
           try:
-            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file)
+            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file, log_errors=False)
             device_object.publish()
             detected_devices.add(name)
             logging.info("Detected device: {}".format(name))
@@ -113,6 +124,8 @@ def detect_devices(env_file):
 
     # Reboot
     os.system('reboot')
+    # Make sure the system reboots and the SimpleAQ service does not restart
+    time.sleep(60)
 
   # Let's make sure that if any priority devices were detected, they are listed first.
   device_objects = []
@@ -141,7 +154,8 @@ def attempt_reset_i2c_bus(bus_number):
   # If it took longer than a second, we should try resetting.
   if end_time - start_time > 1:
     logging.info("The I2C bus appears to be stuck.  Device should be power cycled.")
-   
+    return True
+  return False
 
 # This program loads environment variables only on boot.
 # If the environment variables change for any reason, the systemd service
@@ -155,8 +169,9 @@ def main(args):
     dotenv.load_dotenv()
 
   # Attempt to avoid rare I2C bus error.
+  i2c_bus_stuck = False
   if os.getenv('i2c_bus_number'):
-    attempt_reset_i2c_bus(int(os.getenv('i2c_bus_number')))
+    i2c_bus_stuck = attempt_reset_i2c_bus(int(os.getenv('i2c_bus_number')))
 
   # resize2fs_once doesn't appear to work reliably anymore.
   # The raspi-config version does.
@@ -168,6 +183,8 @@ def main(args):
     logging.info("First boot.  Resizing root file system and rebooting.")
     os.system('raspi-config --expand-rootfs')
     os.system('reboot')
+    # Make sure the SimpleAQ service does not restart before reboot
+    time.sleep(60)
     return
 
   device_objects = detect_devices(FLAGS.env)
@@ -191,11 +208,8 @@ def main(args):
 
     # Maybe trigger wlan mode
     if switch_to_wlan():
-      logging.warning("Trying to switch to wlan mode.")
-      os.system("systemctl start " + os.getenv("wlan_service"))
-      # This sleep is essential, or we may switch right back to AP mode because
-      # we didn't manage to switch to wlan fast enough.
-      time.sleep(30)
+      logging.warning("Trying to connect on wlan.")
+      start_wlan_service()
 
     with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
@@ -207,6 +221,7 @@ def main(args):
                                        timesource=timesource,
                                        interval=interval,
                                        i2c_transceiver=i2c_transceiver,
+                                       log_errors=True,
                                        env_file=FLAGS.env,
                                        send_last_known_gps=send_last_known_gps))
 
@@ -221,65 +236,47 @@ def main(args):
           while not do_reboot:
             timesource.set_time(datetime.datetime.now())
             result_failure = [sensor.publish() for sensor in sensors]
+
             if any(result_failure):
-              logging.warning("Failed to write some results.  Switching to hostap mode.")
+              # We only report errors, we do not take the entire unit offline if a few things are malfunctioning.
+              # Errors will continue to be logged and saved.
+              system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True) 
+              system_device._try_write("System", "error", "Devices reported errors: " + ','.join([r for r in result_failure if result]))
+            elif i2c_bus_stuck:
+              system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True)
+              system_device._try_write("System", "error", "I2C bus stuckness was detected, and this device should be unplugged and plugged back in again.")
 
-              # Trigger hostapd mode.
-              os.system("systemctl start " + os.getenv("ap_service"))
+            # All data is written exclusively from local storage.
+            logging.info("Getting rows from local storage")
+            publish_rows = local_storage.getrecent(int(os.getenv("max_backlog_writes")))
+            data_json = [row[1] for row in publish_rows]
 
-              # Maybe touch a file to indicate the time that we did this.
-              if not os.path.exists(os.getenv("hostap_status_file")):
-                os.system("touch " + os.getenv("hostap_status_file"))
+            logging.info("Attempting to write data to remote.")
+            # We'll try to write them in one single batch.
+            if data_json:
+              try:
+                remote.write(data_json)
+ 
+                # We succeeded in writing the data.  Let's delete it from our local cache.
+                logging.info("Deleting written rows.")
+                for row in publish_rows:
+                  local_storage.deleterecord(row[0])
+              except Exception as err:
+                logging.error("Failed to write data to remote: {}".format(str(err)))
+
+                # Trigger hostapd mode.
+                os.system("systemctl start " + os.getenv("ap_service"))
+
+                # Maybe touch a file to indicate the time that we did this.
+                if not os.path.exists(os.getenv("hostap_status_file")):
+                  os.system("touch " + os.getenv("hostap_status_file"))
             else:
-              # Write backlog files.
-              files_written = 0
+              logging.info("No data to write!")
 
-              logging.info("Checking for backlog files to write.")
-              count = local_storage.countrecords()
-
-              logging.info("Found {} backlog files!".format(count))
- 
-              with contextlib.closing(local_storage.getcursor()) as cursor:
-                # We iterate over the cursor to avoid loading everything into memory at once.
-                for data_point in cursor:
-                  try:
-                    data_json = json.loads(data_point[1])
-
-                    if 'point' in data_json and 'field' in data_json and 'value' in data_json and 'time' in data_json:
-                      try:
-                        remote.write(data_json)
-                      except Exception as err:
-                        # Immediately break on Influx errors -- if the connection was lost,
-                        # we don't need to retry every file forever.
-                        logging.error("Error writing saved data point with id [{}] to Influx: {}".format(data_point[0], str(err)))
-                        break
-
-                      # Delete the file once written successfully.
-                      local_storage.deleterecord(data_point[0])
-
-                      files_written += 1
-                    else:
-                      # Eventually, very many malformed files in this directory would cause unacceptable slowness.
-                      logging.warning("Data point with id [{}] has missing fields.".format(data_point[0]))
-
-                  except Exception as err:
-                    logging.error("Error writing saved data point with id [{}]: {}".format(data_point[0], str(err)))
-
-                  # We spread out our writing of backlogs, so as not to spend a long time writing
-                  # many backups after a long downtime.  We'll catch up eventually.
-                  if files_written >= int(os.getenv("max_backlog_writes")):
-                    break
-
-                logging.info("Wrote {} backlog files.".format(files_written))
- 
             # Maybe trigger wlan mode.
             if switch_to_wlan():
-              logging.warning("Switching to wlan mode.")
-              # This shouldn't be necessary, but we found that sometimes the systemd-networkd DHCP server stalls
-              # when we're bringing the wlan up and down.  This brings it back.  See issue #55.
-              os.system("service systemd-networkd restart")
-              time.sleep(15)  # 15 second cooldown for systemd-networkd to restart.
-              os.system("systemctl start " + os.getenv("wlan_service"))
+              logging.warning("Trying to connect to wlan.")
+              start_wlan_service()
   
             # TODO:  We should probably wait until a specific future time,  instead of sleep.
             time.sleep(interval)

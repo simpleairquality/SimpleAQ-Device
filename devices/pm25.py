@@ -14,6 +14,7 @@ class Pm25(Sensor):
     super().__init__(remotestorage, localstorage, timesource)
     i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
     self.pm25 = PM25_I2C(i2c)
+    self.name = "PM25"
 
   def read(self):
     try:
@@ -39,9 +40,14 @@ class Pm25(Sensor):
           remote_key += " ug per m3"
         # It is actually important that the try_write_to_remote happens before the result, otherwise
         # it will never be evaluated!
-        result = self._try_write_to_remote('PM25', remote_key, val) or result
+        try:
+          result = self._try_write('PM25', remote_key, val) or result
+        except Exception as err:
+          self._try_write_error('PM25', remote_key, str(err)) or result
+          raise err
+
     except Exception as err:
       logging.error("Error getting data from PM25.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = True
+      result = device.name 
 
     return result
