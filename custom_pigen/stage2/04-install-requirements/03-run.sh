@@ -100,6 +100,7 @@ on_chroot << EOF
 
          systemctl enable hostapd
          systemctl enable dnsmasq
+         systemctl enable dhcpcd
 EOF
 
 # Don't let logs get too big.

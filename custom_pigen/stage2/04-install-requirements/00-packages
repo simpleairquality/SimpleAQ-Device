@@ -1,5 +1,6 @@
 python3-pip
 bootlogd
+dhcpcd
 dnsmasq
 i2c-tools
 iptables-persistent
