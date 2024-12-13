@@ -92,6 +92,9 @@ on_chroot << EOF
          echo "ignore_broadcast_ssid=0" >> /etc/hostapd/hostapd.conf
          echo "wpa=2"                   >> /etc/hostapd/hostapd.conf
          echo "wpa_passphrase=SimpleAQ" >> /etc/hostapd/hostapd.conf
+         echo "wpa_key_mgmt=WPA-PSK"    >> /etc/hostapd/hostapd.conf
+         echo "wpa_pairwise=TKIP"       >> /etc/hostapd/hostapd.conf
+         echo "rsn_pairwise=CCMP"       >> /etc/hostapd/hostapd.conf
 
          sed -i 's|^DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
 
