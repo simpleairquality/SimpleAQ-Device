@@ -210,7 +210,7 @@ def main(args):
               # We only report errors, we do not take the entire unit offline if a few things are malfunctioning.
               # Errors will continue to be logged and saved.
               system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True) 
-              system_device._try_write("System", "error", "Devices reported errors: " + ','.join([r for r in result_failure if result]))
+              system_device._try_write("System", "error", "Devices reported errors: " + ','.join([r for r in result_failure if r]))
             elif i2c_bus_stuck:
               system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True)
               system_device._try_write("System", "error", "I2C bus stuckness was detected, and this device should be unplugged and plugged back in again.")
