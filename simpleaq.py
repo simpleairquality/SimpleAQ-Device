@@ -232,10 +232,6 @@ def main(args):
                   local_storage.deleterecord(row[0])
               except Exception as err:
                 logging.error("Failed to write data to remote: {}".format(str(err)))
-
-                # Maybe touch a file to indicate the time that we did this.
-                if not os.path.exists(os.getenv("hostap_status_file")):
-                  os.system("touch " + os.getenv("hostap_status_file"))
             else:
               logging.info("No data to write!")
 
