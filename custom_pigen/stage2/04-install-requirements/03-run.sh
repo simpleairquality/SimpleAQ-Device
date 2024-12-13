@@ -32,7 +32,6 @@ EOF
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/uap0.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
@@ -49,10 +48,6 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/hostap_config.service
         chmod 644 /etc/systemd/system/hostap_config.service
         systemctl enable hostap_config
-
-        chown root:root /etc/systemd/system/uap0.service
-        chmod 644 /etc/systemd/system/uap0.service
-        systemctl enable uap0
 EOF
 
 # Delete now-unnecessary custom pigen stuff.
@@ -60,47 +55,65 @@ on_chroot << EOF
         rm -rf /simpleaq/custom_pigen
 EOF
 
-# Copy dnsmasq.conf over.
+# Following instructions at:
+# https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
+
+# Disable Debian networking and dhcpcd
+on_chroot << EOF
+        systemctl mask networking.service dhcpcd.service
+        mv /etc/network/interfaces /etc/network/interfaces-
+EOF
+
+# Ensure that systemd-resolved is configured properly.
+on_chroot << EOF
+    apt-get install -y systemd-resolved
+    rm /etc/resolv.conf 
+    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+EOF
+
+# Enable systemd-networkd
+on_chroot << EOF
+        systemctl disable NetworkManager.service
+        systemctl enable systemd-networkd.service
+        systemctl enable systemd-resolved.service
+        systemctl start systemd-networkd.service
+        systemctl start systemd-resolved.service
+        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+EOF
+
+# The wifi client must be on wlan0.
+on_chroot << EOF
+        mv /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+        systemctl disable wpa_supplicant.service
+        systemctl enable wpa_supplicant@wlan0.service
+        systemctl start wpa_supplicant@wlan0.service
+EOF
+
+cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
+
+# The hostap is on ap0.
+cp files/wpa_supplicant-ap0.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant-ap0.conf"
+cp files/12-ap0.network          "${ROOTFS_DIR}/etc/systemd/network"
+cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
 cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
+
+# The hostap no longer conflicts with the wlan0 service.
+on_chroot << EOF
+        systemctl enable wpa_supplicant@ap0.service
+        systemctl start wpa_supplicant@ap0.service
+EOF
+
+# Custom service that allows us to switch between hostap and wifi mode.
+cp files/wpa_supplicant@ap0.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
 # This file also has firewall safeguards.
 cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
 
-# Add AP information to dhcpcd.conf
-on_chroot << EOF
-        echo "interface uap0" >> /etc/dhcpcd.conf
-        echo "static ip_address=192.168.4.1/24" >> /etc/dhcpcd.conf
-        echo "nohook wpa_supplicant" >> dhcpcd.conf
-EOF
-
 # Add AP setup endpoint to /etc/hosts
 on_chroot << EOF
          echo "" >> /etc/hosts
          echo "192.168.4.1             simpleaq.setup" >> /etc/hosts
-EOF
-
-# Setup hostapd
-on_chroot << EOF
-         echo "interface=uap0"          >> /etc/hostapd/hostapd.conf
-         echo "ssid=SimpleAQ"           >> /etc/hostapd/hostapd.conf
-         echo "hw_mode=g"               >> /etc/hostapd/hostapd.conf
-         echo "channel=4"               >> /etc/hostapd/hostapd.conf
-         echo "wmm_enabled=0"           >> /etc/hostapd/hostapd.conf
-         echo "macaddr_acl=0"           >> /etc/hostapd/hostapd.conf
-         echo "auth_algs=1"             >> /etc/hostapd/hostapd.conf
-         echo "ignore_broadcast_ssid=0" >> /etc/hostapd/hostapd.conf
-         echo "wpa=2"                   >> /etc/hostapd/hostapd.conf
-         echo "wpa_passphrase=SimpleAQ" >> /etc/hostapd/hostapd.conf
-         echo "wpa_key_mgmt=WPA-PSK"    >> /etc/hostapd/hostapd.conf
-         echo "wpa_pairwise=TKIP"       >> /etc/hostapd/hostapd.conf
-         echo "rsn_pairwise=CCMP"       >> /etc/hostapd/hostapd.conf
-
-         sed -i 's|^DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
-
-         systemctl enable hostapd
-         systemctl enable dnsmasq
-         systemctl enable dhcpcd
 EOF
 
 # Don't let logs get too big.
