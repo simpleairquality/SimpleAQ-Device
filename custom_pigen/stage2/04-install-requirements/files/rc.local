@@ -44,7 +44,7 @@ _NEW_SSID=$(grep "^\s*ssid=" /etc/wpa_supplicant/wpa_supplicant-ap0.conf | cut -
 # Restart wpa_supplicant if the SSID has changed
 if [ "$_CURRENT_SSID" != "$_NEW_SSID" ]; then
   echo "SSID has changed from $_CURRENT_SSID to $_NEW_SSID. Restarting wpa_supplicant..."
-  systemctl restart wpa_supplicant
+  systemctl restart wpa_supplicant@ap0
 fi
 
 # Don't allow any connections we didn't explicitly request.

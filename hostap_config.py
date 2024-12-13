@@ -154,10 +154,6 @@ def update():
       request.args.get('simpleaq_hostapd_hide_ssid', '0'),
       quote_mode='never')
 
-  # Remove the HostAP status file so we retry connections on reboot.
-  if os.path.exists(os.getenv('hostap_status_file')):
-    os.remove(os.getenv('hostap_status_file'))
-
   # Schedule a Reboot.
   if os.path.exists(os.getenv('reboot_status_file')):
     # Force an immediate reboot.

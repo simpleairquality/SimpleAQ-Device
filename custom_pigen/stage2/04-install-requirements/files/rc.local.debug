@@ -35,4 +35,13 @@ else
   sed -i -s "s/^\s*ignore_broadcast_ssid=.*/     ignore_broadcast_ssid=$_SIMPLEAQ_HOSTAPD_HIDE_SSID/" /etc/wpa_supplicant/wpa_supplicant-ap0.conf
 fi
 
+# Check the new SSID
+_NEW_SSID=$(grep "^\s*ssid=" /etc/wpa_supplicant/wpa_supplicant-ap0.conf | cut -d'"' -f2)
+
+# Restart wpa_supplicant if the SSID has changed
+if [ "$_CURRENT_SSID" != "$_NEW_SSID" ]; then
+  echo "SSID has changed from $_CURRENT_SSID to $_NEW_SSID. Restarting wpa_supplicant..."
+  systemctl restart wpa_supplicant@ap0
+fi
+
 exit 0
