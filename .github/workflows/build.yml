@@ -76,6 +76,7 @@ jobs:
         echo KEYBOARD_KEYMAP=us                    >> config
         echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
         echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
+        echo WPA_COUNTRY=US                        >> config
         echo "image=$IMAGE"                        >> $GITHUB_OUTPUT
 
     # Greatly speed up our build because we don't need a desktop
@@ -174,6 +175,7 @@ jobs:
         echo KEYBOARD_KEYMAP=us                    >> config
         echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
         echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
+        echo WPA_COUNTRY=US                        >> config
         echo "image=$IMAGE"                        >> $GITHUB_OUTPUT
 
     # Greatly speed up our build because we don't need a desktop

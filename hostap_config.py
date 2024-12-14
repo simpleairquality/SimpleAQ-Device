@@ -129,6 +129,7 @@ def update():
     with open(os.getenv('wlan_file'), mode='w') as wlan_file:
       wlan_file.write('ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n')
       wlan_file.write('update_config=1\n')
+      wlan_file.write('country=US\n')
       wlan_file.write('network={\n')
       wlan_file.write('    ssid="{}"\n'.format(request.args.get('local_wifi_network')))
       wlan_file.write('    psk="{}"\n'.format(request.args.get('local_wifi_password')))
