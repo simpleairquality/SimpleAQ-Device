@@ -10,3 +10,4 @@ iptables
 iw
 pipx
 userconf-pi
+hostapd

@@ -32,6 +32,7 @@ EOF
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
@@ -48,6 +49,11 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/hostap_config.service
         chmod 644 /etc/systemd/system/hostap_config.service
         systemctl enable hostap_config
+
+        chown root:root /etc/systemd/system/ap0-setup.service
+        chmod 644 /etc/systemd/system/ap0-setup.service
+        systemctl enable ap0-setup
+
 EOF
 
 # Delete now-unnecessary custom pigen stuff.
@@ -81,30 +87,22 @@ on_chroot << EOF
         ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 EOF
 
-# The wifi client must be on wlan0.
-on_chroot << EOF
-        mv /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
-        systemctl disable wpa_supplicant.service
-        systemctl enable wpa_supplicant@wlan0.service
-        systemctl start wpa_supplicant@wlan0.service
-EOF
-
 cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
 
 # The hostap is on ap0.
-cp files/wpa_supplicant-ap0.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant-ap0.conf"
 cp files/12-ap0.network          "${ROOTFS_DIR}/etc/systemd/network"
 cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
 cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
+# Copy hostapd.conf in
+cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
+cp files/hostapd "${ROOTFS_DIR}/etc/default/hostapd"
+
 # The hostap no longer conflicts with the wlan0 service.
 on_chroot << EOF
-        systemctl enable wpa_supplicant@ap0.service
-        systemctl start wpa_supplicant@ap0.service
+        systemctl enable hostapd 
+        systemctl start hostapd 
 EOF
-
-# Custom service that allows us to switch between hostap and wifi mode.
-cp files/wpa_supplicant@ap0.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
 # This file also has firewall safeguards.
