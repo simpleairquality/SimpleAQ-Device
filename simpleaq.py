@@ -96,7 +96,7 @@ def detect_devices(env_file):
         'detected_devices',
         ','.join(detected_devices))
 
-    os.environ['detected_devices'] = ','.join(detected_devices))
+    os.environ['detected_devices'] = ','.join(detected_devices)
 
     # Restart the hostap service so that it reads correctly.
     os.system('service {} restart'.format(os.getenv('hostap_config_service')))
