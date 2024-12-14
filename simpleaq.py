@@ -96,10 +96,8 @@ def detect_devices(env_file):
         'detected_devices',
         ','.join(detected_devices))
 
-    # Reboot
-    os.system('reboot')
-    # Make sure the system reboots and the SimpleAQ service does not restart
-    time.sleep(60)
+    # Probably no need to reboot for this condition.
+    current_devices = detected_devices
 
   # Let's make sure that if any priority devices were detected, they are listed first.
   device_objects = []
