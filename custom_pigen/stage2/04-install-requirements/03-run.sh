@@ -67,7 +67,6 @@ EOF
 # Disable Debian networking and dhcpcd
 on_chroot << EOF
         systemctl mask networking.service dhcpcd.service
-        mv /etc/network/interfaces /etc/network/interfaces-
 EOF
 
 # Ensure that systemd-resolved is configured properly.
