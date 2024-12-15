@@ -41,7 +41,7 @@ fi
 # Check the new SSID
 _NEW_SSID=$(grep "^\s*ssid=" /etc/hostapd/hostapd.conf | cut -d'"' -f2)
 
-# Restart wpa_supplicant if the SSID has changed
+# Restart hostapd if the SSID has changed
 if [ "$_CURRENT_SSID" != "$_NEW_SSID" ]; then
   echo "SSID has changed from $_CURRENT_SSID to $_NEW_SSID. Restarting hostapd..."
   systemctl restart hostapd
