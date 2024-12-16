@@ -1,0 +1,10 @@
+[Unit]
+Description=SimpleAQ Recorder
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always
+ExecStart=python /simpleaq/simpleaq.py --env /etc/environment
+

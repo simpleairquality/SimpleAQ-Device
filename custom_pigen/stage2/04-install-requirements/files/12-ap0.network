@@ -1,0 +1,9 @@
+[Match]
+Name=ap0
+[Network]
+Address=192.168.4.1/24
+DHCPServer=yes
+MulticastDNS=true
+DNS=192.168.4.1
+[DHCPServer]
+DNS=192.168.4.1
