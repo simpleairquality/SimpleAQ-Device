@@ -1,8 +1,8 @@
 [Unit]
 Description=Setup virtual AP interface
 Before=hostapd.service
-Wants=network.target
 After=network.target
+Requires=sys-subsystem-net-devices-wlan0.device
 
 [Service]
 Type=oneshot

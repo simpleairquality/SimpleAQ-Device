@@ -37,7 +37,6 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/ap0-setup.service
         chmod 644 /etc/systemd/system/ap0-setup.service
         systemctl enable ap0-setup
-
 EOF
 
 # Delete now-unnecessary custom pigen stuff.
@@ -48,34 +47,29 @@ EOF
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
 
-# Disable Debian networking and dhcpcd
-# on_chroot << EOF
-#         systemctl mask networking.service dhcpcd.service
-# EOF
-
 # Ensure that systemd-resolved is configured properly.
-# on_chroot << EOF
-#    apt-get install -y systemd-resolved
-#    rm /etc/resolv.conf 
-#    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
-# EOF
+on_chroot << EOF
+        apt-get install -y systemd-resolved
+        rm /etc/resolv.conf 
+        ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+EOF
 
 # Enable systemd-networkd
-# on_chroot << EOF
-#         systemctl disable NetworkManager.service
-#        systemctl enable systemd-networkd.service
-#        systemctl enable systemd-resolved.service
-#        systemctl start systemd-networkd.service
-#        systemctl start systemd-resolved.service
-#        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-# EOF
+on_chroot << EOF
+        systemctl disable NetworkManager.service
+        systemctl enable systemd-networkd.service
+        systemctl enable systemd-resolved.service
+        systemctl start systemd-networkd.service
+        systemctl start systemd-resolved.service
+        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+EOF
 
-# cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
+cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
 
 # The hostap is on ap0.
 # cp files/12-ap0.network          "${ROOTFS_DIR}/etc/systemd/network"
-# cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
-# cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
+cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
+cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # Copy hostapd.conf in
 # cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
@@ -99,7 +93,7 @@ cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
 
 # Don't let logs get too big.
 on_chroot << EOF
-  sed -i '/SystemMaxUse/c\SystemMaxUse=100M' /etc/systemd/journald.conf
+        sed -i '/SystemMaxUse/c\SystemMaxUse=100M' /etc/systemd/journald.conf
 EOF
 
 # Disable firewall safeguards for debug builds.
