@@ -1,0 +1,13 @@
+python3-pip
+bootlogd
+dnsmasq
+i2c-tools
+iptables-persistent
+libi2c-dev
+libgpiod-dev
+libopenblas-dev
+iptables
+iw
+pipx
+userconf-pi
+hostapd
