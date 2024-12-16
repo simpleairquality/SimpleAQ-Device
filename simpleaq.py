@@ -147,20 +147,6 @@ def main(args):
   if os.getenv('i2c_bus_number'):
     i2c_bus_stuck = attempt_reset_i2c_bus(int(os.getenv('i2c_bus_number')))
 
-  # resize2fs_once doesn't appear to work reliably anymore.
-  # The raspi-config version does.
-  if os.getenv('first_boot') == 'true':
-    dotenv.set_key(
-        FLAGS.env,
-        'first_boot',
-        'false')
-    logging.info("First boot.  Resizing root file system and rebooting.")
-    os.system('raspi-config --expand-rootfs')
-    os.system('reboot')
-    # Make sure the SimpleAQ service does not restart before reboot
-    time.sleep(60)
-    return
-
   device_objects = detect_devices(FLAGS.env)
 
   remote_storage_class = None
