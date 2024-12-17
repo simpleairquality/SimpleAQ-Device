@@ -18,6 +18,10 @@ cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 
+# My belief is that this should be, or at least was, auto-generated.
+# Now it's not anymore.  We copy it over.
+cp files/wpa_supplicant.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
+
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
 on_chroot << EOF
