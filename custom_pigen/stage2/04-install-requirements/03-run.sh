@@ -15,71 +15,71 @@ EOF
 # https://github.com/torfsen/python-systemd-tutorial is awesome.
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/99-wlan0.rules "${ROOTFS_DIR}/etc/udev/rules.d"
+# cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
+# cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
+# cp files/99-wlan0.rules "${ROOTFS_DIR}/etc/udev/rules.d"
 
 # My belief is that this should be, or at least was, auto-generated.
 # Now it's not anymore.  We copy it over.
-cp files/wpa_supplicant.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
+# cp files/wpa_supplicant.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
-on_chroot << EOF
-        cat /simpleaq/example.env >> /etc/environment
-EOF
+# on_chroot << EOF
+#         cat /simpleaq/example.env >> /etc/environment
+# EOF
 
 # Make sure our service has the right permissions and that it starts on boot.
-on_chroot << EOF
-        chown root:root /etc/systemd/system/simpleaq.service
-        chmod 644 /etc/systemd/system/simpleaq.service
-        systemctl enable simpleaq
+# on_chroot << EOF
+#         chown root:root /etc/systemd/system/simpleaq.service
+#         chmod 644 /etc/systemd/system/simpleaq.service
+#         systemctl enable simpleaq
 
-        chown root:root /etc/systemd/system/hostap_config.service
-        chmod 644 /etc/systemd/system/hostap_config.service
-        systemctl enable hostap_config
+#         chown root:root /etc/systemd/system/hostap_config.service
+#         chmod 644 /etc/systemd/system/hostap_config.service
+#         systemctl enable hostap_config
 
-        chown root:root /etc/systemd/system/ap0-setup.service
-        chmod 644 /etc/systemd/system/ap0-setup.service
-        systemctl enable ap0-setup
-EOF
+#         chown root:root /etc/systemd/system/ap0-setup.service
+#         chmod 644 /etc/systemd/system/ap0-setup.service
+#         systemctl enable ap0-setup
+# EOF
 
 # Delete now-unnecessary custom pigen stuff.
-on_chroot << EOF
-        rm -rf /simpleaq/custom_pigen
-EOF
+# on_chroot << EOF
+#         rm -rf /simpleaq/custom_pigen
+# EOF
 
 # Remove rfkill, as it seems to cause problems.  We don't want it anyway.
-on_chroot << EOF
-        apt-get remove -y rfkill
-EOF
+# on_chroot << EOF
+#         apt-get remove -y rfkill
+# EOF
 
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
 
 # Ensure that systemd-resolved is configured properly.
-on_chroot << EOF
-        apt-get install -y systemd-resolved
-        rm /etc/resolv.conf 
-        ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
-EOF
+# on_chroot << EOF
+#        apt-get install -y systemd-resolved
+#        rm /etc/resolv.conf 
+#        ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+# EOF
 
 # Enable systemd-networkd
-on_chroot << EOF
-        systemctl disable NetworkManager.service
-        systemctl enable systemd-networkd.service
-        systemctl enable systemd-resolved.service
-        systemctl start systemd-networkd.service
-        systemctl start systemd-resolved.service
-        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-EOF
+# on_chroot << EOF
+#         systemctl disable NetworkManager.service
+#         systemctl enable systemd-networkd.service
+#         systemctl enable systemd-resolved.service
+#         systemctl start systemd-networkd.service
+#         systemctl start systemd-resolved.service
+#         ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+# EOF
 
-cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
+# cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
 
 # The hostap is on ap0.
 # cp files/12-ap0.network          "${ROOTFS_DIR}/etc/systemd/network"
-cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
-cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
+# cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
+# cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # Copy hostapd.conf in
 # cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
@@ -93,7 +93,12 @@ cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
 # This file also has firewall safeguards.
-cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
+# cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
+# on_chroot << EOF
+#         chown root:root /etc/rc.local
+#         chmod 644 /etc/rc.local
+# EOF
+
 
 # Add AP setup endpoint to /etc/hosts
 # on_chroot << EOF
@@ -107,7 +112,7 @@ on_chroot << EOF
 EOF
 
 # Disable firewall safeguards for debug builds.
-if [ ${ENABLE_SSH} -eq 1 ]
-then
-  cp files/rc.local.debug "${ROOTFS_DIR}/etc/rc.local"
-fi 
+# if [ ${ENABLE_SSH} -eq 1 ]
+# then
+#   cp files/rc.local.debug "${ROOTFS_DIR}/etc/rc.local"
+# fi 
