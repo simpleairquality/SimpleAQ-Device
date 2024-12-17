@@ -1,15 +1,14 @@
 [Unit]
-Description=Setup virtual AP interface
-Before=hostapd.service
-After=network.target
-Requires=sys-subsystem-net-devices-wlan0.device
+Description=Create ap0 interface
+After=sys-subsystem-net-devices-wlan0.device
 
 [Service]
 Type=oneshot
-ExecStart=/sbin/iw dev wlan0 interface add ap0 type __ap
-ExecStartPost=/bin/ip link set ap0 up
 RemainAfterExit=true
+ExecStart=/sbin/iw phy phy0 interface add ap0 type __ap
+ExecStartPost=/usr/bin/ip link set dev ap0 address 00:11:22:33:44:55
+ExecStartPost=/sbin/ifconfig ap0 up
+ExecStop=/sbin/iw dev ap0 del
 
 [Install]
 WantedBy=multi-user.target
-

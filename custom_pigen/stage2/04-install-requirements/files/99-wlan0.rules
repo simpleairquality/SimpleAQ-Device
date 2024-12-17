@@ -1,0 +1,1 @@
+SUBSYSTEM=="net", KERNEL=="wlan0", RUN+="/bin/systemctl restart ap0-setup.service"

@@ -17,6 +17,7 @@ cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/99-wlan0.rules "${ROOTFS_DIR}/etc/udev/rules.d"
 
 # My belief is that this should be, or at least was, auto-generated.
 # Now it's not anymore.  We copy it over.
@@ -46,6 +47,11 @@ EOF
 # Delete now-unnecessary custom pigen stuff.
 on_chroot << EOF
         rm -rf /simpleaq/custom_pigen
+EOF
+
+# Remove rfkill, as it seems to cause problems.  We don't want it anyway.
+on_chroot << EOF
+        apt-get remove -y rfkill
 EOF
 
 # Following instructions at:
