@@ -15,8 +15,11 @@ EOF
 # https://github.com/torfsen/python-systemd-tutorial is awesome.
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
-# cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
-# cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/ap0-hotspot.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
+cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
+
 # cp files/99-wlan0.rules "${ROOTFS_DIR}/etc/udev/rules.d"
 
 # My belief is that this should be, or at least was, auto-generated.
@@ -25,29 +28,32 @@ cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
-# on_chroot << EOF
-#         cat /simpleaq/example.env >> /etc/environment
-# EOF
+on_chroot << EOF
+        cat /simpleaq/example.env >> /etc/environment
+EOF
 
 # Make sure our service has the right permissions and that it starts on boot.
-# on_chroot << EOF
-#         chown root:root /etc/systemd/system/simpleaq.service
-#         chmod 644 /etc/systemd/system/simpleaq.service
-#         systemctl enable simpleaq
+on_chroot << EOF
+        chown root:root /etc/systemd/system/simpleaq.service
+        chmod 644 /etc/systemd/system/simpleaq.service
+        systemctl enable simpleaq
 
-#         chown root:root /etc/systemd/system/hostap_config.service
-#         chmod 644 /etc/systemd/system/hostap_config.service
-#         systemctl enable hostap_config
+        chown root:root /etc/systemd/system/hostap_config.service
+        chmod 644 /etc/systemd/system/hostap_config.service
+        systemctl enable hostap_config
 
-#         chown root:root /etc/systemd/system/ap0-setup.service
-#         chmod 644 /etc/systemd/system/ap0-setup.service
-#         systemctl enable ap0-setup
-# EOF
+        chown root:root /etc/systemd/system/ap0-setup.service
+        chmod 644 /etc/systemd/system/ap0-setup.service
+        systemctl enable ap0-setup
+
+        chmod 600 /etc/NetworkManager/system-connections/ap0-hotspot.nmconnection
+EOF
 
 # Delete now-unnecessary custom pigen stuff.
-# on_chroot << EOF
-#         rm -rf /simpleaq/custom_pigen
-# EOF
+on_chroot << EOF
+        rm -rf /simpleaq/custom_pigen
+EOF
+
 
 # Remove rfkill, as it seems to cause problems.  We don't want it anyway.
 # on_chroot << EOF
@@ -79,7 +85,7 @@ cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 # The hostap is on ap0.
 # cp files/12-ap0.network          "${ROOTFS_DIR}/etc/systemd/network"
 # cp files/resolved.conf           "${ROOTFS_DIR}/etc/systemd/resolved.conf"
-# cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
+cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # Copy hostapd.conf in
 # cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
