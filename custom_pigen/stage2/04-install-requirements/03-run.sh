@@ -88,7 +88,7 @@ cp files/dhcpcd.conf "${ROOTFS_DIR}/etc/dhcpcd.conf"
 
 # DHCP server for ap0
 on_chroot << EOF
-        apt-get install isc-dhcp-server
+        apt-get install -y isc-dhcp-server
 EOF
 
 cp files/dhcpd.conf "${ROOTFS_DIR}/etc/dhcp/dhcpd.conf"
