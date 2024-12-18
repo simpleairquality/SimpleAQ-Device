@@ -1,15 +1,12 @@
 [Unit]
 Description=Create ap0 interface
-After=NetworkManager.service
+After=sys-subsystem-net-devices-wlan0.device
 
 [Service]
 Type=oneshot
-RemainAfterExit=true
-ExecStartPre=bash -c 'while ! /usr/bin/nmcli device status | grep wlan0 -q; do sleep 1; done'
 ExecStart=/sbin/iw dev wlan0 interface add ap0 type __ap
-ExecStartPost=nmcli device set ap0 managed yes
-ExecStartPost=bash -c 'while ! /usr/bin/nmcli device status | grep ap0 -q; do sleep 1; done'
-ExecStartPost=nmcli connection up ap0-hotspot
+ExecStartPost=/usr/bin/ip link set dev ap0 up
+RemainAfterExit=true
 ExecStop=/sbin/iw dev ap0 del
 
 [Install]

@@ -27,17 +27,12 @@ cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/ap0-hotspot.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
-cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
-
-# Remove this later.
-cp files/test_commands.sh "${ROOTFS_DIR}/"
 
 # cp files/99-wlan0.rules "${ROOTFS_DIR}/etc/udev/rules.d"
 
 # My belief is that this should be, or at least was, auto-generated.
 # Now it's not anymore.  We copy it over.
-# cp files/wpa_supplicant.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
+cp files/wpa_supplicant.conf "${ROOTFS_DIR}/etc/wpa_supplicant/wpa_supplicant.conf"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
@@ -58,9 +53,6 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/ap0-setup.service
         chmod 644 /etc/systemd/system/ap0-setup.service
         systemctl enable ap0-setup
-
-        chown root:root /etc/NetworkManager/system-connections/ap0-hotspot.nmconnection
-        chmod 600 /etc/NetworkManager/system-connections/ap0-hotspot.nmconnection
 EOF
 
 # Delete now-unnecessary custom pigen stuff.
@@ -70,9 +62,9 @@ EOF
 
 
 # Remove rfkill, as it seems to cause problems.  We don't want it anyway.
-# on_chroot << EOF
-#         apt-get remove -y rfkill
-# EOF
+on_chroot << EOF
+        apt-get remove -y rfkill
+EOF
 
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
@@ -84,15 +76,23 @@ EOF
 #        ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 # EOF
 
-# Enable systemd-networkd
-# on_chroot << EOF
-#         systemctl disable NetworkManager.service
-#         systemctl enable systemd-networkd.service
-#         systemctl enable systemd-resolved.service
-#         systemctl start systemd-networkd.service
-#         systemctl start systemd-resolved.service
-#         ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-# EOF
+# Enable dhcpcd 
+on_chroot << EOF
+        systemctl disable NetworkManager.service
+        systemctl enable hostapd
+        systemctl enable dhcpcd
+        systemctl start hostapd 
+        systemctl start dhcpcd
+EOF
+cp files/dhcpcd.conf "${ROOTFS_DIR}/etc/dhcpcd.conf"
+
+# DHCP server for ap0
+on_chroot << EOF
+        apt-get install isc-dhcp-server
+EOF
+
+cp files/dhcpd.conf "${ROOTFS_DIR}/etc/dhcp/dhcpd.conf"
+echo 'INTERFACESv4="ap0"' >> "${ROOTFS_DIR}/etc/default/isc-dhcp-server"
 
 # cp files/08-wlan0.network "${ROOTFS_DIR}/etc/systemd/network"
 
@@ -102,8 +102,8 @@ EOF
 cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # Copy hostapd.conf in
-# cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
-# cp files/hostapd "${ROOTFS_DIR}/etc/default/hostapd"
+cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
+cp files/hostapd "${ROOTFS_DIR}/etc/default/hostapd"
 
 # The hostap no longer conflicts with the wlan0 service.
 # on_chroot << EOF
@@ -113,11 +113,11 @@ cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
 # This file also has firewall safeguards.
-# cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
-# on_chroot << EOF
-#         chown root:root /etc/rc.local
-#         chmod 644 /etc/rc.local
-# EOF
+cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
+on_chroot << EOF
+        chown root:root /etc/rc.local
+        chmod 644 /etc/rc.local
+EOF
 
 
 # Add AP setup endpoint to /etc/hosts
