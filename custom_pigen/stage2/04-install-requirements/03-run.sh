@@ -2,6 +2,16 @@
 
 cp -R /simpleaq "${ROOTFS_DIR}"
 
+# Ensure that i2c and spi are enabled.
+# But still use our usual boot config, which has essential changes to i2c.
+on_chroot << EOF
+        cp /boot/firmware/config.txt /boot/firmware/temp
+	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
+        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
+        cp /boot/firmware/temp /boot/firmware/config.txt
+        rm /boot/firmware/temp
+EOF
+
 # Install SimpleAQ requirements.
 on_chroot << EOF
         pip install --break-system-packages -r /simpleaq/requirements.txt
@@ -46,6 +56,7 @@ on_chroot << EOF
         chmod 644 /etc/systemd/system/ap0-setup.service
         systemctl enable ap0-setup
 
+        chown root:root /etc/NetworkManager/system-connections/ap0-hotspot.nmconnection
         chmod 600 /etc/NetworkManager/system-connections/ap0-hotspot.nmconnection
 EOF
 
