@@ -30,6 +30,9 @@ cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-hotspot.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
 
+# Remove this later.
+cp files/test_commands.sh "${ROOTFS_DIR}/"
+
 # cp files/99-wlan0.rules "${ROOTFS_DIR}/etc/udev/rules.d"
 
 # My belief is that this should be, or at least was, auto-generated.
