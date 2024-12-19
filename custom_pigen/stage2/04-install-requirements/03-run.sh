@@ -27,7 +27,7 @@ cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/ap0-hotspot.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
+# cp files/ap0-hotspot.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
 
 # Remove this later.
@@ -58,9 +58,6 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/ap0-setup.service
         chmod 644 /etc/systemd/system/ap0-setup.service
         systemctl enable ap0-setup
-
-        chown root:root /etc/NetworkManager/system-connections/ap0-hotspot.nmconnection
-        chmod 600 /etc/NetworkManager/system-connections/ap0-hotspot.nmconnection
 EOF
 
 # Delete now-unnecessary custom pigen stuff.
@@ -102,23 +99,22 @@ EOF
 cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
 
 # Copy hostapd.conf in
-# cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
-# cp files/hostapd "${ROOTFS_DIR}/etc/default/hostapd"
+cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
+cp files/hostapd "${ROOTFS_DIR}/etc/default/hostapd"
 
 # The hostap no longer conflicts with the wlan0 service.
-# on_chroot << EOF
-#         systemctl enable hostapd 
-#         systemctl start hostapd 
-# EOF
+on_chroot << EOF
+        systemctl enable hostapd 
+        systemctl start hostapd 
+EOF
 
 # Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
 # This file also has firewall safeguards.
-# cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
-# on_chroot << EOF
-#         chown root:root /etc/rc.local
-#         chmod 644 /etc/rc.local
-# EOF
-
+cp files/rc.local "${ROOTFS_DIR}/etc/rc.local"
+on_chroot << EOF
+        chown root:root /etc/rc.local
+        chmod 644 /etc/rc.local
+EOF
 
 # Add AP setup endpoint to /etc/hosts
 # on_chroot << EOF
@@ -132,7 +128,7 @@ on_chroot << EOF
 EOF
 
 # Disable firewall safeguards for debug builds.
-# if [ ${ENABLE_SSH} -eq 1 ]
-# then
-#   cp files/rc.local.debug "${ROOTFS_DIR}/etc/rc.local"
-# fi 
+if [ ${ENABLE_SSH} -eq 1 ]
+then
+        cp files/rc.local.debug "${ROOTFS_DIR}/etc/rc.local"
+fi 
