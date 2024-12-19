@@ -26,8 +26,9 @@ EOF
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
+# cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/unblock-rfkill.service "${ROOTFS_DIR}/etc/systemd/system"
+cp files/99-ap0 "${ROOTFS_DIR}/lib/dhcpcd/dhcpcd-hooks/99-ap0"
 
 # cp files/99-wlan0.rules "${ROOTFS_DIR}/etc/udev/rules.d"
 
@@ -50,10 +51,6 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/hostap_config.service
         chmod 644 /etc/systemd/system/hostap_config.service
         systemctl enable hostap_config
-
-        chown root:root /etc/systemd/system/ap0-setup.service
-        chmod 644 /etc/systemd/system/ap0-setup.service
-        systemctl enable ap0-setup
 
         chown root:root /etc/systemd/system/unblock-rfkill.service
         chmod 644 /etc/systemd/system/unblock-rfkill.service
