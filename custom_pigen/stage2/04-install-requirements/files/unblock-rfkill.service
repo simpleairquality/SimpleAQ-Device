@@ -1,0 +1,13 @@
+[Unit]
+Description=Unblock all devices via rfkill
+DefaultDependencies=no
+Before=dhcpcd.service hostapd.service network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/rfkill unblock all
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
