@@ -62,9 +62,9 @@ EOF
 
 
 # Remove rfkill, as it seems to cause problems.  We don't want it anyway.
-on_chroot << EOF
-        apt-get remove -y rfkill
-EOF
+# on_chroot << EOF
+#         apt-get remove -y rfkill
+# EOF
 
 # Following instructions at:
 # https://raspberrypi.stackexchange.com/questions/93311/switch-between-wifi-client-and-access-point-without-reboot
