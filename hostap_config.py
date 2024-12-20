@@ -22,7 +22,7 @@ def get_wifi_field(field):
     try:
         # "Wifi" set in files/wifi.nmconnection
         result = subprocess.run(
-            ["sudo", "nmcli", "-s", "-g", "802-11-wireless-security.{}".format(field), "connection", "show", "Wifi"],
+            ["sudo", "nmcli", "-s", "-g", field, "connection", "show", "Wifi"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -63,8 +63,8 @@ def main():
   ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
   psk_re = re.compile("^\s*psk=\"(.*)\"\s*$")
 
-  local_ssid = get_wifi_field('ssid')
-  local_psk = get_wifi_field('psk') 
+  local_ssid = get_wifi_field('802-11-wireless.ssid')
+  local_psk = get_wifi_field('802-11-wireless-security.psk') 
 
   num_data_points = "Database Error"
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
