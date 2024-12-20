@@ -25,7 +25,6 @@ EOF
 # https://github.com/torfsen/python-systemd-tutorial is awesome.
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/wifi.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
