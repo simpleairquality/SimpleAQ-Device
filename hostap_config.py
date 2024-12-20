@@ -183,11 +183,7 @@ def update():
 
   # Schedule a Reboot.
   if os.path.exists(os.getenv('reboot_status_file')):
-    # Force an immediate reboot.
-    os.remove(os.getenv('reboot_status_file'))
-    os.system('reboot')
-  else:
-    # Attempt a soft reboot.
+    # Attempt a soft reboot of the SimpleAQ service
     os.system('touch {}'.format(os.getenv('reboot_status_file')))
 
   # The user may never see this before the system restarts.

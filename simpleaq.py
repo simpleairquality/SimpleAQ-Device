@@ -230,10 +230,9 @@ def main(args):
 
   # Now we've released all of the devices and finalized local storage.  It is safe to do a gracefull reboot.
   if do_reboot:
-    logging.info("Detected request for graceful reboot.  Rebooting now.")
-    os.system('reboot')
-    # Wait a minute, to make sure the service doesn't restart too soon.
-    time.sleep(60)
-
+    logging.info("Detected request for graceful restart.  Restarting SimpleAQ services and hostapd now.")
+    os.system('systemctl restart hostap_config')
+    os.system('systemctl restart hostapd')
+    
 if __name__ == '__main__':
   app.run(main)
