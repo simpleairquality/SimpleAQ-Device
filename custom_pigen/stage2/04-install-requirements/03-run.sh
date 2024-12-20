@@ -27,7 +27,7 @@ cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/dnsmasq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
-# cp files/ap0-hotspot.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
+cp files/wifi.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
 
 # Remove this later.
@@ -58,6 +58,9 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/ap0-setup.service
         chmod 644 /etc/systemd/system/ap0-setup.service
         systemctl enable ap0-setup
+
+        chown root:root /etc/NetworkManager/system-connections/wifi.nmconnection
+        chmod 600 /etc/NetworkManager/system-connections/wifi.nmconnection
 EOF
 
 # Delete now-unnecessary custom pigen stuff.
@@ -117,10 +120,10 @@ on_chroot << EOF
 EOF
 
 # Add AP setup endpoint to /etc/hosts
-# on_chroot << EOF
-#          echo "" >> /etc/hosts
-#          echo "192.168.4.1             simpleaq.setup" >> /etc/hosts
-# EOF
+on_chroot << EOF
+         echo "" >> /etc/hosts
+         echo "192.168.4.1             simpleaq.setup" >> /etc/hosts
+EOF
 
 # Don't let logs get too big.
 on_chroot << EOF

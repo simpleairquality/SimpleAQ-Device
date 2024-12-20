@@ -6,33 +6,65 @@ import json
 import re
 import subprocess
 import sqlite3
+import logging
 from localstorage.localsqlite import LocalSqlite
 
 import netifaces as ni
 
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 
 def get_mac(interface='wlan0'):
   return ni.ifaddresses(interface)[ni.AF_LINK][0]['addr']
+
+def get_wifi_field(field):
+    """Retrieve the PSK for a given connection name."""
+    try:
+        # "Wifi" set in files/wifi.nmconnection
+        result = subprocess.run(
+            ["sudo", "nmcli", "-s", "-g", "802-11-wireless-security.{}".format(field), "connection", "show", "Wifi"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        logger.error(str(e))
+    return ""
+
+def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
+    """
+    Set or update the Wi-Fi credentials (SSID and PSK) for a connection.
+
+    Parameters:
+        ssid (str): The SSID of the Wi-Fi network.
+        psk (str): The password for the Wi-Fi network.
+        connection_name (str): The name of the connection profile (optional).
+                               If not provided, defaults to the SSID.
+    """
+    if not connection_name:
+        connection_name = ssid  # Use SSID as connection name if none provided
+
+    try:
+        # Connection better already exist, update the SSID and PSK
+        subprocess.run(
+            ["nmcli", "connection", "modify", connection_name,
+             "802-11-wireless.ssid", ssid,
+             "802-11-wireless-security.key-mgmt", "wpa-psk",
+             "802-11-wireless-security.psk", psk],
+            check=True,
+            )
+    except subprocess.CalledProcessError as e:
+        logger.error(str(e))
 
 @app.route('/')
 def main():
   ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
   psk_re = re.compile("^\s*psk=\"(.*)\"\s*$")
 
-  local_ssid = ""
-  with open(os.getenv('wlan_file'), mode='r') as wlan_file:
-    for line in wlan_file:
-      search_result = ssid_re.match(line)
-      if search_result:
-        local_ssid = search_result.group(1)
-
-  local_psk = ""
-  with open(os.getenv('wlan_file'), mode='r') as wlan_file:
-    for line in wlan_file:
-      search_result = psk_re.match(line)
-      if search_result:
-        local_psk = search_result.group(1)
+  local_ssid = get_wifi_field('ssid')
+  local_psk = get_wifi_field('psk') 
 
   num_data_points = "Database Error"
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
@@ -126,14 +158,8 @@ def update():
     # If for any reason that changes, this will have to also.
     # However, just in case some users manually edit this, it will never be overwritten unless
     # they actually try to change the values in the form.
-    with open(os.getenv('wlan_file'), mode='w') as wlan_file:
-      wlan_file.write('ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n')
-      wlan_file.write('update_config=1\n')
-      wlan_file.write('country=US\n')  # TODO:  Maybe make this configurable in environment vars
-      wlan_file.write('network={\n')
-      wlan_file.write('    ssid="{}"\n'.format(request.args.get('local_wifi_network')))
-      wlan_file.write('    psk="{}"\n'.format(request.args.get('local_wifi_password')))
-      wlan_file.write('}\n')
+    set_wifi_credentials(request.args.get('local_wifi_network'), 
+                         request.args.get('local_wifi_password'))
 
   # Update environment variables.
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
