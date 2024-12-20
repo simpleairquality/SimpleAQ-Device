@@ -74,8 +74,13 @@ def main():
       # Don't let this break things.
       pass
 
+  warn_message = ''
+  if os.path.exists(os.getenv('reboot_status_file')):
+    warn_message = 'These settings may be out of date, as previous settings are still being applied.  Please refresh this page in a few minutes for up to date settings.'
+
   return render_template(
       'index.html',
+      warn_message=warn_message,
       num_data_points=num_data_points,
       local_wifi_network=local_ssid,
       local_wifi_password=local_psk,
@@ -182,9 +187,7 @@ def update():
       quote_mode='never')
 
   # Schedule a Reboot.
-  if os.path.exists(os.getenv('reboot_status_file')):
-    # Attempt a soft reboot of the SimpleAQ service
-    os.system('touch {}'.format(os.getenv('reboot_status_file')))
+  os.system('touch {}'.format(os.getenv('reboot_status_file')))
 
   # The user may never see this before the system restarts.
   return render_template('update.html')
