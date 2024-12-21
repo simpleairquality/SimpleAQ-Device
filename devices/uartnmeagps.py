@@ -40,7 +40,7 @@ def get_baud_rate():
 
 class GPSReader(object):
   def __init__(self, serial, interval, timesource):
-    self.nmea = UBXReader(serial, quitonerror=ERR_RAISE)
+    self.nmea = UBXReader(serial, quitonerror=ERR_LOG)
     self.stop_reading = threading.Event()
     self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
     self.serial = serial
