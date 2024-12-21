@@ -70,6 +70,13 @@ on_chroot << EOF
         systemctl start hostapd 
 EOF
 
+cp files/gpsd "${ROOTFS_DIR}/etc/default/gpsd"
+
+# Also enable gpsd
+on_chroot << EOF
+        systemctl enable gpsd
+EOF
+
 # Add AP setup endpoint to /etc/hosts
 on_chroot << EOF
          echo "" >> /etc/hosts

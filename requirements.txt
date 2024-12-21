@@ -19,3 +19,4 @@ requests
 requests-toolbelt
 RPi.GPIO
 smbus
+gpsd-py3

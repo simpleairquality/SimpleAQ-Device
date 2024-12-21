@@ -11,3 +11,5 @@ iw
 pipx
 userconf-pi
 hostapd
+gpsd
+gpsd-clients

@@ -100,7 +100,6 @@ def main():
       max_backlog_writes=os.getenv('max_backlog_writes'),
       detected_devices=os.getenv('detected_devices'),
       i2c_bus=os.getenv('i2c_bus'),
-      uart_serial_baud=os.getenv('uart_serial_baud'),
       mac_addr=str(get_mac()))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
@@ -170,7 +169,7 @@ def update():
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
           'simpleaq_interval', 'simpleaq_hostapd_name', 'endpoint_type',
           'simpleaq_hostapd_password', 'hostap_retry_interval_sec',
-          'max_backlog_writes', 'i2c_bus', 'uart_serial_baud']
+          'max_backlog_writes', 'i2c_bus']
 
   no_quote_keys = ['simpleaq_hostapd_name', 'simpleaq_hostapd_password']
 

@@ -1,0 +1,8 @@
+# Devices gpsd should use
+DEVICES="/dev/ttyS0"
+
+# Options for gpsd
+GPSD_OPTIONS="-n"
+
+# Automatically start gpsd
+START_DAEMON="true"
