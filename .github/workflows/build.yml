@@ -21,6 +21,8 @@ jobs:
         remove-dotnet: 'true'
         remove-android: 'true'
         remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
 
     - name: List Available Space
       run: |
