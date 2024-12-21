@@ -2,7 +2,6 @@
 import calendar
 import datetime
 import dotenv
-import io
 import os
 import re
 import time
@@ -10,11 +9,139 @@ import threading
 import subprocess
 import sys
 from serial import Serial
-
+from io import BufferedReader
 from absl import logging
-from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
-from pyubx2.ubxtypes_core import ERR_LOG
+from pyubx2 import UBXReader, ERR_IGNORE
 from . import Sensor
+
+# Modified from:  https://github.com/semuconsulting/PyGPSClient/blob/537d48e7fa1526dbb332f3dacaad110d497cc59a/examples/socket_server.py
+class GPSReader:
+    """
+    Stream handler class.
+    """
+
+    def __init__(self, serport, baud, timeout, interval, timesource):
+        """
+        Constructor.
+        """
+
+        self._serport = serport
+        self._baud = baud
+        self._timeout = timeout
+        self._serial_object = None
+        self._serial_buffer = None
+        self._stream_thread = None
+        self._stopevent = threading.Event()
+
+        self.timesource = timesource
+        self.interval = interval
+
+        # Seed last_latitude and last_longitude from the environment variable, if available.
+        self.altitude = None
+        self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None
+        self.longitude = float(os.getenv('last_longitude')) if os.getenv('last_longitude') else None
+        self.last_good_reading = 0
+        self.gpsdate = None
+        self.gpstime = None
+        self.has_set_time = False
+        self.has_read_data = False
+        self.last_error = None
+        self.start_read_thread()
+
+    def start_read_thread(self):
+        """
+        Start the stream read thread.
+        """
+
+        self._stopevent.clear()
+        self._stream_thread = threading.Thread(
+            target=self._read_thread,
+            args=(self._stopevent),
+            daemon=True,
+        )
+        self._stream_thread.start()
+
+    def stop_read_thread(self):
+        """
+        Stop serial reader thread.
+        """
+
+        self._stopevent.set()
+        self._stream_thread = None
+
+    def _read_thread(self, stopevent: Event):
+        """
+        THREADED PROCESS
+
+        Connects to selected data stream and starts read loop.
+
+        :param Event stopevent: thread stop event
+        """
+
+        try:
+            with Serial(
+                self._serport, self._baud, timeout=self._timeout
+            ) as self._serial_object:
+                stream = BufferedReader(self._serial_object)
+                self._readloop(stopevent, stream)
+
+        except Exception as err:
+            if str(err) != self.last_error:
+                logging.error("UART GPS Error (duplicates will be suppressed) {}".format(str(err)))
+                self.last_error = str(err)
+
+    def _readloop(self, stopevent: Event, stream: object):
+        """
+        Read stream continously until stop event or stream error.
+
+        :param Event stopevent: thread stop event
+        :param object stream: data stream
+        """
+        # pylint: disable=no-self-use
+
+        ubr = UBXReader(
+            stream,
+            quitonerror=ERR_IGNORE,
+            bufsize=DEFAULT_BUFSIZE
+        )
+
+        raw_data = None
+        parsed_data = None
+        while not stopevent.is_set():
+            try:
+                raw_data, parsed_data = ubr.read()
+                if raw_data is not None and parsed_data:
+                    self.has_read_data = True
+                    if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
+                        if parsed_data.altUnit in ['m', 'M']:
+                            self.altitude = parsed_data.alt
+                    if hasattr(parsed_data, 'lon') and parsed_data.lon:
+                        self.longitude = parsed_data.lon
+                        self.last_good_reading = time.time()
+                    if hasattr(parsed_data, 'lat') and parsed_data.lat:
+                        self.latitude = parsed_data.lat
+                        self.last_good_reading = time.time()
+                    if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
+                        # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
+                        self.gpsdate = parsed_data.date
+                        self.gpstime = parsed_data.time
+
+                    if not self.has_set_time:
+                        if self.interval:
+                            if self.gpsdate and self.gpstime:
+                                epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
+
+                            if abs(time.time() - epoch_seconds) > self.interval:
+                                logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                                    ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
+                                    ' exceeds interval time of ' + str(self.interval))
+                                os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
+                                self.timesource.set_time(datetime.datetime.now())
+                                self.has_set_time = True
+            except Exception as err:
+                if str(err) != self.last_error:
+                    logging.error("UART GPS Error (duplicates will be suppressed) {}".format(str(err)))
+                    self.last_error = str(err)
 
 
 def get_baud_rate():
@@ -38,85 +165,10 @@ def get_baud_rate():
     raise Exception(str(e))
 
 
-class GPSReader(object):
-  def __init__(self, serial, interval, timesource):
-    self.nmea = UBXReader(serial, quitonerror=ERR_LOG)
-    self.stop_reading = threading.Event()
-    self.read_thread = threading.Thread(target=self._read_gps_data, daemon=True)
-    self.serial = serial
-    self.timesource = timesource
-    self.read_thread.start()
-    self.interval = interval
-
-    # Seed last_latitude and last_longitude from the environment variable, if available.
-    self.altitude = None
-    self.latitude = float(os.getenv('last_latitude')) if os.getenv('last_latitude') else None
-    self.longitude = float(os.getenv('last_longitude')) if os.getenv('last_longitude') else None
-    self.last_good_reading = 0
-    self.gpsdate = None
-    self.gpstime = None
-    self.has_set_time = False
-    self.has_read_data = False
-    self.last_error = None
-
-  def __del__(self):
-    self.kill()
-
-  def kill(self):
-    self.stop_reading.set()
-
-  # Thread that keeps latitude and longitude up-to-date.
-  def _read_gps_data(self):
-    while not self.stop_reading.is_set():
-      try:
-        # We accept the possibility that we could get bad data if the stream is shut down while reading
-        parsed_data = None
-        if self.serial:
-          (raw_data, parsed_data) = self.nmea.read()
-        else:
-          time.sleep(1)
-
-        if parsed_data:
-          self.has_read_data = True
-          if hasattr(parsed_data, 'alt') and hasattr(parsed_data, 'altUnit'):
-            if parsed_data.altUnit in ['m', 'M']:
-              self.altitude = parsed_data.alt
-          if hasattr(parsed_data, 'lon') and parsed_data.lon:
-            self.longitude = parsed_data.lon
-            self.last_good_reading = time.time()
-          if hasattr(parsed_data, 'lat') and parsed_data.lat:
-            self.latitude = parsed_data.lat
-            self.last_good_reading = time.time()
-          if hasattr(parsed_data, 'date') and hasattr(parsed_data, 'time') and parsed_data.date and parsed_data.time:
-            # We can set the system time using the date (with YYYY-MM-DD) and time (HH:MM:SS)
-            self.gpsdate = parsed_data.date
-            self.gpstime = parsed_data.time
-
-            if not self.has_set_time:
-              if self.interval:
-                if self.gpsdate and self.gpstime:
-                  epoch_seconds = calendar.timegm((self.gpsdate.year, self.gpsdate.month, self.gpsdate.day, self.gpstime.hour, self.gpstime.minute, self.gpstime.second))
-
-                  if abs(time.time() - epoch_seconds) > self.interval:
-                    logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                                    ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                                    ' exceeds interval time of ' + str(self.interval))
-                    os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
-                    self.timesource.set_time(datetime.datetime.now())
-                    self.has_set_time = True
-      except Exception as err:
-        if str(err) != self.last_error:
-          exc_type, exc_obj, exc_tb = sys.exc_info()
-          fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-          logging.error("UART GPS Error (duplicates will be suppressed) {}:{}: {}".format(fname, exc_tb.tb_lineno, str(err)))
-          self.last_error = str(err)
-
-
 class UartNmeaGps(Sensor):
   def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
     # Stream represents our connection to the UART.
-    self.stream = None
     self.last_error = ''
     self.timesource = timesource
     self.has_transmitted_device_info = False
@@ -141,6 +193,8 @@ class UartNmeaGps(Sensor):
     detected_baud = -1
     retry_set_baud = 10
 
+    logging.info("Ensuring that serial port baud is set to {}.".format(self.baud))
+
     detected_baud = get_baud_rate()
     for _ in range(retry_set_baud):
       if detected_baud == self.baud:
@@ -155,10 +209,7 @@ class UartNmeaGps(Sensor):
     if detected_baud != self.baud:
       logging.error("Failed to set baud rate. UART NMEA GPS detection will probably fail.")
 
-    self.stream = Serial(os.getenv('uart_serial_port'), self.baud, timeout=1)
-    self.stream.reset_input_buffer()
-    self.stream.reset_output_buffer()
-    self.gpsreader = GPSReader(self.stream, self.interval, self.timesource)
+    self.gpsreader = GPSReader(os.getenv('uart_serial_port'), self.baud, 1, self.interval, self.timesource)
  
     # Wait and see if we read any data on the serial port.
     max_retry_count = 15
@@ -171,23 +222,14 @@ class UartNmeaGps(Sensor):
 
     # If we didn't get any data, clean up to the best of our ability.
     if not self.gpsreader or not self.gpsreader.has_read_data:
-      self.gpsreader.kill()
-      self.gpsreader = None
-      self.stream.close()
-      time.sleep(1)
-      self.stream = None      
-      logging.error("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA')))
-      raise Exception("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud', '9600;NMEA'))) 
+      self.gpsreader.stop_read_thread()
+      logging.error("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud')))
+      raise Exception("Could not detect a UART GPS on {} at any setting in {}.".format(os.getenv('uart_serial_port'), os.getenv('uart_serial_baud'))) 
 
   # Close the port when we shut down.
   def __del__(self):
     if self.gpsreader:
-      self.gpsreader.kill()
-      self.gpsreader = None
-
-    if self.stream and self.stream.is_open:
-      self.stream.close()
-      self.stream = None
+      self.gpsreader.stop_read_thread()
 
   def publish(self):
     logging.info('Publishing GPS data to remote')
