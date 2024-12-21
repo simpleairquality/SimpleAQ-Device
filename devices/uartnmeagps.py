@@ -13,7 +13,7 @@ from serial import Serial
 
 from absl import logging
 from pyubx2 import UBXReader, NMEA_PROTOCOL, UBX_PROTOCOL 
-from pyubx2.ubxtypes_core import ERR_RAISE
+from pyubx2.ubxtypes_core import ERR_LOG
 from . import Sensor
 
 
