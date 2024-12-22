@@ -31,6 +31,7 @@ class UartNmeaGps(Sensor):
 
     try:
       gpsd.connect()
+      packet = gpsd.get_current()
     except Exception as err:
       logging.error("UARTNMEAGPS could not connect to GPSD: {}".format(str(err)))
       raise Exception("UARTNMEAGPS could not connect to GPSD: {}".format(str(err)))
