@@ -19,7 +19,7 @@ class Sensor(object):
       return float(value)
     return value
 
-  def _try_log_error(self, point, field, error):
+  def _try_write_error(self, point, field, error):
     if self.name == 'System':
       error_field = 'error'
     else:
