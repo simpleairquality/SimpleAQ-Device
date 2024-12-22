@@ -6,6 +6,7 @@ iptables-persistent
 libi2c-dev
 libgpiod-dev
 libopenblas-dev
+lsof
 iptables
 iw
 pipx
