@@ -8,6 +8,8 @@ on_chroot << EOF
         cp /boot/firmware/config.txt /boot/firmware/temp
 	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
         SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
+        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_serial_hw 0
+        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_serial_cons 1
         cp /boot/firmware/temp /boot/firmware/config.txt
         rm /boot/firmware/temp
 EOF
