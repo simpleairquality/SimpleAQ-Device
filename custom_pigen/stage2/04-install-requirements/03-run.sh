@@ -75,6 +75,8 @@ cp files/gpsd "${ROOTFS_DIR}/etc/default/gpsd"
 # Also enable gpsd
 on_chroot << EOF
         systemctl enable gpsd
+        adduser gpsd dialout
+        adduser gpsd tty
 EOF
 
 # Add AP setup endpoint to /etc/hosts
