@@ -206,7 +206,7 @@ def main(args):
             publish_rows = local_storage.getrecent(int(os.getenv("max_backlog_writes")))
             data_json = [row[1] for row in publish_rows]
 
-            logging.info("Attempting to write data to remote.")
+            logging.info("Attempting to write {} data points to remote.".format(len(data_json)))
             # We'll try to write them in one single batch.
             if data_json:
               try:
