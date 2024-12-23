@@ -185,6 +185,13 @@ def update():
       request.args.get('simpleaq_hostapd_hide_ssid', '0'),
       quote_mode='never')
 
+  # Update hostapd settings if requested.  It will be rebooted by SimpleAQ services.
+  if request.args.get('simpleaq_hostapd_name'):
+    os.system('sed -i -s "s/^\s*ssid=.*/ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_name')))
+  if request.args.get('simpleaq_hostapd_password') is not None:
+    os.system('sed -i -s "s/^\s*wpa_passphrase=.*/wpa_passphrase={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_password')))
+  os.system('sed -i -s "s/^\s*ignore_broadcast_ssid=.*/ignore_broadcast_ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_hide_ssid', '0')))
+
   # Schedule a Reboot.
   os.system('touch {}'.format(os.getenv('reboot_status_file')))
 
