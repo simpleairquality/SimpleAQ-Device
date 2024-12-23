@@ -54,12 +54,15 @@ class UartNmeaGps(Sensor):
 
       # See if we actually have a fix.
       if packet.mode >= 2:
-        # Write altitude
-        try:
-          result = self._try_write('GPS', 'altitude_meters', packet.altitude()) or result
-        except Exception as err:
-          self._try_write_error('GPS', 'altitude_meters', str(err))
-          raise err
+
+        # 3D fix.
+        if packet.mode == 3:
+          # Write altitude
+          try:
+            result = self._try_write('GPS', 'altitude_meters', packet.altitude()) or result
+          except Exception as err:
+            self._try_write_error('GPS', 'altitude_meters', str(err))
+            raise err
 
         # See if we have latitude and longitude
         latitude, longitude = packet.position()
