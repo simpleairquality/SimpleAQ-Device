@@ -64,7 +64,7 @@ class Gps(Sensor):
           self.has_set_time = True
 
   def publish(self):
-    logging.info('Publishing GPS data to remote')
+    logging.info('Publishing GPS data')
     # Yes, recommended behavior is to call update twice.  
     self.gps.update()
     self.gps.update()

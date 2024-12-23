@@ -35,7 +35,7 @@ class Sen5x(Sensor):
     return values
 
   def publish(self):
-    logging.info('Publishing SEN5X to remote')
+    logging.info('Publishing SEN5X data')
     result = False
     try:
       data = self.read()

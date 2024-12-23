@@ -37,7 +37,7 @@ class UartNmeaGps(Sensor):
       raise Exception("UARTNMEAGPS could not connect to GPSD: {}".format(str(err)))
 
   def publish(self):
-    logging.info('Publishing GPS data to remote')
+    logging.info('Publishing GPS data')
 
 
     result = False
