@@ -15,7 +15,13 @@ import RPi.GPIO as GPIO
 I2C_MODE  = 0x01
 tempSwitch = 0
 temp = 0.0
-SEND_WAIT = 0.5
+# The driver code at https://github.com/DFRobot/DFRobot_MultiGasSensor/blob/main/python/raspberrypi/DFRobot_MultiGasSensor.py
+# uses only an 0.1s wait.  We tried with 0.5s wait and still saw issues.  We're trying longer but it may be the case that
+# either bus capacitance is too high or the file descriptor
+# https://sensirion.github.io/python-i2c-driver/_modules/sensirion_i2c_driver/linux_i2c_transceiver.html#LinuxI2cTransceiver
+# needs to be closed and then opened again, which may reset the bus.  Or it may not, and we simply must fix the bus capacitance.
+# https://forum.micropython.org/viewtopic.php?t=12610#:~:text=Errno%205%20EIO%20error%20with,a%20device%20on%20the%20bus.
+SEND_WAIT = 1 
 
 def fuc_check_sum(i,ln):
   '''!
