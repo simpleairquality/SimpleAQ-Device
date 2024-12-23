@@ -114,7 +114,7 @@ class UartNmeaGps(Sensor):
         # If available, send the last-known GPS
         if self.send_last_known_gps:
           # If desired, send the last-known GPS values.
-          if self.last_known_latitude is not None and self.last_known_longitude is not None and self.last_known_latitude is not "" and self.last_known_longitude is not "":
+          if self.last_known_latitude is not None and self.last_known_longitude is not None and self.last_known_latitude != "" and self.last_known_longitude != "":
             result = self._try_write('GPS', 'latitude_degrees', float(self.last_known_latitude)) or result
             result = self._try_write('GPS', 'longitude_degrees', float(self.last_known_longitude)) or result
             result = self._try_write('GPS', 'last_known_gps_reading', 1) or result
