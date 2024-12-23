@@ -624,7 +624,7 @@ class DFRobotMultiGas(Sensor):
     logging.info('Publishing DFRobot Multi-Gas on I2C {} to.'.format(self.address))
     result = False
     try:
-      uncorrected_gas_concentration, gas_concentration = self.read_gas_concentration()
+      uncorrected_gas_concentration, gas_concentration = self.sensor.read_gas_concentration()
       if self.sensor.gastype and self.sensor.gasunits:
         if uncorrected_gas_concentration is not None:
           result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), uncorrected_gas_concentration) or result
