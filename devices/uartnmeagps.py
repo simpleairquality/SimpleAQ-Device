@@ -56,7 +56,7 @@ class UartNmeaGps(Sensor):
       if packet.mode >= 2:
         # Write altitude
         try:
-          result = self._try_write('GPS', 'altitude_meters', packet.altitude) or result
+          result = self._try_write('GPS', 'altitude_meters', packet.altitude()) or result
         except Exception as err:
           self._try_write_error('GPS', 'altitude_meters', str(err))
           raise err
@@ -94,9 +94,9 @@ class UartNmeaGps(Sensor):
         result = self._try_write('GPS', 'last_known_gps_reading', 0) or result
 
         # Update time if needed.
-        if packet.time_utc():
+        if packet.get_time(local_time=False):
           if self.interval:
-            epoch_seconds = packet.time_utc().timestamp()
+            epoch_seconds = packet.get_time(local_time=False).timestamp()
 
             if abs(time.time() - epoch_seconds) > self.interval:
               logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
