@@ -56,7 +56,7 @@ class UartNmeaGps(Sensor):
       if packet.mode >= 2:
         # Write altitude
         try:
-          result = self._try_write('GPS', 'altitude_meters', self.altitude) or result
+          result = self._try_write('GPS', 'altitude_meters', packet.altitude) or result
         except Exception as err:
           self._try_write_error('GPS', 'altitude_meters', str(err))
           raise err
