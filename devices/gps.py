@@ -107,6 +107,7 @@ class Gps(Sensor):
         # Avoid flakes in case the reading changes.
         gps_latitude = self.gps.latitude
         gps_longitude = self.gps.longitude
+        gps_altitude = self.gps.altitude_m
 
         if gps_latitude and gps_longitude and abs(gps_latitude) <= 90 and abs(gps_longitude) <= 180:
           # It is actually important that the try_write_to_remote happens before the result, otherwise
@@ -126,6 +127,14 @@ class Gps(Sensor):
             self._try_write_error('GPS', 'longitude_degrees', str(err))
             result = self.name
             raise err
+
+          if gps_altitude is not None:
+            try:
+              result = self._try_write('GPS', 'altitude_m', gps_altitude) or result
+            except Exception as err:
+              self._try_write_error('GPS', 'altitude_m', str(err))
+              result = self.name
+              raise err
 
           if self.send_last_known_gps:
             try:
@@ -163,7 +172,7 @@ class Gps(Sensor):
             result = self._try_write('GPS', 'longitude_degrees', self.longitude) or result
             result = self._try_write('GPS', 'last_known_gps_reading', 1) or result
 
-        logging.warning('GPS has no fix.')
+        logging.warning('GPS has no fix (quality: {})'.format(self.gps.fix_quality))
     except Exception as err:
       logging.error("Error getting data from GPS.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
       result = self.name
