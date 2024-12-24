@@ -22,6 +22,7 @@ temp = 0.0
 # needs to be closed and then opened again, which may reset the bus.  Or it may not, and we simply must fix the bus capacitance.
 # https://forum.micropython.org/viewtopic.php?t=12610#:~:text=Errno%205%20EIO%20error%20with,a%20device%20on%20the%20bus.
 SEND_WAIT = 1 
+SEND_WAIT_FOR_DATA = 2.5
 
 def fuc_check_sum(i,ln):
   '''!
@@ -357,7 +358,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT_FOR_DATA)
     if(fuc_check_sum(recvbuf,8) == recvbuf[8]):
       self.gasconcentration = ((recvbuf[2]<<8)+recvbuf[3])*1.0
 
