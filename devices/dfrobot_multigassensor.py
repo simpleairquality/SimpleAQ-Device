@@ -357,7 +357,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT_FOR_DATA)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
     if(fuc_check_sum(recvbuf,8) == recvbuf[8]):
       self.gasconcentration = ((recvbuf[2]<<8)+recvbuf[3])*1.0
 
