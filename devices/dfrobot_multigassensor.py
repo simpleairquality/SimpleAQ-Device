@@ -21,8 +21,7 @@ temp = 0.0
 # https://sensirion.github.io/python-i2c-driver/_modules/sensirion_i2c_driver/linux_i2c_transceiver.html#LinuxI2cTransceiver
 # needs to be closed and then opened again, which may reset the bus.  Or it may not, and we simply must fix the bus capacitance.
 # https://forum.micropython.org/viewtopic.php?t=12610#:~:text=Errno%205%20EIO%20error%20with,a%20device%20on%20the%20bus.
-SEND_WAIT = 1 
-SEND_WAIT_FOR_DATA = 2.5
+SEND_WAIT = 0.1
 
 def fuc_check_sum(i,ln):
   '''!
@@ -610,7 +609,7 @@ class DFRobotMultiGas(Sensor):
     change_success = False
     while not change_success and time_waited < max_wait_time_sec:
       try:
-        change_success = self.sensor.change_acquire_mode(self.sensor.PASSIVITY)
+        change_success = self.sensor.change_acquire_mode(self.sensor.INITIATIVE)
       except Exception as err:
         pass # Probably already logged.
       time_waited += 1
@@ -625,31 +624,34 @@ class DFRobotMultiGas(Sensor):
     logging.info('Publishing DFRobot Multi-Gas on I2C {} to.'.format(self.address))
     result = False
     try:
-      uncorrected_gas_concentration, gas_concentration = self.sensor.read_gas_concentration()
-      if self.sensor.gastype and self.sensor.gasunits:
-        if uncorrected_gas_concentration is not None:
-          result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), uncorrected_gas_concentration) or result
-        else:
-          self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), 'Failed to get uncorrected gas concentration.')
-          result = self.name
-          logging.warning("DFRobot Multi Gas {} failed to get uncorrected gas concentration!".format(self.sensor.gastype))
+      if self.sensor.data_is_available():
+        uncorrected_gas_concentration, gas_concentration = self.sensor.read_gas_concentration()
+        if self.sensor.gastype and self.sensor.gasunits:
+          if uncorrected_gas_concentration is not None:
+            result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), uncorrected_gas_concentration) or result
+          else:
+            self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), 'Failed to get uncorrected gas concentration.')
+            result = self.name
+            logging.warning("DFRobot Multi Gas {} failed to get uncorrected gas concentration!".format(self.sensor.gastype))
 
-        if gas_concentration is not None:
-          result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), gas_concentration) or result
-        else:
-          self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), 'Failed to get concentration.')
-          result = self.name
-          logging.warning("DFRobot Multi Gas {} failed to get gas concentration!".format(self.sensor.gastype))
+          if gas_concentration is not None:
+            result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), gas_concentration) or result
+          else:
+            self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), 'Failed to get concentration.')
+            result = self.name
+            logging.warning("DFRobot Multi Gas {} failed to get gas concentration!".format(self.sensor.gastype))
 
-        try:
-          result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
-        except Exception as err:
-          self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C'.format(self.sensor.gastype, self.sensor.gasunits), str(err))
-          result = self.name
-          logging.err("DFRobot Multi Gas {} failed to get temperature!".format(self.sensor.gastype))
+          try:
+            result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C', self.sensor.temp) or result
+          except Exception as err:
+            self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C'.format(self.sensor.gastype, self.sensor.gasunits), str(err))
+            result = self.name
+            logging.err("DFRobot Multi Gas {} failed to get temperature!".format(self.sensor.gastype))
+        else:
+          logging.error("Unable to determine gas type or units on DFRobotMultiGas{} sensor on {}".format(self.dip, self.address))
+          result = self.name 
       else:
-        logging.error("Unable to determine gas type or units on DFRobotMultiGas{} sensor on {}".format(self.dip, self.address))
-        result = self.name 
+        logging.warn("No data was available for DFRobotMultiGas{}".format(self.dip, str(err)))
     except Exception as err:
       logging.error("Error getting data from DFRobotMultiGas{}.  Is this sensor correctly installed and the cable attached tightly: {}".format(self.dip, str(err)));
       result = self.name 
