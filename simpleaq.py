@@ -98,7 +98,7 @@ def detect_devices(env_file):
     os.environ['detected_devices'] = ','.join(detected_devices)
 
     # Restart the hostap service so that it reads correctly.
-    os.system('service {} restart'.format(os.getenv('hostap_config_service')))
+    os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
 
   # Let's make sure that if any priority devices were detected, they are listed first.
   device_objects = []
@@ -230,7 +230,7 @@ def main(args):
   # Now we've released all of the devices and finalized local storage.  It is safe to do a gracefull reboot.
   if do_reboot:
     logging.info("Detected request for graceful restart.  Restarting SimpleAQ services and hostapd now.")
-    os.system('systemctl restart hostap_config')
+    os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
     os.system('systemctl restart hostapd')
     
 if __name__ == '__main__':

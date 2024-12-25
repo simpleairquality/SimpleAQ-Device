@@ -13,12 +13,6 @@ class Bmp3xx(Sensor):
     self.sensor = adafruit_bmp3xx.BMP3XX_I2C(board.I2C())
     self.name = "BMP3XX"
 
-    # Monkeypatch out trying to obtain I2C bus lock.
-    # This sensor will not be compatible with devices that access I2C
-    # on other threads.
-    self.sensor.i2c.try_lock = lambda self : True
-    self.sensor.i2c.unlock = lambda self : None
-
   def publish(self):
     logging.info('Publishing BMP3XX Data')
     result = False
