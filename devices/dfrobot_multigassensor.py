@@ -582,7 +582,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: [{}] {}".format(self.__addr, status, error)) 
 
       # Experimental method to recover from a stuck bus.
-      if status == 'Errno 5':
+      if status == 4:
         logging.warn("Attempting to recover i2c bus")
         self.i2cbus.close()
         self.i2cbus.open()
