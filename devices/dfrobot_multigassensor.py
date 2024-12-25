@@ -583,9 +583,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
 
       # Experimental method to recover from a stuck bus.
       if status == 4:
-        logging.warn("Attempting to recover i2c bus")
-        self.i2cbus.close()
-        self.i2cbus.open()
+        logging.warn("It is likely that the I2C bus is stuck.")
 
       raise Exception(error)
 
