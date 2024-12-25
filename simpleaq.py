@@ -39,12 +39,10 @@ from sensirion_i2c_driver import LinuxI2cTransceiver
 import busio
 
 def bypass_lock(self):
-  logging.info("Bypassed I2C locking.  All I2C sensors should be single-threaded when accessing the bus.")
   return True
 
 def bypass_unlock(self):
-  logging.info("Bypassed I2C unlocking.  All I2C sensors should be single-threaded when accessing the bus.")
-  return True
+  return
 
 busio.I2C.try_lock = bypass_lock
 busio.I2C.unlock = bypass_unlock
