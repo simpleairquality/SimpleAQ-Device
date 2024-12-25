@@ -89,7 +89,7 @@ EOF
 
 # Don't let logs get too big.
 on_chroot << EOF
-        sed -i '/SystemMaxUse/c\SystemMaxUse=100M' /etc/systemd/journald.conf
+        sed -i '/SystemMaxUse/c\SystemMaxUse=10M' /etc/systemd/journald.conf
 EOF
 
 # Choose a better HostAP name than just "SimpleAQ" if nothing else is provided. 
