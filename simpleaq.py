@@ -35,9 +35,22 @@ from timesources.synctimesource import SyncTimeSource
 
 from sensirion_i2c_driver import LinuxI2cTransceiver
 
+# Bypass locking of the I2C bus.
+import busio
+
+def bypass_lock(self):
+  logging.info("Bypassed I2C locking.  All I2C sensors should be single-threaded when accessing the bus.")
+  return True
+
+def bypass_unlock(self):
+  logging.info("Bypassed I2C unlocking.  All I2C sensors should be single-threaded when accessing the bus.")
+  return True
+
+busio.I2C.try_lock = bypass_lock
+busio.I2C.unlock = bypass_unlock
+
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
-
 
 def do_graceful_reboot():
   if os.path.exists(os.getenv("reboot_status_file")):
