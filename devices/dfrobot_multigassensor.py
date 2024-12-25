@@ -21,8 +21,8 @@ temp = 0.0
 # https://sensirion.github.io/python-i2c-driver/_modules/sensirion_i2c_driver/linux_i2c_transceiver.html#LinuxI2cTransceiver
 # needs to be closed and then opened again, which may reset the bus.  Or it may not, and we simply must fix the bus capacitance.
 # https://forum.micropython.org/viewtopic.php?t=12610#:~:text=Errno%205%20EIO%20error%20with,a%20device%20on%20the%20bus.
-SEND_WAIT = 0.1
-SEND_WAIT_FOR_DATA = 1
+SEND_WAIT = 0.5
+SEND_WAIT_FOR_DATA = 2
 
 def fuc_check_sum(i,ln):
   '''!
@@ -582,7 +582,7 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: [{}] {}".format(self.__addr, status, error)) 
 
       # Experimental method to recover from a stuck bus.
-      if status == 4:
+      if status == self.i2cbus.STATUS_TIMEOUT or status == self.i2cbus.STATUS_UNSPECIFIED_ERROR:
         logging.warn("It is likely that the I2C bus is stuck.")
 
       raise Exception(error)
