@@ -8,7 +8,7 @@ import adafruit_bmp3xx
 from adafruit_bmp3xx import _REGISTER_CONTROL, _REGISTER_STATUS, _REGISTER_PRESSUREDATA
 
 
-def patch_bmp3xx_read(self) => Tuple[float, float]:
+def patch_bmp3xx_read(self):
   """Returns a tuple for temperature and pressure."""
   # OK, pylint. This one is all kinds of stuff you shouldn't worry about.
   # pylint: disable=invalid-name, too-many-locals
