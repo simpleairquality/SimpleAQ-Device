@@ -5,7 +5,9 @@ from . import Sensor
 
 import board
 import adafruit_bmp3xx
+import time
 from adafruit_bmp3xx import _REGISTER_CONTROL, _REGISTER_STATUS, _REGISTER_PRESSUREDATA
+from types import MethodType
 
 
 def patch_bmp3xx_read(self):
@@ -23,9 +25,9 @@ def patch_bmp3xx_read(self):
     wait_time += self._wait_time
     time.sleep(self._wait_time)
 
-  logger.info("Waited for {}s".format(wait_time))
+  logging.info("Waited for {}s".format(wait_time))
   if wait_time >= max_wait_time:
-    logger.info("Timed out waiting for data in BMP3XX")
+    logging.info("Timed out waiting for data in BMP3XX")
     raise Exception("Timed out waiting for data in BMP3XX")
 
   # Get ADC values
@@ -72,7 +74,7 @@ class Bmp3xx(Sensor):
 
     # We encounter an issue where bus instability causes an infinite loop in default
     # adafruit_bmp3xx read.
-    self.sensor._read = patch_bmp3xx_read
+    self.sensor._read = MethodType(patch_bmp3xx_read, self.sensor)
     self.name = "BMP3XX"
 
   def publish(self):
