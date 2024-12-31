@@ -170,14 +170,20 @@ def main(args):
         sensors = []
 
         for device_object in device_objects:
-          sensors.append(device_object(remotestorage=remote,
-                                       localstorage=local_storage,
-                                       timesource=timesource,
-                                       interval=interval,
-                                       i2c_transceiver=i2c_transceiver,
-                                       log_errors=True,
-                                       env_file=FLAGS.env,
-                                       send_last_known_gps=send_last_known_gps))
+          try:
+            sensor = device_object(remotestorage=remote,
+                                   localstorage=local_storage,
+                                   timesource=timesource,
+                                   interval=interval,
+                                   i2c_transceiver=i2c_transceiver,
+                                   log_errors=True,
+                                   env_file=FLAGS.env,
+                                   send_last_known_gps=send_last_known_gps)
+            sensors.append(sensor)
+          except Exception as err:
+            logging.error("Failure initializing detected device: {}".format(str(err)))
+            logging.warn("SimpleAQ service will restart now.")
+            return 1
 
         # This enteres a guaranteed-closing context manager for every sensors.
         # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
