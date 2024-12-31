@@ -182,7 +182,7 @@ def main(args):
             sensors.append(sensor)
           except Exception as err:
             logging.error("Failure initializing detected device: {}".format(str(err)))
-            logging.warn("SimpleAQ service will restart now.")
+            logging.warning("SimpleAQ service will restart now.")
             return 1
 
         # This enteres a guaranteed-closing context manager for every sensors.
