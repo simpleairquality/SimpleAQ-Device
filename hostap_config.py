@@ -228,6 +228,13 @@ def simpleaq():
   response.mimetype = 'text/plain'
   return response
 
+@app.route('/debug/networkmanager/')
+def networkmanager():
+  result = subprocess.run(['journalctl', '-u', 'NetworkManager'], stdout=subprocess.PIPE)
+  response = make_response(result.stdout, 200)
+  response.mimetype = 'text/plain'
+  return response
+
 @app.route('/debug/hostap/')
 def hostap():
   result = subprocess.run(['journalctl', '-u', 'hostap_config.service'], stdout=subprocess.PIPE)
