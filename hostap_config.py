@@ -6,38 +6,65 @@ import json
 import re
 import subprocess
 import sqlite3
+import logging
 from localstorage.localsqlite import LocalSqlite
 
 import netifaces as ni
 
 app = Flask(__name__)
-
-def prevent_hostap_switch():
-  subprocess.run(['touch', '/simpleaq/hostap_status_file'])
+logger = logging.getLogger(__name__)
 
 def get_mac(interface='wlan0'):
   return ni.ifaddresses(interface)[ni.AF_LINK][0]['addr']
 
+def get_wifi_field(field):
+    """Retrieve the PSK for a given connection name."""
+    try:
+        # "Wifi" set in files/wifi.nmconnection
+        result = subprocess.run(
+            ["sudo", "nmcli", "-s", "-g", field, "connection", "show", "Wifi"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        logger.error(str(e))
+    return ""
+
+def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
+    """
+    Set or update the Wi-Fi credentials (SSID and PSK) for a connection.
+
+    Parameters:
+        ssid (str): The SSID of the Wi-Fi network.
+        psk (str): The password for the Wi-Fi network.
+        connection_name (str): The name of the connection profile (optional).
+                               If not provided, defaults to the SSID.
+    """
+    if not connection_name:
+        connection_name = ssid  # Use SSID as connection name if none provided
+
+    try:
+        # Connection better already exist, update the SSID and PSK
+        subprocess.run(
+            ["nmcli", "connection", "modify", connection_name,
+             "802-11-wireless.ssid", ssid,
+             "802-11-wireless-security.key-mgmt", "wpa-psk",
+             "802-11-wireless-security.psk", psk],
+            check=True,
+            )
+    except subprocess.CalledProcessError as e:
+        logger.error(str(e))
+
 @app.route('/')
 def main():
-  prevent_hostap_switch()
-
   ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
   psk_re = re.compile("^\s*psk=\"(.*)\"\s*$")
 
-  local_ssid = ""
-  with open(os.getenv('wlan_file'), mode='r') as wlan_file:
-    for line in wlan_file:
-      search_result = ssid_re.match(line)
-      if search_result:
-        local_ssid = search_result.group(1)
-
-  local_psk = ""
-  with open(os.getenv('wlan_file'), mode='r') as wlan_file:
-    for line in wlan_file:
-      search_result = psk_re.match(line)
-      if search_result:
-        local_psk = search_result.group(1)
+  local_ssid = get_wifi_field('802-11-wireless.ssid')
+  local_psk = get_wifi_field('802-11-wireless-security.psk') 
 
   num_data_points = "Database Error"
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
@@ -47,8 +74,13 @@ def main():
       # Don't let this break things.
       pass
 
+  warn_message = ''
+  if os.path.exists(os.getenv('reboot_status_file')):
+    warn_message = 'These settings may be out of date, as previous settings are still being applied.  Please refresh this page in a few minutes for up to date settings.'
+
   return render_template(
       'index.html',
+      warn_message=warn_message,
       num_data_points=num_data_points,
       local_wifi_network=local_ssid,
       local_wifi_password=local_psk,
@@ -68,13 +100,10 @@ def main():
       max_backlog_writes=os.getenv('max_backlog_writes'),
       detected_devices=os.getenv('detected_devices'),
       i2c_bus=os.getenv('i2c_bus'),
-      uart_serial_baud=os.getenv('uart_serial_baud'),
       mac_addr=str(get_mac()))
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():
-  prevent_hostap_switch()
-
   touch_every = int(os.getenv('hostap_retry_interval_sec', '100'))
 
   def generate(connection, cursor):
@@ -86,7 +115,6 @@ def download():
         # Maybe prevent HostAP switching during a large download.
         count += 1
         if count > touch_every:
-          prevent_hostap_switch()
           count = 0
 
         # Make sure we only return valid JSON
@@ -134,19 +162,14 @@ def update():
     # If for any reason that changes, this will have to also.
     # However, just in case some users manually edit this, it will never be overwritten unless
     # they actually try to change the values in the form.
-    with open(os.getenv('wlan_file'), mode='w') as wlan_file:
-      wlan_file.write('ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n')
-      wlan_file.write('update_config=1\n')
-      wlan_file.write('network={\n')
-      wlan_file.write('    ssid="{}"\n'.format(request.args.get('local_wifi_network')))
-      wlan_file.write('    psk="{}"\n'.format(request.args.get('local_wifi_password')))
-      wlan_file.write('}\n')
+    set_wifi_credentials(request.args.get('local_wifi_network'), 
+                         request.args.get('local_wifi_password'))
 
   # Update environment variables.
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
           'simpleaq_interval', 'simpleaq_hostapd_name', 'endpoint_type',
           'simpleaq_hostapd_password', 'hostap_retry_interval_sec',
-          'max_backlog_writes', 'i2c_bus', 'uart_serial_baud']
+          'max_backlog_writes', 'i2c_bus']
 
   no_quote_keys = ['simpleaq_hostapd_name', 'simpleaq_hostapd_password']
 
@@ -162,31 +185,25 @@ def update():
       request.args.get('simpleaq_hostapd_hide_ssid', '0'),
       quote_mode='never')
 
-  # Remove the HostAP status file so we retry connections on reboot.
-  if os.path.exists(os.getenv('hostap_status_file')):
-    os.remove(os.getenv('hostap_status_file'))
+  # Update hostapd settings if requested.  It will be rebooted by SimpleAQ services.
+  if request.args.get('simpleaq_hostapd_name'):
+    os.system('sed -i -s "s/^\s*ssid=.*/ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_name')))
+  if request.args.get('simpleaq_hostapd_password') is not None:
+    os.system('sed -i -s "s/^\s*wpa_passphrase=.*/wpa_passphrase={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_password')))
+  os.system('sed -i -s "s/^\s*ignore_broadcast_ssid=.*/ignore_broadcast_ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_hide_ssid', '0')))
 
   # Schedule a Reboot.
-  if os.path.exists(os.getenv('reboot_status_file')):
-    # Force an immediate reboot.
-    os.remove(os.getenv('reboot_status_file'))
-    os.system('reboot')
-  else:
-    # Attempt a soft reboot.
-    os.system('touch {}'.format(os.getenv('reboot_status_file')))
+  os.system('touch {}'.format(os.getenv('reboot_status_file')))
 
   # The user may never see this before the system restarts.
   return render_template('update.html')
 
 @app.route("/purge_warn/", methods=('GET',))
 def purge_warn():
-  prevent_hostap_switch()
   return render_template('purge_warn.html', simpleaq_logo='/static/simpleaq_logo.png')
 
 @app.route("/purge/", methods=('POST',))
 def purge():
-  prevent_hostap_switch()
-
   # Make sure there's a place to actually put the backlog database if necessary.
   os.makedirs(os.path.dirname(os.getenv("sqlite_db_path")), exist_ok=True)
 
@@ -199,7 +216,6 @@ def purge():
 
 @app.route('/debug/dmesg/')
 def dmesg():
-  prevent_hostap_switch()
   result = subprocess.run(['dmesg'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
@@ -207,7 +223,6 @@ def dmesg():
 
 @app.route('/debug/simpleaq/')
 def simpleaq():
-  prevent_hostap_switch()
   result = subprocess.run(['journalctl', '-u', 'simpleaq.service'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
@@ -215,7 +230,6 @@ def simpleaq():
 
 @app.route('/debug/hostap/')
 def hostap():
-  prevent_hostap_switch()
   result = subprocess.run(['journalctl', '-u', 'hostap_config.service'], stdout=subprocess.PIPE)
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'

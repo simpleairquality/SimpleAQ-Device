@@ -1,7 +1,7 @@
 import json
 import requests
 from requests_toolbelt import MultipartEncoder
-
+from absl import logging
 from dateutil import parser
 from . import RemoteStorage
 
@@ -32,9 +32,11 @@ class SimpleAQStorage(RemoteStorage):
         headers={'Content-Type': encoder.content_type},
         timeout=10
     )
-    
+
     if response.status_code >= 400:
       raise Exception(f"Received status {response.status_code} from SimpleAQ endpoint {self.endpoint}")
+    else:
+      logging.info(f"Received {response.status_code} from SimpleAQ endpoint {self.endpoint}.")
 
   def __enter__(self):
     return self

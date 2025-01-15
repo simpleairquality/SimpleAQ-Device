@@ -1,9 +1,6 @@
 [Unit]
 Description=SimpleAQ HostAP Configuration Tool
-After=network.target wpa_supplicant@ap0.service
-Requires=wpa_supplicant@ap0.service
-PartOf=wpa_supplicant@ap0.service
-Conflicts=wpa_supplicant@wlan0.service
+After=network.target
 
 [Service]
 WorkingDirectory=/simpleaq
@@ -12,4 +9,4 @@ ExecStart=flask run --host=0.0.0.0 --port=80
 Restart=always
 
 [Install]
-WantedBy=multi-user.target wpa_supplicant@ap0.service
+WantedBy=multi-user.target

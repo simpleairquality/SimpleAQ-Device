@@ -11,6 +11,11 @@
     </center>
   </td>
 </tr>
+<tr>
+  <td colspan=2>
+    <b><font color="red">{{warn_message}}</font></b>
+  </td>
+</tr>
 <form method="get" action="update">
 <tr>
   <th>Setting</th>
@@ -85,10 +90,6 @@
 <tr>
   <td>I2C Bus</td>
   <td><input name="i2c_bus" type="text" value="{{i2c_bus}}" size="42"/></td>
-</tr>
-<tr>
-  <td>UART Serial Baud</td>
-  <td><input name="uart_serial_baud" type="text" value="{{uart_serial_baud}}" size="42"/></td>
 </tr>
 <tr>
   <td><button type="submit">Submit Changes and Reboot</button></td>

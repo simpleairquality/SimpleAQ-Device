@@ -25,7 +25,7 @@ class Pm25(Sensor):
     return aqdata
 
   def publish(self):
-    logging.info('Publishing PM2.5 to remote')
+    logging.info('Publishing PM2.5 data')
     result = False
     try:
       aqdata = self.read()

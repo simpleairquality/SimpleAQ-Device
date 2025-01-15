@@ -38,33 +38,6 @@ from sensirion_i2c_driver import LinuxI2cTransceiver
 FLAGS = flags.FLAGS
 flags.DEFINE_string('env', None, 'Location of an alternate .env file, if desired.')
 
-
-def switch_to_wlan():
-  if os.path.exists(os.getenv("hostap_status_file")):
-    if time.time() - os.path.getmtime(os.getenv("hostap_status_file")) >= int(os.getenv("hostap_retry_interval_sec")) or time.time() < os.path.getmtime(os.getenv("hostap_status_file")):
-      os.remove(os.getenv("hostap_status_file"))
-      return True
-    else:
-      logging.info("Will retry wifi connection in {} seconds ({}/{} waited).".format(
-          int(os.getenv("hostap_retry_interval_sec")) - (time.time() - os.path.getmtime(os.getenv("hostap_status_file"))),
-          time.time() - os.path.getmtime(os.getenv("hostap_status_file")),
-          int(os.getenv("hostap_retry_interval_sec"))))
-      return False
-  else:
-    return True
-
-
-def start_wlan_service():
-  # This shouldn't be necessary, but we found that sometimes the systemd-networkd DHCP server stalls
-  # when we're bringing the wlan up and down.  This brings it back.  See issue #55.
-  os.system("service systemd-networkd restart")
-  time.sleep(15)  # 15 second cooldown for systemd-networkd to restart.
-  os.system("systemctl start " + os.getenv("wlan_service"))
-  # This sleep is essential, or we may switch right back to AP mode because
-  # we didn't manage to switch to wlan fast enough.
-  time.sleep(30)
-
-
 def do_graceful_reboot():
   if os.path.exists(os.getenv("reboot_status_file")):
     os.remove(os.getenv("reboot_status_file"))
@@ -122,10 +95,10 @@ def detect_devices(env_file):
         'detected_devices',
         ','.join(detected_devices))
 
-    # Reboot
-    os.system('reboot')
-    # Make sure the system reboots and the SimpleAQ service does not restart
-    time.sleep(60)
+    os.environ['detected_devices'] = ','.join(detected_devices)
+
+    # Restart the hostap service so that it reads correctly.
+    os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
 
   # Let's make sure that if any priority devices were detected, they are listed first.
   device_objects = []
@@ -173,20 +146,6 @@ def main(args):
   if os.getenv('i2c_bus_number'):
     i2c_bus_stuck = attempt_reset_i2c_bus(int(os.getenv('i2c_bus_number')))
 
-  # resize2fs_once doesn't appear to work reliably anymore.
-  # The raspi-config version does.
-  if os.getenv('first_boot') == 'true':
-    dotenv.set_key(
-        FLAGS.env,
-        'first_boot',
-        'false')
-    logging.info("First boot.  Resizing root file system and rebooting.")
-    os.system('raspi-config --expand-rootfs')
-    os.system('reboot')
-    # Make sure the SimpleAQ service does not restart before reboot
-    time.sleep(60)
-    return
-
   device_objects = detect_devices(FLAGS.env)
 
   remote_storage_class = None
@@ -206,24 +165,25 @@ def main(args):
 
     interval = int(os.getenv('simpleaq_interval'))
 
-    # Maybe trigger wlan mode
-    if switch_to_wlan():
-      logging.warning("Trying to connect on wlan.")
-      start_wlan_service()
-
     with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
         sensors = []
 
         for device_object in device_objects:
-          sensors.append(device_object(remotestorage=remote,
-                                       localstorage=local_storage,
-                                       timesource=timesource,
-                                       interval=interval,
-                                       i2c_transceiver=i2c_transceiver,
-                                       log_errors=True,
-                                       env_file=FLAGS.env,
-                                       send_last_known_gps=send_last_known_gps))
+          try:
+            sensor = device_object(remotestorage=remote,
+                                   localstorage=local_storage,
+                                   timesource=timesource,
+                                   interval=interval,
+                                   i2c_transceiver=i2c_transceiver,
+                                   log_errors=True,
+                                   env_file=FLAGS.env,
+                                   send_last_known_gps=send_last_known_gps)
+            sensors.append(sensor)
+          except Exception as err:
+            logging.error("Failure initializing detected device: {}".format(str(err)))
+            logging.warning("SimpleAQ service will restart now.")
+            return 1
 
         # This enteres a guaranteed-closing context manager for every sensors.
         # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
@@ -241,7 +201,7 @@ def main(args):
               # We only report errors, we do not take the entire unit offline if a few things are malfunctioning.
               # Errors will continue to be logged and saved.
               system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True) 
-              system_device._try_write("System", "error", "Devices reported errors: " + ','.join([r for r in result_failure if result]))
+              system_device._try_write("System", "error", "Devices reported errors: " + ','.join([r for r in result_failure if r]))
             elif i2c_bus_stuck:
               system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True)
               system_device._try_write("System", "error", "I2C bus stuckness was detected, and this device should be unplugged and plugged back in again.")
@@ -251,7 +211,7 @@ def main(args):
             publish_rows = local_storage.getrecent(int(os.getenv("max_backlog_writes")))
             data_json = [row[1] for row in publish_rows]
 
-            logging.info("Attempting to write data to remote.")
+            logging.info("Attempting to write {} data points to remote.".format(len(data_json)))
             # We'll try to write them in one single batch.
             if data_json:
               try:
@@ -263,21 +223,9 @@ def main(args):
                   local_storage.deleterecord(row[0])
               except Exception as err:
                 logging.error("Failed to write data to remote: {}".format(str(err)))
-
-                # Trigger hostapd mode.
-                os.system("systemctl start " + os.getenv("ap_service"))
-
-                # Maybe touch a file to indicate the time that we did this.
-                if not os.path.exists(os.getenv("hostap_status_file")):
-                  os.system("touch " + os.getenv("hostap_status_file"))
             else:
               logging.info("No data to write!")
 
-            # Maybe trigger wlan mode.
-            if switch_to_wlan():
-              logging.warning("Trying to connect to wlan.")
-              start_wlan_service()
-  
             # TODO:  We should probably wait until a specific future time,  instead of sleep.
             time.sleep(interval)
 
@@ -287,9 +235,9 @@ def main(args):
 
   # Now we've released all of the devices and finalized local storage.  It is safe to do a gracefull reboot.
   if do_reboot:
-    os.system('reboot')
-    # Wait a minute, to make sure the service doesn't restart too soon.
-    time.sleep(60)
-
+    logging.info("Detected request for graceful restart.  Restarting SimpleAQ services and hostapd now.")
+    os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
+    os.system('systemctl restart hostapd')
+    
 if __name__ == '__main__':
   app.run(main)

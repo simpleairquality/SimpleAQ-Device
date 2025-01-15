@@ -15,7 +15,14 @@ import RPi.GPIO as GPIO
 I2C_MODE  = 0x01
 tempSwitch = 0
 temp = 0.0
+# The driver code at https://github.com/DFRobot/DFRobot_MultiGasSensor/blob/main/python/raspberrypi/DFRobot_MultiGasSensor.py
+# uses only an 0.1s wait.  We tried with 0.5s wait and still saw issues.  We're trying longer but it may be the case that
+# either bus capacitance is too high or the file descriptor
+# https://sensirion.github.io/python-i2c-driver/_modules/sensirion_i2c_driver/linux_i2c_transceiver.html#LinuxI2cTransceiver
+# needs to be closed and then opened again, which may reset the bus.  Or it may not, and we simply must fix the bus capacitance.
+# https://forum.micropython.org/viewtopic.php?t=12610#:~:text=Errno%205%20EIO%20error%20with,a%20device%20on%20the%20bus.
 SEND_WAIT = 0.5
+SEND_WAIT_FOR_DATA = 2
 
 def fuc_check_sum(i,ln):
   '''!
@@ -351,7 +358,7 @@ class DFRobot_MultiGasSensor(object):
     sendbuf[6]=0x00
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
-    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
+    recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT_FOR_DATA)
     if(fuc_check_sum(recvbuf,8) == recvbuf[8]):
       self.gasconcentration = ((recvbuf[2]<<8)+recvbuf[3])*1.0
 
@@ -558,8 +565,6 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
     sendbuf[7]=0x00
     sendbuf[8]=fuc_check_sum(sendbuf,8)
     recvbuf = self.transcieve(sendbuf, 9, SEND_WAIT)
-    for i in range(0,8):
-      print("%#x"%recvbuf[i])
     if (recvbuf[8] == fuc_check_sum(recvbuf, 8)):
       self.analysis_all_data(recvbuf)
       return True
@@ -575,6 +580,11 @@ class DFRobot_MultiGasSensor_I2C(DFRobot_MultiGasSensor):
       return rx_data
     else:
       logging.error("Failed to write data to DFRobot MultiGas Sensor on {}: [{}] {}".format(self.__addr, status, error)) 
+
+      # Experimental method to recover from a stuck bus.
+      if status == self.i2cbus.STATUS_TIMEOUT or status == self.i2cbus.STATUS_UNSPECIFIED_ERROR:
+        logging.warn("It is likely that the I2C bus is stuck.")
+
       raise Exception(error)
 
 
@@ -614,23 +624,11 @@ class DFRobotMultiGas(Sensor):
 
     self.sensor.set_temp_compensation(self.sensor.ON)
 
-  def retry_gas_concentration(self, max_retries=10):
-    remote_io_error = None
-    for _ in range(max_retries):
-      try:
-        return self.sensor.read_gas_concentration()
-      except Exception as err:
-        if "Remote I/O error" in str(err):
-          remote_io_error = err
-        else:
-          raise err
-    raise remote_io_error
-
   def publish(self):
     logging.info('Publishing DFRobot Multi-Gas on I2C {} to.'.format(self.address))
     result = False
     try:
-      uncorrected_gas_concentration, gas_concentration = self.retry_gas_concentration()
+      uncorrected_gas_concentration, gas_concentration = self.sensor.read_gas_concentration()
       if self.sensor.gastype and self.sensor.gasunits:
         if uncorrected_gas_concentration is not None:
           result = self._try_write('DFRobotMultiGas{}'.format(self.sensor.gastype), '{}_uncorrected_concentration_{}'.format(self.sensor.gastype, self.sensor.gasunits), uncorrected_gas_concentration) or result

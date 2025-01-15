@@ -16,11 +16,13 @@ jobs:
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
       with:
-        root-reserve-mb: 10240 
+        root-reserve-mb: 11240 
         swap-size-mb: 1024
         remove-dotnet: 'true'
         remove-android: 'true'
         remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
 
     - name: List Available Space
       run: |
@@ -45,7 +47,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: dca93d24c7dfb943d84601d2bc4a089f9b66b87f
+        ref: ca08900c66c5eb4dc3444ce63e91ee081107ffa2
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -76,6 +78,7 @@ jobs:
         echo KEYBOARD_KEYMAP=us                    >> config
         echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
         echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
+        echo WPA_COUNTRY=US                        >> config
         echo "image=$IMAGE"                        >> $GITHUB_OUTPUT
 
     # Greatly speed up our build because we don't need a desktop
@@ -113,11 +116,13 @@ jobs:
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
       with:
-        root-reserve-mb: 10240
+        root-reserve-mb: 11240
         swap-size-mb: 1024
         remove-dotnet: 'true'
         remove-android: 'true'
         remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
 
     - name: List Available Space
       run: |
@@ -142,7 +147,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: dca93d24c7dfb943d84601d2bc4a089f9b66b87f
+        ref: ca08900c66c5eb4dc3444ce63e91ee081107ffa2
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -174,6 +179,7 @@ jobs:
         echo KEYBOARD_KEYMAP=us                    >> config
         echo KEYBOARD_LAYOUT=\"English\ \(US\)\"   >> config
         echo DISABLE_FIRST_BOOT_USER_RENAME=1      >> config
+        echo WPA_COUNTRY=US                        >> config
         echo "image=$IMAGE"                        >> $GITHUB_OUTPUT
 
     # Greatly speed up our build because we don't need a desktop
