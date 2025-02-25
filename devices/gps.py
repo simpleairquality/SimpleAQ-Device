@@ -66,8 +66,12 @@ class Gps(Sensor):
   def publish(self):
     logging.info('Publishing GPS data')
     # Yes, recommended behavior is to call update twice.  
-    self.gps.update()
-    self.gps.update()
+    try:
+      self.gps.update()
+      self.gps.update()
+    except OSError as err:
+      logging.error('OSError when updating GPS: ' + str(err) + '.')
+
     result = False
     try:
       if not self.has_transmitted_device_info:
