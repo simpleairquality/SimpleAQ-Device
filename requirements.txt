@@ -20,3 +20,6 @@ requests-toolbelt
 RPi.GPIO
 smbus
 gpsd-py3
+pyrtlsdr
+matplotlib
+setuptools

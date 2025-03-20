@@ -8,6 +8,8 @@ import subprocess
 import sqlite3
 import logging
 from localstorage.localsqlite import LocalSqlite
+from rtlsdr import RtlSdr
+import matplotlib.pyplot as plt
 
 import netifaces as ni
 
@@ -58,49 +60,44 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
     except subprocess.CalledProcessError as e:
         logger.error(str(e))
 
-@app.route('/')
-def main():
-  ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
-  psk_re = re.compile("^\s*psk=\"(.*)\"\s*$")
-
-  local_ssid = get_wifi_field('802-11-wireless.ssid')
-  local_psk = get_wifi_field('802-11-wireless-security.psk') 
-
-  num_data_points = "Database Error"
-  with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
+def get_new_spectrogram(center_freq):
     try:
-      num_data_points = local_storage.countrecords()
-    except Exception:
-      # Don't let this break things.
-      pass
+        sdr = RtlSdr()
 
-  warn_message = ''
-  if os.path.exists(os.getenv('reboot_status_file')):
-    warn_message = 'These settings may be out of date, as previous settings are still being applied.  Please refresh this page in a few minutes for up to date settings.'
+        # Configure the SDR
+        sdr.sample_rate = 2.048e6  # Hz
+        sdr.gain = 'auto'
 
-  return render_template(
-      'index.html',
-      warn_message=warn_message,
-      num_data_points=num_data_points,
-      local_wifi_network=local_ssid,
-      local_wifi_password=local_psk,
-      endpoint_type_simpleaq="selected" if os.getenv('endpoint_type') == "SIMPLEAQ" else "",
-      endpoint_type_influxdb="selected" if os.getenv('endpoint_type') == "INFLUXDB" else "",
-      influx_options_disabled="" if os.getenv('endpoint_type') == "INFLUXDB" else "disabled",
-      simpleaq_logo='static/simpleaq_logo.png',
-      influx_org=os.getenv('influx_org'),
-      influx_bucket=os.getenv('influx_bucket'),
-      influx_token=os.getenv('influx_token'),
-      influx_server=os.getenv('influx_server'),
-      simpleaq_interval=os.getenv('simpleaq_interval'),
-      simpleaq_hostapd_name=os.getenv('simpleaq_hostapd_name'),
-      simpleaq_hostapd_password=os.getenv('simpleaq_hostapd_password'),
-      simpleaq_hostapd_hide_ssid_checked=('checked' if os.getenv('simpleaq_hostapd_hide_ssid') == '1' else ''),
-      hostap_retry_interval_sec=os.getenv('hostap_retry_interval_sec'),
-      max_backlog_writes=os.getenv('max_backlog_writes'),
-      detected_devices=os.getenv('detected_devices'),
-      i2c_bus=os.getenv('i2c_bus'),
-      mac_addr=str(get_mac()))
+        # Read samples
+        samples = sdr.read_samples(256 * 1024)
+
+        # Plot the spectrogram
+        plt.specgram(samples, NFFT=1024, Fs=sdr.sample_rate, noverlap=900)
+        plt.xlabel("Time (s)")
+        plt.ylabel("Frequency (Hz)")
+        plt.title("RTL-SDR Spectrogram (Center frequency {})".format(center_freq))
+        plt.savefig('./static/spec.jpg')
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if 'sdr' in locals():
+            sdr.close()
+
+
+@app.route('/', methods=('GET',))
+def main():
+    center_freq = request.args.get('frequency')
+
+    cf = 100000000
+    if center_freq:
+        cf = int(center_freq)
+
+    get_new_spectrogram(cf)
+
+    return render_template(
+        'index.html',
+        center_frequency=cf)
 
 @app.route('/simpleaq.ndjson', methods=('GET',))
 def download():
