@@ -69,7 +69,7 @@ def get_new_spectrogram(center_freq):
         sdr.gain = 'auto'
 
         # Read samples
-        samples = sdr.read_samples(256 * 1024)
+        samples = sdr.read_samples(128 * 1024)
 
         # Plot the spectrogram
         plt.specgram(samples, NFFT=1024, Fs=sdr.sample_rate, noverlap=900)
@@ -79,7 +79,7 @@ def get_new_spectrogram(center_freq):
         plt.savefig('./static/spec.jpg')
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
     finally:
         if 'sdr' in locals():
             sdr.close()

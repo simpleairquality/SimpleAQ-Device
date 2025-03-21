@@ -30,6 +30,7 @@ cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/wifi.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
+cp files/blacklist-rtl.conf "${ROOTFS_DIR}/etc/modprobe.d/"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
