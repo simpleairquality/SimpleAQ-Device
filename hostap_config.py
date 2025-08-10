@@ -4,6 +4,7 @@ import getmac
 import os
 import json
 import re
+import shlex
 import subprocess
 import sqlite3
 import logging
@@ -47,14 +48,24 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
         connection_name = ssid  # Use SSID as connection name if none provided
 
     try:
-        # Connection better already exist, update the SSID and PSK
-        subprocess.run(
-            ["nmcli", "connection", "modify", connection_name,
-             "802-11-wireless.ssid", ssid,
-             "802-11-wireless-security.key-mgmt", "wpa-psk",
-             "802-11-wireless-security.psk", psk],
-            check=True,
-            )
+        if psk:
+          # Connection better already exist, update the SSID and PSK
+          subprocess.run(
+              ["nmcli", "connection", "modify", connection_name,
+               "802-11-wireless.ssid", ssid,
+               "802-11-wireless-security.key-mgmt", "wpa-psk",
+               "802-11-wireless-security.psk", psk],
+              check=True,
+              )
+        else:
+          # If no password is provided, connect without one.
+          subprocess.run(
+              ["nmcli", "connection", "modify", connection_name,
+               "802-11-wireless.ssid", ssid,
+               "802-11-wireless-security.key-mgmt", "none"],
+              check=True,
+              )
+
     except subprocess.CalledProcessError as e:
         logger.error(str(e))
 
@@ -152,18 +163,33 @@ def download():
 
   return Response(generate(db_conn, cursor), mimetype='application/x-ndjson')
 
+def get_psk(ssid, password):
+  cmd = f"wpa_passphrase {shlex.quote(ssid)} {shlex.quote(password)}"
+  psk_output = subprocess.check_output(cmd, shell=True, text=True)
+
+  # Extract the 'psk=' line that is *not* the commented passphrase
+  psk_line = next(line for line in psk_output.splitlines() if line.strip().startswith("psk=") and not line.strip().startswith("#"))
+  psk_value = psk_line.split("=", 1)[1]
+
+  return psk_value
+
 @app.route('/update/', methods=('GET',))
 def update():
+  if request.args.get('local_wifi_network') and request.args.get('local_wifi_password'):
+    new_local_wifi_psk = get_psk(request.args.get('local_wifi_network', ''), request.args.get('local_wifi_password', ''))
+  elif request.args.get('local_wifi_network') and not request.args.get('local_wifi_password'):
+    new_local_wifi_psk = ''
+
   # Maybe update local wifi from a template.
   if (request.args.get('local_wifi_network') != request.args.get('original_local_wifi_network') or
-      request.args.get('local_wifi_password') != request.args.get('original_local_wifi_password')):
+      new_local_wifi_psk != request.args.get('original_local_wifi_password')):
     # Generate a new wlan configuration.
     # Note that this in no way respects the default configuration set in custom_pigen.
     # If for any reason that changes, this will have to also.
     # However, just in case some users manually edit this, it will never be overwritten unless
     # they actually try to change the values in the form.
     set_wifi_credentials(request.args.get('local_wifi_network'), 
-                         request.args.get('local_wifi_password'))
+                         new_local_wifi_psk)
 
   # Update environment variables.
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
