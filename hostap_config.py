@@ -182,7 +182,7 @@ def update():
 
   # Maybe update local wifi from a template.
   if (request.args.get('local_wifi_network') != request.args.get('original_local_wifi_network') or
-      new_local_wifi_psk != request.args.get('original_local_wifi_password')):
+      request.args.get('local_wifi_password') != request.args.get('original_local_wifi_password')):
     # Generate a new wlan configuration.
     # Note that this in no way respects the default configuration set in custom_pigen.
     # If for any reason that changes, this will have to also.
