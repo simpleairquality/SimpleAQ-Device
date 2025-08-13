@@ -176,7 +176,7 @@ def get_psk(ssid, password):
 @app.route('/update/', methods=('GET',))
 def update():
   new_local_wifi_psk = None
-  if request.args.get('local_wifi_network') and request.args.get('local_wifi_password') and len(request.args.get('local_wifi_password', '') < 64:
+  if request.args.get('local_wifi_network') and request.args.get('local_wifi_password') and len(request.args.get('local_wifi_password', '')) < 64:
     new_local_wifi_psk = get_psk(request.args.get('local_wifi_network', ''), request.args.get('local_wifi_password', ''))
   elif request.args.get('local_wifi_network') and not request.args.get('local_wifi_password'):
     new_local_wifi_psk = ''
