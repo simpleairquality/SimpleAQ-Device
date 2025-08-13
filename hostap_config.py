@@ -175,7 +175,8 @@ def get_psk(ssid, password):
 
 @app.route('/update/', methods=('GET',))
 def update():
-  if request.args.get('local_wifi_network') and request.args.get('local_wifi_password'):
+  new_local_wifi_psk = None
+  if request.args.get('local_wifi_network') and request.args.get('local_wifi_password') and len(request.args.get('local_wifi_password', '') < 64:
     new_local_wifi_psk = get_psk(request.args.get('local_wifi_network', ''), request.args.get('local_wifi_password', ''))
   elif request.args.get('local_wifi_network') and not request.args.get('local_wifi_password'):
     new_local_wifi_psk = ''
@@ -189,7 +190,7 @@ def update():
     # However, just in case some users manually edit this, it will never be overwritten unless
     # they actually try to change the values in the form.
     set_wifi_credentials(request.args.get('local_wifi_network'), 
-                         new_local_wifi_psk)
+                         new_local_wifi_psk or '')
 
   # Update environment variables.
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
