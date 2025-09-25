@@ -4,7 +4,6 @@ import contextlib
 import datetime
 import json
 import os
-import smbus
 import time
 import RPi.GPIO as GPIO
 
@@ -22,6 +21,7 @@ from devices.dfrobot_multigassensor import DFRobotMultiGas00
 from devices.dfrobot_multigassensor import DFRobotMultiGas01
 from devices.dfrobot_multigassensor import DFRobotMultiGas10
 from devices.dfrobot_multigassensor import DFRobotMultiGas11
+from devices.pcbartists_decibel import PCBArtistsDecibel 
 from devices.uartnmeagps import UartNmeaGps
 
 from localstorage.localdummy import LocalDummy
@@ -57,7 +57,8 @@ device_map = {
     'dfrobotmultigas00': DFRobotMultiGas00,
     'dfrobotmultigas01': DFRobotMultiGas01,
     'dfrobotmultigas10': DFRobotMultiGas10,
-    'dfrobotmultigas11': DFRobotMultiGas11
+    'dfrobotmultigas11': DFRobotMultiGas11,
+    'pcbartistsdecibel': PCBArtistsDecibel
 }
 
 priority_devices = ['gps', 'dfrobotgps', 'uartnmeagps']
