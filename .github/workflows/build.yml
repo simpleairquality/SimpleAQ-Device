@@ -34,6 +34,12 @@ jobs:
         sudo apt update
         sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
 
+    - name: Switch to /mnt for build
+      run: |
+        sudo mkdir -p /mnt/build
+        sudo chown $USER:$USER /mnt/build
+        echo "WORKSPACE=/mnt/build" >> $GITHUB_ENV
+
     - name: Checkout SimpleAQ-Device
       uses: actions/checkout@v3
       with:
