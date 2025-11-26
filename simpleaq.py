@@ -7,6 +7,7 @@ import os
 import smbus
 import time
 import RPi.GPIO as GPIO
+import subprocess
 
 from absl import app, flags, logging
 
@@ -185,6 +186,8 @@ def main(args):
             logging.warning("SimpleAQ service will restart now.")
             return 1
 
+        last_write_succeeded = True
+
         # This enteres a guaranteed-closing context manager for every sensors.
         # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
         # Most of the others are no-ops.
@@ -223,6 +226,35 @@ def main(args):
                   local_storage.deleterecord(row[0])
               except Exception as err:
                 logging.error("Failed to write data to remote: {}".format(str(err)))
+
+                if last_write_succeeded:
+                    # Let's get a system device and write any useful logging information.
+                    # Obviously this won't immediately succeed, but we can later help users debug errors.
+                    system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True)
+
+                    try:
+                      dmesg_result = subprocess.run(['dmesg | tail -n 100'], shell=True, stdout=subprocess.PIPE)
+                      dmesg_string = dmesg_result.stdout.decode('utf-8')
+
+                      simpleaq_result = subprocess.run(['journalctl -u simpleaq.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
+                      simpleaq_string = simpleaq_result.stdout.decode('utf-8')
+
+                      networkmanager_result = subprocess.run(['journalctl -u NetworkManager | tail -n 100'], shell=True, stdout=subprocess.PIPE)
+                      networkmanager_string = networkmanager_result.stdout.decode('utf-8')
+
+                      hostap_result = subprocess.run(['journalctl -u hostap_config.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
+                      hostap_string = hostap_result.stdout.decode('utf-8')
+
+                      system_device._try_write("System", "error", "dmesg logs: \n" + dmesg_string)
+                      system_device._try_write("System", "error", "simpleaq logs: \n" + simpleaq_string)
+                      system_device._try_write("System", "error", "networkmanager logs: \n" + networkmanager_string)
+                      system_device._try_write("System", "error", "hostap logs: \n" + hostap_string)
+
+                    except Exception:
+                      logging.error("Failed to write error logs: {}".format(str(err)))
+
+                    last_write_succeeded = False
+
             else:
               logging.info("No data to write!")
 
