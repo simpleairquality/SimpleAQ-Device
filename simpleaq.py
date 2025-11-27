@@ -245,11 +245,10 @@ def main(args):
                       hostap_result = subprocess.run(['journalctl -u hostap_config.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
                       hostap_string = hostap_result.stdout.decode('utf-8')
 
-                      system_device._try_write("System", "error", "dmesg logs: \n" + dmesg_string)
-                      system_device._try_write("System", "error", "simpleaq logs: \n" + simpleaq_string)
-                      system_device._try_write("System", "error", "networkmanager logs: \n" + networkmanager_string)
-                      system_device._try_write("System", "error", "hostap logs: \n" + hostap_string)
-
+                      system_device._try_write("System", "error", "dmesg logs: \n" + dmesg_string +
+                                                                  "\n simpleaq logs: \n" + simpleaq_string +
+                                                                  "\n networkmanager logs: \n" + networkmanager_string +
+                                                                  "\n hostap logs: \n" + hostap_string)
                     except Exception:
                       logging.error("Failed to write error logs: {}".format(str(err)))
 
