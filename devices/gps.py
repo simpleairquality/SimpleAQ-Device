@@ -61,7 +61,7 @@ class Gps(Sensor):
                           ' exceeds interval time of ' + str(self.interval) + '.  Scheduling a graceful reboot.')
           os.system('chronyc settime {}'.format(calendar.timegm(self.gps.timestamp_utc)))
 
-          file_path = Path(os.getenv("reboot_status_file"))
+          file_path = Path(os.getenv("reboot_status_file") + '_system')
           file_path.touch(exist_ok=True)
 
           self.timesource.set_time(datetime.datetime.now())

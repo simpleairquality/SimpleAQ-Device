@@ -106,7 +106,7 @@ class UartNmeaGps(Sensor):
               logging.warning('System clock is very different from GPS time ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
                               '.  Because time is coming from gpsd, we will allow chrony to handle slewing.  Scheduling a graceful reboot.')
 
-              file_path = Path(os.getenv("reboot_status_file"))
+              file_path = Path(os.getenv("reboot_status_file") + '_system')
               file_path.touch(exist_ok=True)
 
               self.timesource.set_time(datetime.datetime.now())
