@@ -35,7 +35,8 @@ cp files/wifi-powersave.conf "${ROOTFS_DIR}/etc/NetworkManager/conf.d/wifi-power
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
 on_chroot << EOF
-        cat /simpleaq/example.env >> /etc/environment
+        cat /simpleaq/example.env | grep -v "image_name=" >> /etc/environment
+        echo image_name=${IMG_NAME} >> /etc/environment
 EOF
 
 # Make sure our service has the right permissions and that it starts on boot.
