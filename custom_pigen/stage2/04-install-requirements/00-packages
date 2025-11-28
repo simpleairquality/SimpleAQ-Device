@@ -14,3 +14,4 @@ userconf-pi
 hostapd
 gpsd
 gpsd-clients
+chrony

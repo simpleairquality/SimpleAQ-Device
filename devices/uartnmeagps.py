@@ -6,6 +6,7 @@ import dotenv
 import os
 import time
 import sys
+from pathlib import Path
 from absl import logging
 from . import Sensor
 
@@ -102,10 +103,12 @@ class UartNmeaGps(Sensor):
             epoch_seconds = packet.get_time(local_time=False).timestamp()
 
             if abs(time.time() - epoch_seconds) > self.interval:
-              logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                              ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                              ' exceeds interval time of ' + str(self.interval))
-              os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
+              logging.warning('System clock is very different from GPS time ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                              '.  Because time is coming from gpsd, we will allow chrony to handle slewing.  Scheduling a graceful reboot.')
+
+              file_path = Path(os.getenv("reboot_status_file"))
+              file_path.touch(exist_ok=True)
+
               self.timesource.set_time(datetime.datetime.now())
               self.has_set_time = True
       else:
