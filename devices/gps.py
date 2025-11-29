@@ -58,12 +58,9 @@ class Gps(Sensor):
         if abs(time.time() - epoch_seconds) > self.interval:
           logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat() +
                           ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                          ' exceeds interval time of ' + str(self.interval) + '.  Scheduling a graceful reboot.')
-          os.system('chronyc settime {}'.format(calendar.timegm(self.gps.timestamp_utc)))
-
-          file_path = Path(os.getenv("reboot_status_file") + '_system')
-          file_path.touch(exist_ok=True)
-
+                          ' exceeds interval time of ' + str(self.interval) + '.  This is error-prone and used only for the legacy I2C GPS.')
+          os.system('date --utc -s %s' % datetime.datetime.fromtimestamp(calendar.timegm(self.gps.timestamp_utc)).isoformat())
+          os.system('hwclock --systohc')
           self.timesource.set_time(datetime.datetime.now())
           self.has_set_time = True
 

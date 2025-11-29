@@ -45,12 +45,6 @@ def do_graceful_reboot():
     return True
   return False
 
-def do_graceful_system_reboot():
-  if os.path.exists(os.getenv("reboot_status_file") + '_system'):
-    os.remove(os.getenv("reboot_status_file") + '_system')
-    return True
-  return False
-
 # Enumerate the list of supported devices here.
 device_map = {
     'system': System,
@@ -167,8 +161,6 @@ def main(args):
     timesource = SyncTimeSource()
     send_last_known_gps = True
 
-  do_system_reboot = False
-
   # This implicitly creates the database.
   with LocalSqlite(os.getenv("sqlite_db_path")) as local_storage:
 
@@ -204,7 +196,7 @@ def main(args):
             stack.enter_context(sensor)
 
           do_reboot = False
-          while not do_reboot and not do_system_reboot:
+          while not do_reboot:
             timesource.set_time(datetime.datetime.now())
             result_failure = [sensor.publish() for sensor in sensors]
 
@@ -271,18 +263,12 @@ def main(args):
             # We attempt to reboot gracefully, at a time when we've released all of the buses,
             # to prevent inadvertently causing bus stuckness.
             do_reboot = do_graceful_reboot()
-            do_system_reboot = do_graceful_system_reboot()
 
   # Now we've released all of the devices and finalized local storage.  It is safe to do a gracefull reboot.
   if do_reboot:
     logging.info("Detected request for graceful restart.  Restarting SimpleAQ services and hostapd now.")
     os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
     os.system('systemctl restart hostapd')
-
-  if do_system_reboot:
-    logging.info("Detected request for a system reboot.  Rebooting now.")
-    os.system('reboot')
-    time.sleep(15)  # Wait 15 seconds.  We don't want SimpleAQ to come back up.
 
 if __name__ == '__main__':
   app.run(main)

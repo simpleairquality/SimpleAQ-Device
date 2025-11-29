@@ -103,11 +103,11 @@ class UartNmeaGps(Sensor):
             epoch_seconds = packet.get_time(local_time=False).timestamp()
 
             if abs(time.time() - epoch_seconds) > self.interval:
-              logging.warning('System clock is very different from GPS time ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                              '.  Because time is coming from gpsd, we will allow chrony to handle slewing.  Scheduling a graceful reboot.')
+              logging.warning(
+                  'System clock (epoch ' + str(time.time()) + ') is very different from GPS time ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                              ' (epoch ' + str(epoch_seconds) + '). This differs by ' + str(abs(time.time() - epoch_seconds)) + ', exceeding our data interval.  Jumping time.')
 
-              file_path = Path(os.getenv("reboot_status_file") + '_system')
-              file_path.touch(exist_ok=True)
+              os.system('chronyc makestep')
 
               self.timesource.set_time(datetime.datetime.now())
               self.has_set_time = True
