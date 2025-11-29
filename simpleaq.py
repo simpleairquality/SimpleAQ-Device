@@ -45,7 +45,7 @@ def do_graceful_reboot():
     return True
   return False
 
-def do_system_reboot():
+def do_graceful_system_reboot():
   if os.path.exists(os.getenv("reboot_status_file") + '_system'):
     os.remove(os.getenv("reboot_status_file") + '_system')
     return True
@@ -271,7 +271,7 @@ def main(args):
             # We attempt to reboot gracefully, at a time when we've released all of the buses,
             # to prevent inadvertently causing bus stuckness.
             do_reboot = do_graceful_reboot()
-            do_system_reboot = do_system_reboot()
+            do_system_reboot = do_graceful_system_reboot()
 
   # Now we've released all of the devices and finalized local storage.  It is safe to do a gracefull reboot.
   if do_reboot:
