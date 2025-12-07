@@ -31,6 +31,7 @@ cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/wifi.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
 cp files/wifi-powersave.conf "${ROOTFS_DIR}/etc/NetworkManager/conf.d/wifi-powersave.conf"
+cp files/chrony.conf "${ROOTFS_DIR}/etc/chrony/chrony.conf"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.

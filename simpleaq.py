@@ -45,7 +45,6 @@ def do_graceful_reboot():
     return True
   return False
 
-
 # Enumerate the list of supported devices here.
 device_map = {
     'system': System,
@@ -270,6 +269,6 @@ def main(args):
     logging.info("Detected request for graceful restart.  Restarting SimpleAQ services and hostapd now.")
     os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
     os.system('systemctl restart hostapd')
-    
+
 if __name__ == '__main__':
   app.run(main)

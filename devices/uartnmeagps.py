@@ -6,6 +6,7 @@ import dotenv
 import os
 import time
 import sys
+from pathlib import Path
 from absl import logging
 from . import Sensor
 
@@ -102,10 +103,12 @@ class UartNmeaGps(Sensor):
             epoch_seconds = packet.get_time(local_time=False).timestamp()
 
             if abs(time.time() - epoch_seconds) > self.interval:
-              logging.warning('Setting system clock to ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
-                              ' because difference of ' + str(abs(time.time() - epoch_seconds)) +
-                              ' exceeds interval time of ' + str(self.interval))
-              os.system('date --utc -s %s' % datetime.datetime.utcfromtimestamp(epoch_seconds).isoformat())
+              logging.warning(
+                  'System clock (epoch ' + str(time.time()) + ') is very different from GPS time ' + datetime.datetime.fromtimestamp(epoch_seconds).isoformat() +
+                              ' (epoch ' + str(epoch_seconds) + '). This differs by ' + str(abs(time.time() - epoch_seconds)) + ', exceeding our data interval.  Jumping time.')
+
+              os.system('chronyc makestep')
+
               self.timesource.set_time(datetime.datetime.now())
               self.has_set_time = True
       else:
