@@ -13,7 +13,7 @@ from localstorage.localsqlite import LocalSqlite
 import netifaces as ni
 
 app = Flask(__name__)
-logger = logging.getLogger(__name__)
+app.logger.setLevel(logging.INFO)
 
 def get_mac(interface='wlan0'):
   return ni.ifaddresses(interface)[ni.AF_LINK][0]['addr']
@@ -31,7 +31,7 @@ def get_wifi_field(field):
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        logger.error(str(e))
+        app.logger.error(str(e))
     return ""
 
 def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
@@ -61,13 +61,18 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
           # If no password is provided, connect without one.
           subprocess.run(
               ["nmcli", "connection", "modify", connection_name,
-               "802-11-wireless.ssid", ssid,
-               "802-11-wireless-security.key-mgmt", "none"],
+               "802-11-wireless.ssid", ssid],
               check=True,
               )
 
+          subprocess.run(
+              ["nmcli", "connection", "modify", connection_name,
+               "remove", "802-11-wireless-security"],
+              check=True,
+          )
+
     except subprocess.CalledProcessError as e:
-        logger.error(str(e))
+        app.logger.error(str(e))
 
 @app.route('/')
 def main():
@@ -176,21 +181,32 @@ def get_psk(ssid, password):
 @app.route('/update/', methods=('GET',))
 def update():
   new_local_wifi_psk = None
-  if request.args.get('local_wifi_network') and request.args.get('local_wifi_password') and len(request.args.get('local_wifi_password', '')) < 64:
-    new_local_wifi_psk = get_psk(request.args.get('local_wifi_network', ''), request.args.get('local_wifi_password', ''))
-  elif request.args.get('local_wifi_network') and not request.args.get('local_wifi_password'):
-    new_local_wifi_psk = ''
+  
+  new_local_wifi_network = request.args.get('local_wifi_network')
+  new_local_wifi_password = request.args.get('local_wifi_password')
+  original_local_wifi_network = request.args.get('original_local_wifi_network')
+  original_local_wifi_password = request.args.get('original_local_wifi_password')
 
-  # Maybe update local wifi from a template.
-  if (request.args.get('local_wifi_network') != request.args.get('original_local_wifi_network') or
-      request.args.get('local_wifi_password') != request.args.get('original_local_wifi_password')):
-    # Generate a new wlan configuration.
-    # Note that this in no way respects the default configuration set in custom_pigen.
-    # If for any reason that changes, this will have to also.
-    # However, just in case some users manually edit this, it will never be overwritten unless
-    # they actually try to change the values in the form.
-    set_wifi_credentials(request.args.get('local_wifi_network'), 
-                         new_local_wifi_psk or '')
+  # Check if WiFi settings changed
+  wifi_changed = (new_local_wifi_network != original_local_wifi_network or
+                  new_local_wifi_password != original_local_wifi_password)
+
+  if wifi_changed and new_local_wifi_network:
+    if new_local_wifi_password == '':
+      # Explicitly empty = open network
+      new_local_wifi_psk = ''
+    elif len(new_local_wifi_password) < 8:
+      # This is not normally a valid thing, leading to an HTTP 500 when get_psk fails.
+      # Let them try I guess.
+      new_local_wifi_psk = new_local_wifi_password
+    elif len(new_local_wifi_password) < 64:
+      # Short password = needs hashing
+      new_local_wifi_psk = get_psk(new_local_wifi_network, new_local_wifi_password)
+    else:
+      # 64 chars = already a PSK
+      new_local_wifi_psk = new_local_wifi_password
+
+    set_wifi_credentials(new_local_wifi_network, new_local_wifi_psk)
 
   # Update environment variables.
   keys = ['influx_org', 'influx_bucket', 'influx_token', 'influx_server',
