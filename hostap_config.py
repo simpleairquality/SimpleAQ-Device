@@ -13,7 +13,7 @@ from localstorage.localsqlite import LocalSqlite
 import netifaces as ni
 
 app = Flask(__name__)
-logger = logging.getLogger(__name__)
+app.logger.setLevel(logging.INFO)
 
 def get_mac(interface='wlan0'):
   return ni.ifaddresses(interface)[ni.AF_LINK][0]['addr']
@@ -31,7 +31,7 @@ def get_wifi_field(field):
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        logger.error(str(e))
+        app.logger.error(str(e))
     return ""
 
 def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
@@ -61,13 +61,18 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
           # If no password is provided, connect without one.
           subprocess.run(
               ["nmcli", "connection", "modify", connection_name,
-               "802-11-wireless.ssid", ssid,
-               "802-11-wireless-security.key-mgmt", "none"],
+               "802-11-wireless.ssid", ssid]
               check=True,
               )
 
+          subprocess.run(
+              ["nmcli", "connection", "modify", connection_name,
+               "remove", "802-11-wireless-security"],
+              check=True,
+          )
+
     except subprocess.CalledProcessError as e:
-        logger.error(str(e))
+        app.logger.error(str(e))
 
 @app.route('/')
 def main():
@@ -190,6 +195,10 @@ def update():
     if new_local_wifi_password == '':
       # Explicitly empty = open network
       new_local_wifi_psk = ''
+    elif len(new_local_wifi_password) < 8:
+      # This is not normally a valid thing, leading to an HTTP 500 when get_psk fails.
+      # Let them try I guess.
+      new_local_wifi_psk = new_local_wifi_password
     elif len(new_local_wifi_password) < 64:
       # Short password = needs hashing
       new_local_wifi_psk = get_psk(new_local_wifi_network, new_local_wifi_password)
