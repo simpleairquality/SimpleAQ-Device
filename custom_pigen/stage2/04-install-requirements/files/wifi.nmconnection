@@ -3,6 +3,8 @@ id=Wifi
 uuid=894d14e5-2e6a-471f-8c17-8acb9a4a8b80
 type=wifi
 interface-name=wlan0
+autoconnect=true
+autoconnect-retries=0
 
 [wifi]
 mode=infrastructure
