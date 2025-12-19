@@ -61,7 +61,7 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
           # If no password is provided, connect without one.
           subprocess.run(
               ["nmcli", "connection", "modify", connection_name,
-               "802-11-wireless.ssid", ssid]
+               "802-11-wireless.ssid", ssid],
               check=True,
               )
 
