@@ -54,6 +54,9 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
               ["nmcli", "connection", "modify", connection_name,
                "802-11-wireless.ssid", ssid,
                "802-11-wireless-security.key-mgmt", "wpa-psk",
+               "connection.autoconnect", "yes",
+               "connection.autoconnect-retries", "0",
+               "802-11-wireless.powersave", "2",
                "802-11-wireless-security.psk", psk],
               check=True,
               )
@@ -61,7 +64,10 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
           # If no password is provided, connect without one.
           subprocess.run(
               ["nmcli", "connection", "modify", connection_name,
-               "802-11-wireless.ssid", ssid],
+               "802-11-wireless.ssid", ssid,
+               "connection.autoconnect", "yes",
+               "connection.autoconnect-retries", "0",
+               "802-11-wireless.powersave", "2"],
               check=True,
               )
 
@@ -70,6 +76,8 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
                "remove", "802-11-wireless-security"],
               check=True,
           )
+
+
 
     except subprocess.CalledProcessError as e:
         app.logger.error(str(e))
