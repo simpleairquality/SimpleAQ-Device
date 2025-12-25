@@ -4,6 +4,7 @@ adafruit-circuitpython-gps
 adafruit-circuitpython-pm25
 adafruit-circuitpython-bme680
 adafruit-circuitpython-bmp3xx
+adafruit-circuitpython-scd4x
 getmac
 influxdb_client
 python-dotenv

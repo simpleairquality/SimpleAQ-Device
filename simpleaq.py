@@ -24,6 +24,7 @@ from devices.dfrobot_multigassensor import DFRobotMultiGas10
 from devices.dfrobot_multigassensor import DFRobotMultiGas11
 from devices.pcbartists_decibel import PCBArtistsDecibel 
 from devices.uartnmeagps import UartNmeaGps
+from devices.scd4x import Scd4x
 
 from localstorage.localdummy import LocalDummy
 from localstorage.localsqlite import LocalSqlite 
@@ -58,7 +59,8 @@ device_map = {
     'dfrobotmultigas01': DFRobotMultiGas01,
     'dfrobotmultigas10': DFRobotMultiGas10,
     'dfrobotmultigas11': DFRobotMultiGas11,
-    'pcbartistsdecibel': PCBArtistsDecibel
+    'pcbartistsdecibel': PCBArtistsDecibel,
+    'scd4x': Scd4x,
 }
 
 priority_devices = ['gps', 'dfrobotgps', 'uartnmeagps']
