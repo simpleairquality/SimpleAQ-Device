@@ -57,7 +57,9 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
                "connection.autoconnect", "yes",
                "connection.autoconnect-retries", "0",
                "802-11-wireless.powersave", "2",
-               "802-11-wireless-security.psk", psk],
+               "802-11-wireless.band", "bg",
+               "802-11-wireless-security.psk", psk,
+               "802-11-wireless-security.psk-flags", "0"],
               check=True,
               )
         else:
@@ -65,6 +67,7 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
           subprocess.run(
               ["nmcli", "connection", "modify", connection_name,
                "802-11-wireless.ssid", ssid,
+               "802-11-wireless.band", "bg",
                "connection.autoconnect", "yes",
                "connection.autoconnect-retries", "0",
                "802-11-wireless.powersave", "2"],
