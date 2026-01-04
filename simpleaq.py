@@ -25,6 +25,7 @@ from devices.dfrobot_multigassensor import DFRobotMultiGas11
 from devices.pcbartists_decibel import PCBArtistsDecibel 
 from devices.uartnmeagps import UartNmeaGps
 from devices.scd4x import Scd4x
+from devices.lps28 import Lps28
 
 from localstorage.localdummy import LocalDummy
 from localstorage.localsqlite import LocalSqlite 
@@ -61,6 +62,7 @@ device_map = {
     'dfrobotmultigas11': DFRobotMultiGas11,
     'pcbartistsdecibel': PCBArtistsDecibel,
     'scd4x': Scd4x,
+    'lps28': Lps28,
 }
 
 priority_devices = ['gps', 'dfrobotgps', 'uartnmeagps']
@@ -96,9 +98,9 @@ def detect_devices(env_file):
     dotenv.set_key(
         env_file,
         'detected_devices',
-        ','.join(detected_devices))
+        ','.join(sorted(detected_devices)))
 
-    os.environ['detected_devices'] = ','.join(detected_devices)
+    os.environ['detected_devices'] = ','.join(sorted(detected_devices))
 
     # Restart the hostap service so that it reads correctly.
     os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
