@@ -246,13 +246,14 @@ def main(args):
                       networkmanager_result = subprocess.run(['journalctl -u NetworkManager | tail -n 100'], shell=True, stdout=subprocess.PIPE)
                       networkmanager_string = networkmanager_result.stdout.decode('utf-8')
 
-                      hostap_result = subprocess.run(['journalctl -u hostap_config.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
-                      hostap_string = hostap_result.stdout.decode('utf-8')
+                      # Do not save HostAP logs, as these may contain sensitive information.
+                      # hostap_result = subprocess.run(['journalctl -u hostap_config.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
+                      # hohostap_string = hostap_result.stdout.decode('utf-8')
 
                       system_device._try_write("System", "error", "dmesg logs: \n" + dmesg_string +
                                                                   "\n simpleaq logs: \n" + simpleaq_string +
-                                                                  "\n networkmanager logs: \n" + networkmanager_string +
-                                                                  "\n hostap logs: \n" + hostap_string)
+                                                                  "\n networkmanager logs: \n" + networkmanager_string)
+
                     except Exception:
                       logging.error("Failed to write error logs: {}".format(str(err)))
 
