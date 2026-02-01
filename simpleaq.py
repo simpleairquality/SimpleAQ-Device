@@ -18,6 +18,7 @@ from devices.bmp3xx import Bmp3xx
 from devices.gps import Gps
 from devices.pm25 import Pm25
 from devices.sen5x import Sen5x
+from devices.sen6x import Sen6x
 from devices.dfrobot_multigassensor import DFRobotMultiGas00 
 from devices.dfrobot_multigassensor import DFRobotMultiGas01
 from devices.dfrobot_multigassensor import DFRobotMultiGas10
@@ -56,6 +57,7 @@ device_map = {
     'gps': Gps,
     'pm25': Pm25,
     'sen5x': Sen5x,
+    'sen6x': Sen6x,
     'dfrobotmultigas00': DFRobotMultiGas00,
     'dfrobotmultigas01': DFRobotMultiGas01,
     'dfrobotmultigas10': DFRobotMultiGas10,

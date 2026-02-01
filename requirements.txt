@@ -6,6 +6,7 @@ adafruit-circuitpython-bme680
 adafruit-circuitpython-bmp3xx
 adafruit-circuitpython-scd4x
 adafruit-circuitpython-lps28
+adafruit-circuitpython-sen6x
 getmac
 influxdb_client
 python-dotenv
