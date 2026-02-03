@@ -13,17 +13,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      #    - name: Maximize Build Space
-      #      uses: easimon/maximize-build-space@master
-      #      with:
-      #        root-reserve-mb: 15000
-      #        swap-size-mb: 512
-      #        remove-dotnet: 'true'
-      #        remove-android: 'true'
-      #        remove-haskell: 'true'
-      #       remove-codeql: 'true'
-      #       remove-docker-images: 'true'
-
     - name: List Available Space
       run: |
         echo "Free space:"
@@ -47,7 +36,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: ca08900c66c5eb4dc3444ce63e91ee081107ffa2
+        ref: 962bf483c8f326405794827cce8c0313fd5880a8
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
@@ -113,17 +102,6 @@ jobs:
   build_debug:
     runs-on: ubuntu-latest
     steps:
-      #   - name: Maximize Build Space
-      #     uses: easimon/maximize-build-space@master
-      #     with:
-      #       root-reserve-mb: 15000
-      #       swap-size-mb: 1024
-      #       remove-dotnet: 'true'
-      #       remove-android: 'true'
-      #       remove-haskell: 'true'
-      #       remove-codeql: 'true'
-      #       remove-docker-images: 'true'
-
     - name: List Available Space
       run: |
         echo "Free space:"
@@ -147,7 +125,7 @@ jobs:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
         fetch-depth: 1
-        ref: ca08900c66c5eb4dc3444ce63e91ee081107ffa2
+        ref: 962bf483c8f326405794827cce8c0313fd5880a8
 
     # This is where we install all of our PiGen extras.
     # Helpful:  https://geoffhudik.com/tech/2020/05/15/using-pi-gen-to-build-a-custom-raspbian-lite-image/
