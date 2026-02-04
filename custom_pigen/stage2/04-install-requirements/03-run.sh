@@ -5,10 +5,10 @@ cp -R /simpleaq "${ROOTFS_DIR}"
 # Ensure that i2c and spi are enabled.
 # But still use our usual boot config, which has essential changes to i2c.
 on_chroot << EOF
-	SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_i2c 0
-        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_spi 0
-        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_serial_hw 0
-        SUDO_USER="${FIRST_USER_NAME}" raspi-config nonint do_serial_cons 1
+	SKIP_KERNEL_MODULE_LOAD=1 raspi-config nonint do_i2c 0
+        SKIP_KERNEL_MODULE_LOAD=1 raspi-config nonint do_spi 0
+        SKIP_KERNEL_MODULE_LOAD=1 raspi-config nonint do_serial_hw 0
+        SKIP_KERNEL_MODULE_LOAD=1 raspi-config nonint do_serial_cons 1
 EOF
 
 # Install SimpleAQ requirements.
