@@ -3,12 +3,12 @@
 cp -R /simpleaq "${ROOTFS_DIR}"
 
 # Install SimpleAQ requirements.
-# We use two separate methods to try to force the upgrade to break system packages if needed.
+# We force the upgrade to break system packages if needed.
 on_chroot << EOF
-    rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED
+    export PIP_BREAK_SYSTEM_PACKAGES=1
 
-    python3 -m pip install --upgrade pip --break-system-packages
-    python3 -m pip install --break-system-packages -r /simpleaq/requirements.txt
+    python3 -m pip install --upgrade pip
+    python3 -m pip install -r /simpleaq/requirements.txt
 EOF
 
 # Set up a system-scoped systemd service.
