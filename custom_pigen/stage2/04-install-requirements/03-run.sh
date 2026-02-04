@@ -3,7 +3,7 @@
 cp -R /simpleaq "${ROOTFS_DIR}"
 
 # Install SimpleAQ requirements.
-on_chroot << EO
+on_chroot << EOF
     python3 -m pip install --upgrade pip
     python3 -m pip install --break-system-packages -r /simpleaq/requirements.txt
 EOF
