@@ -58,9 +58,16 @@ camera_auto_detect=1
 # Automatically load overlays for detected DSI displays
 display_auto_detect=1
 
+# Automatically load initramfs files, if found
+auto_initramfs=1
+
 # Enable DRM VC4 V3D driver
 dtoverlay=vc4-kms-v3d
 max_framebuffers=2
+
+# Don't have the firmware create an initial video= setting in cmdline.txt.
+# Use the kernel's default instead.
+disable_fw_kms_setup=1
 
 # Disable compensation for displays with overscan
 disable_overscan=1
@@ -77,7 +84,8 @@ otg_mode=1
 # Run as fast as firmware / board allows
 arm_boost=1
 
-[all]
+[cm5]
+dtoverlay=dwc2,dr_mode=host
 
 [all]
 enable_uart=1
