@@ -3,8 +3,9 @@
 cp -R /simpleaq "${ROOTFS_DIR}"
 
 # Install SimpleAQ requirements.
-on_chroot << EOF
-        pip3 install -r /simpleaq/requirements.txt
+on_chroot << EO
+    python3 -m pip install --upgrade pip
+    python3 -m pip install --break-system-packages -r /simpleaq/requirements.txt
 EOF
 
 # Set up a system-scoped systemd service.
