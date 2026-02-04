@@ -16,7 +16,7 @@ RPi.GPIO
 adafruit-blinka
 psutil
 pyubx2
-flask==2.3.2
+flask==3.1.2
 netifaces
 requests
 requests-toolbelt

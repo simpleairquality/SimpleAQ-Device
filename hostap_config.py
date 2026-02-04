@@ -87,8 +87,8 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
 
 @app.route('/')
 def main():
-  ssid_re = re.compile("^\s*ssid=\"(.*)\"\s*$")
-  psk_re = re.compile("^\s*psk=\"(.*)\"\s*$")
+  ssid_re = re.compile(r'^\s*ssid="(.*)"\s*$')
+  psk_re = re.compile(r'^\s*psk="(.*)"\s*$')
 
   local_ssid = get_wifi_field('802-11-wireless.ssid')
   local_psk = get_wifi_field('802-11-wireless-security.psk') 
@@ -241,10 +241,10 @@ def update():
 
   # Update hostapd settings if requested.  It will be rebooted by SimpleAQ services.
   if request.args.get('simpleaq_hostapd_name'):
-    os.system('sed -i -s "s/^\s*ssid=.*/ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_name')))
+    os.system(r'sed -i -s "s/^\s*ssid=.*/ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_name')))
   if request.args.get('simpleaq_hostapd_password') is not None:
-    os.system('sed -i -s "s/^\s*wpa_passphrase=.*/wpa_passphrase={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_password')))
-  os.system('sed -i -s "s/^\s*ignore_broadcast_ssid=.*/ignore_broadcast_ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_hide_ssid', '0')))
+    os.system(r'sed -i -s "s/^\s*wpa_passphrase=.*/wpa_passphrase={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_password')))
+  os.system(r'sed -i -s "s/^\s*ignore_broadcast_ssid=.*/ignore_broadcast_ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_hide_ssid', '0')))
 
   # Schedule a Reboot.
   os.system('touch {}'.format(os.getenv('reboot_status_file')))
