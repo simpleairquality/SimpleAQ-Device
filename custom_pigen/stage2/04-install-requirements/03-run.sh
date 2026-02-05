@@ -11,6 +11,9 @@ on_chroot << EOF
     python3 -m pip install -r /simpleaq/requirements.txt
 EOF
 
+# Load i2c module at runtime.
+echo i2c-dev >> "${ROOTFS_DIR}/etc/modules"
+
 # Set up a system-scoped systemd service.
 # This is actually necessary because user-scoped services will not actually
 # run until the user first logs in, and by default will terminate when the
