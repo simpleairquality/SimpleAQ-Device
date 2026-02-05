@@ -70,9 +70,9 @@ mkdir -p "${ROOTFS_DIR}/boot/firmware"
 mount -v "$BOOT_DEV" "${ROOTFS_DIR}/boot/firmware" -t vfat
 
 rsync -aHAXx --exclude /var/cache/apt/archives --exclude /boot/firmware "${EXPORT_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
-echo "=== DEBUG: Contents of EXPORT_ROOTFS_DIR/boot/firmware ==="
-ls -la "${EXPORT_ROOTFS_DIR}/boot/firmware/"
-echo "=== DEBUG: About to rsync boot files ==="
+echo "=== DEBUG: Contents of EXPORT_ROOTFS_DIR/boot/firmware ===" >&2
+ls -la "${EXPORT_ROOTFS_DIR}/boot/firmware/" >&2
+echo "=== DEBUG: About to rsync boot files ===" >&2
 rsync -rtx "${EXPORT_ROOTFS_DIR}/boot/firmware/" "${ROOTFS_DIR}/boot/firmware/"
-echo "=== DEBUG: After rsync, boot partition contains ==="
-ls -la "${ROOTFS_DIR}/boot/firmware/"
+echo "=== DEBUG: After rsync, boot partition contains ===" >&2
+ls -la "${ROOTFS_DIR}/boot/firmware/" >&2
