@@ -11,12 +11,6 @@ on_chroot << EOF
     python3 -m pip install -r /simpleaq/requirements.txt
 EOF
 
-# That I need to do this is nonsense.  
-# The files are copied from /boot/ to /boot/firmware in the export-image step.
-# Thsi may be a bug in pi-gen.
-cp ../../stage1/00-boot-files/files/config.txt "${ROOTFS_DIR}/boot/"
-echo "console=tty1 root=ROOTDEV rootfstype=ext4 fsck.repair=yes rootwait quiet init=/usr/lib/raspberrypi-sys-mods/firstboot" > "${ROOTFS_DIR}/boot/cmdline.txt"
-
 # Set up a system-scoped systemd service.
 # This is actually necessary because user-scoped services will not actually
 # run until the user first logs in, and by default will terminate when the
