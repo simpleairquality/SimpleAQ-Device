@@ -12,10 +12,10 @@ on_chroot << EOF
 EOF
 
 # That I need to do this is nonsense.  
-# This is certainly a bug somewhere, and yet I can't for the life of me figure out how it's my code doing it.
-# In fact, the modified diff from /custom_pigen/stage2/01-sys-tweaks/00-patches reports success... so these files SHOULD be here. 
-cp ../../stage1/00-boot-files/files/config.txt "${ROOTFS_DIR}/boot/firmware"
-echo "console=tty1 root=ROOTDEV rootfstype=ext4 fsck.repair=yes rootwait quiet init=/usr/lib/raspberrypi-sys-mods/firstboot" > "${ROOTFS_DIR}/boot/firmware/cmdline.txt"
+# The files are copied from /boot/ to /boot/firmware in the export-image step.
+# Thsi may be a bug in pi-gen.
+cp ../../stage1/00-boot-files/files/config.txt "${ROOTFS_DIR}/boot/"
+echo "console=tty1 root=ROOTDEV rootfstype=ext4 fsck.repair=yes rootwait quiet init=/usr/lib/raspberrypi-sys-mods/firstboot" > "${ROOTFS_DIR}/boot/cmdline.txt"
 
 # Set up a system-scoped systemd service.
 # This is actually necessary because user-scoped services will not actually
