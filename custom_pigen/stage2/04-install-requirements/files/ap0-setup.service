@@ -1,0 +1,16 @@
+[Unit]
+Description=Create ap0 interface
+After=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStartPre=bash -c 'while ! /usr/bin/nmcli device status | grep wlan0 -q; do sleep 1; done'
+ExecStart=/sbin/iw dev wlan0 interface add ap0 type __ap
+ExecStartPost=nmcli device set ap0 managed no
+ExecStartPost=/sbin/ifconfig ap0 up
+ExecStartPost=/usr/bin/ip addr add 192.168.4.1/24 dev ap0
+ExecStop=/sbin/iw dev ap0 del
+
+[Install]
+WantedBy=multi-user.target

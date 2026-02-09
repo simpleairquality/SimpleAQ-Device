@@ -2,9 +2,8 @@
 id=SimpleAQ-AP
 uuid=a1b2c3d4-e5f6-7890-abcd-ef1234567890
 type=wifi
-interface-name=wlan0
 autoconnect=true
-autoconnect-priority=-1
+interface-name=ap0
 
 [wifi]
 band=bg
