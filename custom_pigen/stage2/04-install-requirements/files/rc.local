@@ -17,34 +17,66 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-# Append something unique to the hostapd wireless name if it's left default.
+# Get HostAP settings from environment
 _SIMPLEAQ_HOSTAPD_NAME=$(grep "^simpleaq_hostapd_name=" /etc/environment | cut -c23-)
 _SIMPLEAQ_HOSTAPD_PASSWORD=$(grep "^simpleaq_hostapd_password=" /etc/environment | cut -c27-)
 _SIMPLEAQ_HOSTAPD_HIDE_SSID=$(grep "^simpleaq_hostapd_hide_ssid=" /etc/environment | cut -c28-)
 
-# Store the current SSID
-_CURRENT_SSID=$(grep "^\s*ssid=" /etc/hostapd/hostapd.conf | cut -d'"' -f2)
+# NetworkManager connection file path
+_NM_CONNECTION="/etc/NetworkManager/system-connections/simpleaq-ap.nmconnection"
 
+# Get current SSID from NetworkManager connection
+_CURRENT_SSID=$(grep "^ssid=" "$_NM_CONNECTION" | cut -d'=' -f2)
+
+# Determine new SSID
 if [ "$_SIMPLEAQ_HOSTAPD_NAME" = "SimpleAQ" ]; then
   _PI_SSID=SimpleAQ-$(cat /etc/machine-id | cut -c1-4)
-  sed -i -s "s/^\s*ssid=.*/ssid=$_PI_SSID/" /etc/hostapd/hostapd.conf
-  sed -i -s "s/^\s*wpa_passphrase=.*/wpa_passphrase=$_SIMPLEAQ_HOSTAPD_PASSWORD/" /etc/hostapd/hostapd.conf
-  sed -i -s "s/^\s*ignore_broadcast_ssid=.*/ignore_broadcast_ssid=$_SIMPLEAQ_HOSTAPD_HIDE_SSID/" /etc/hostapd/hostapd.conf
-
-  sed -i -s "s/^simpleaq_hostapd_name=.*/simpleaq_hostapd_name=$_PI_SSID/" /etc/environment
 else
-  sed -i -s "s/^\s*ssid=.*/ssid=$_SIMPLEAQ_HOSTAPD_NAME/" /etc/hostapd/hostapd.conf
-  sed -i -s "s/^\s*wpa_passphrase=.*/wpa_passphrase=$_SIMPLEAQ_HOSTAPD_PASSWORD/" /etc/hostapd/hostapd.conf
-  sed -i -s "s/^\s*ignore_broadcast_ssid=.*/ignore_broadcast_ssid=$_SIMPLEAQ_HOSTAPD_HIDE_SSID/" /etc/hostapd/hostapd.conf
+  _PI_SSID=$_SIMPLEAQ_HOSTAPD_NAME
 fi
 
-# Check the new SSID
-_NEW_SSID=$(grep "^\s*ssid=" /etc/hostapd/hostapd.conf | cut -d'"' -f2)
-
-# Restart hostapd if the SSID has changed
-if [ "$_CURRENT_SSID" != "$_NEW_SSID" ]; then
-  echo "SSID has changed from $_CURRENT_SSID to $_NEW_SSID. Restarting hostapd..."
-  systemctl restart hostapd
+# Update NetworkManager connection if settings changed
+if [ "$_CURRENT_SSID" != "$_PI_SSID" ] || [ ! -z "$_SIMPLEAQ_HOSTAPD_PASSWORD" ] || [ ! -z "$_SIMPLEAQ_HOSTAPD_HIDE_SSID" ]; then
+  echo "Updating NetworkManager AP configuration..."
+  
+  # Update SSID
+  sed -i "s/^ssid=.*/ssid=$_PI_SSID/" "$_NM_CONNECTION"
+  
+  # Update password if provided
+  if [ ! -z "$_SIMPLEAQ_HOSTAPD_PASSWORD" ]; then
+    sed -i "s/^psk=.*/psk=$_SIMPLEAQ_HOSTAPD_PASSWORD/" "$_NM_CONNECTION"
+  fi
+  
+  # Update hidden SSID setting if provided
+  # NetworkManager uses wifi.hidden=true/false in the [wifi] section
+  if [ ! -z "$_SIMPLEAQ_HOSTAPD_HIDE_SSID" ]; then
+    if [ "$_SIMPLEAQ_HOSTAPD_HIDE_SSID" = "1" ]; then
+      # Add or update hidden setting
+      if grep -q "^hidden=" "$_NM_CONNECTION"; then
+        sed -i "s/^hidden=.*/hidden=true/" "$_NM_CONNECTION"
+      else
+        sed -i "/^\[wifi\]/a hidden=true" "$_NM_CONNECTION"
+      fi
+    else
+      # Remove or set to false
+      if grep -q "^hidden=" "$_NM_CONNECTION"; then
+        sed -i "s/^hidden=.*/hidden=false/" "$_NM_CONNECTION"
+      fi
+    fi
+  fi
+  
+  # Update environment file with new SSID
+  sed -i "s/^simpleaq_hostapd_name=.*/simpleaq_hostapd_name=$_PI_SSID/" /etc/environment
+  
+  # Reload NetworkManager to pick up changes
+  echo "SSID has changed from $_CURRENT_SSID to $_PI_SSID. Reloading NetworkManager..."
+  nmcli connection reload
+  
+  # Restart the connection if it's active
+  if nmcli -t -f NAME,DEVICE connection show --active | grep -q "^SimpleAQ-AP:"; then
+    nmcli connection down SimpleAQ-AP
+    nmcli connection up SimpleAQ-AP
+  fi
 fi
 
 # Don't allow any connections we didn't explicitly request.

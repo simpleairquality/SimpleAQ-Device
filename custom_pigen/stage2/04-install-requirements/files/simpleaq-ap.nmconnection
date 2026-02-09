@@ -11,6 +11,7 @@ band=bg
 channel=4
 mode=ap
 ssid=SimpleAQ
+hidden=false
 
 [wifi-security]
 key-mgmt=wpa-psk
