@@ -1,6 +1,5 @@
 python3-pip
 bootlogd
-dnsmasq
 i2c-tools
 iptables-persistent
 libi2c-dev
@@ -11,7 +10,6 @@ iptables
 iw
 pipx
 userconf-pi
-hostapd
 gpsd
 gpsd-clients
 chrony

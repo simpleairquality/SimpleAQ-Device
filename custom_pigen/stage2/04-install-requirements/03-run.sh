@@ -22,11 +22,10 @@ echo i2c-dev >> "${ROOTFS_DIR}/etc/modules"
 # https://github.com/torfsen/python-systemd-tutorial is awesome.
 cp files/simpleaq.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/hostap_config.service "${ROOTFS_DIR}/etc/systemd/system"
-cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/wifi.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 cp files/NetworkManager.conf "${ROOTFS_DIR}/etc/NetworkManager/NetworkManager.conf"
-cp files/wifi-powersave.conf "${ROOTFS_DIR}/etc/NetworkManager/conf.d/wifi-powersave.conf"
 cp files/chrony.conf "${ROOTFS_DIR}/etc/chrony/chrony.conf"
+cp files/simpleaq-ap.nmconnection "${ROOTFS_DIR}/etc/NetworkManager/system-connections/"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
@@ -45,12 +44,11 @@ on_chroot << EOF
         chmod 644 /etc/systemd/system/hostap_config.service
         systemctl enable hostap_config
 
-        chown root:root /etc/systemd/system/ap0-setup.service
-        chmod 644 /etc/systemd/system/ap0-setup.service
-        systemctl enable ap0-setup
-
         chown root:root /etc/NetworkManager/system-connections/wifi.nmconnection
         chmod 600 /etc/NetworkManager/system-connections/wifi.nmconnection
+
+        chown root:root /etc/NetworkManager/system-connections/simpleaq-ap.nmconnection
+        chmod 600 /etc/NetworkManager/system-connections/simpleaq-ap.nmconnection
 EOF
 
 # Delete now-unnecessary custom pigen stuff.
@@ -58,17 +56,6 @@ on_chroot << EOF
         rm -rf /simpleaq/custom_pigen
 EOF
 
-cp files/dnsmasq.conf            "${ROOTFS_DIR}/etc/dnsmasq.conf"
-
-# Copy hostapd.conf in
-cp files/hostapd.conf "${ROOTFS_DIR}/etc/hostapd/hostapd.conf"
-cp files/hostapd "${ROOTFS_DIR}/etc/default/hostapd"
-
-# The hostap no longer conflicts with the wlan0 service.
-on_chroot << EOF
-        systemctl enable hostapd 
-        systemctl start hostapd 
-EOF
 
 cp files/gpsd "${ROOTFS_DIR}/etc/default/gpsd"
 
