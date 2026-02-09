@@ -275,7 +275,9 @@ def main(args):
   if do_reboot:
     logging.info("Detected request for graceful restart.  Restarting SimpleAQ services and hostapd now.")
     os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
-    os.system('systemctl restart hostapd')
+    os.system('nmcli connection reload')
+    # Check if SimpleAQ-AP is active and restart it
+    os.system('nmcli connection show --active | grep -q "SimpleAQ-AP" && nmcli connection down SimpleAQ-AP && nmcli connection up SimpleAQ-AP || true')
 
 if __name__ == '__main__':
   app.run(main)

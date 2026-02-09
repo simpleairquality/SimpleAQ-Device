@@ -240,11 +240,31 @@ def update():
       quote_mode='never')
 
   # Update hostapd settings if requested.  It will be rebooted by SimpleAQ services.
+  nm_connection_file = '/etc/NetworkManager/system-connections/simpleaq-ap.nmconnection'
+
   if request.args.get('simpleaq_hostapd_name'):
-    os.system(r'sed -i -s "s/^\s*ssid=.*/ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_name')))
+    os.system(r'sed -i "s/^ssid=.*/ssid={}/" {}'.format(
+        request.args.get('simpleaq_hostapd_name'),
+        nm_connection_file
+    ))
+
   if request.args.get('simpleaq_hostapd_password') is not None:
-    os.system(r'sed -i -s "s/^\s*wpa_passphrase=.*/wpa_passphrase={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_password')))
-  os.system(r'sed -i -s "s/^\s*ignore_broadcast_ssid=.*/ignore_broadcast_ssid={}/" /etc/hostapd/hostapd.conf'.format(request.args.get('simpleaq_hostapd_hide_ssid', '0')))
+    os.system(r'sed -i "s/^psk=.*/psk={}/" {}'.format(
+        request.args.get('simpleaq_hostapd_password'),
+        nm_connection_file
+    ))
+    connection_updated = True
+
+  # Handle hidden SSID (0 = visible, 1 = hidden)
+  hide_ssid = request.args.get('simpleaq_hostapd_hide_ssid', '0')
+  if hide_ssid == '1':
+    # Set to hidden=true or add if doesn't exist
+    os.system(r'grep -q "^hidden=" {} && sed -i "s/^hidden=.*/hidden=true/" {} || sed -i "/^\[wifi\]/a hidden=true" {}'.format(
+        nm_connection_file, nm_connection_file, nm_connection_file
+    ))
+  else:
+    # Set to hidden=false
+    os.system(r'sed -i "s/^hidden=.*/hidden=false/" {}'.format(nm_connection_file))
 
   # Schedule a Reboot.
   os.system('touch {}'.format(os.getenv('reboot_status_file')))
