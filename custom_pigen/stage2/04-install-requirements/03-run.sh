@@ -71,10 +71,19 @@ on_chroot << EOF
         adduser gpsd tty
 EOF
 
-# Add AP setup endpoint to /etc/hosts
+# Create NetworkManager dnsmasq shared directory
+mkdir -p "${ROOTFS_DIR}/etc/NetworkManager/dnsmasq-shared.d"
+
+# Add custom DNS entry for simpleaq.setup
+cat > "${ROOTFS_DIR}/etc/NetworkManager/dnsmasq-shared.d/simpleaq.conf" << 'EOF'
+# Resolve simpleaq.setup to the AP gateway
+address=/simpleaq.setup/192.168.4.1
+EOF
+
+# Set permissions
 on_chroot << EOF
-         echo "" >> /etc/hosts
-         echo "192.168.4.1             simpleaq.setup" >> /etc/hosts
+    chown root:root /etc/NetworkManager/dnsmasq-shared.d/simpleaq.conf
+    chmod 644 /etc/NetworkManager/dnsmasq-shared.d/simpleaq.conf
 EOF
 
 # Don't let logs get too big.
