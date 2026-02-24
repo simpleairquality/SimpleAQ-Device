@@ -77,9 +77,9 @@ class Sen5x(Sensor):
         # NAN values are NOT valid JSON.  We will not send anything if a nan value is ever found for any reason.
         if not math.isnan(data.ambient_humidity.percent_rh):
           try:
-            result = self._try_write('SEN5X', 'humidity_percent', data.ambient_humidity.percent_rh) or result
+            result = self._try_write('SEN5X', 'relative_humidity_pct', data.ambient_humidity.percent_rh) or result
           except Exception as err:
-            self._try_write_error('SEN5X', 'humidity_percent', str(err))
+            self._try_write_error('SEN5X', 'relative_humidity_pct', str(err))
             raise err
         if not math.isnan(data.ambient_temperature.degrees_celsius):
           try:

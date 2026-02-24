@@ -85,14 +85,14 @@ class Sen6x(Sensor):
         
         if 'humidity' in data and data['humidity'] is not None and not math.isnan(data['humidity']):
           try:
-            result = self._try_write('SEN6X', 'humidity_percent', data['humidity']) or result
+            result = self._try_write('SEN6X', 'relative_humidity_pct', data['humidity']) or result
             # Report error status if RH&T sensor has issues
             if status and status.rht_sensor_error:
-              self._try_write_error('SEN6X', 'humidity_percent', 'RH&T sensor error - value may be unreliable')
+              self._try_write_error('SEN6X', 'relative_humidity_pct', 'RH&T sensor error - value may be unreliable')
             elif status and status.fan_error:
-              self._try_write_error('SEN6X', 'humidity_percent', 'Fan blocked/broken - value may be unreliable')
+              self._try_write_error('SEN6X', 'relative_humidity_pct', 'Fan blocked/broken - value may be unreliable')
           except Exception as err:
-            self._try_write_error('SEN6X', 'humidity_percent', str(err))
+            self._try_write_error('SEN6X', 'relative_humidity_pct', str(err))
             raise err
             
         if 'temperature' in data and data['temperature'] is not None and not math.isnan(data['temperature']):
