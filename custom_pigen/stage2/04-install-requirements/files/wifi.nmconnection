@@ -17,6 +17,8 @@ psk=your_wifi_password
 
 [ipv4]
 method=auto
+dns-priority=-100
+route-metric=100
 
 [ipv6]
 addr-gen-mode=default

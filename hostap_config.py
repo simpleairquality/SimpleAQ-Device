@@ -59,7 +59,9 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
                "802-11-wireless.powersave", "2",
                "802-11-wireless.band", "bg",
                "802-11-wireless-security.psk", psk,
-               "802-11-wireless-security.psk-flags", "0"],
+               "802-11-wireless-security.psk-flags", "0",
+               "ipv4.dns-priority", "-100",
+               "ipv4.route-metric", "100"],
               check=True,
               )
         else:
@@ -70,7 +72,9 @@ def set_wifi_credentials(ssid, psk, connection_name="Wifi"):
                "802-11-wireless.band", "bg",
                "connection.autoconnect", "yes",
                "connection.autoconnect-retries", "0",
-               "802-11-wireless.powersave", "2"],
+               "802-11-wireless.powersave", "2",
+               "ipv4.dns-priority", "-100",
+               "ipv4.route-metric", "100"],
               check=True,
               )
 
