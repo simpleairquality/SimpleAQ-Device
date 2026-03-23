@@ -1,0 +1,8 @@
+[Unit]
+Description=WiFi connectivity watchdog
+After=NetworkManager.service ap0-setup.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wifi-watchdog.sh

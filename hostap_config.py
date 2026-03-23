@@ -319,3 +319,10 @@ def hostap():
   response = make_response(result.stdout, 200)
   response.mimetype = 'text/plain'
   return response
+
+@app.route('/debug/wifi-watchdog/')
+def wifi_watchdog():
+  result = subprocess.run(['journalctl', '-t', 'wifi-watchdog'], stdout=subprocess.PIPE)
+  response = make_response(result.stdout, 200)
+  response.mimetype = 'text/plain'
+  return response
