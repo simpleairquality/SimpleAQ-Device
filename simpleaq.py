@@ -193,6 +193,11 @@ def main(args):
             return 1
 
         last_write_succeeded = True
+        # Suppress the failure snapshot early after service start: the first upload
+        # attempts routinely lose the race against wifi coming up at boot, and a
+        # snapshot of that tells us nothing.
+        service_start_time = time.time()
+        snapshot_boot_grace_sec = 300
 
         # This enteres a guaranteed-closing context manager for every sensors.
         # The Sen5X, for instance, requires that start_measurement is started at the beginning of a run and exited at the end.
@@ -230,10 +235,13 @@ def main(args):
                 logging.info("Deleting written rows.")
                 for row in publish_rows:
                   local_storage.deleterecord(row[0])
+
+                # Re-arm the failure snapshot so the next outage gets diagnostics too.
+                last_write_succeeded = True
               except Exception as err:
                 logging.error("Failed to write data to remote: {}".format(str(err)))
 
-                if last_write_succeeded:
+                if last_write_succeeded and time.time() - service_start_time > snapshot_boot_grace_sec:
                     # Let's get a system device and write any useful logging information.
                     # Obviously this won't immediately succeed, but we can later help users debug errors.
                     system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True)
@@ -248,13 +256,21 @@ def main(args):
                       networkmanager_result = subprocess.run(['journalctl -u NetworkManager | tail -n 100'], shell=True, stdout=subprocess.PIPE)
                       networkmanager_string = networkmanager_result.stdout.decode('utf-8')
 
+                      watchdog_result = subprocess.run(['journalctl -t wifi-watchdog | tail -n 50'], shell=True, stdout=subprocess.PIPE)
+                      watchdog_string = watchdog_result.stdout.decode('utf-8')
+
+                      network_state_result = subprocess.run(['nmcli device show wlan0; echo; ip addr; echo; cat /etc/resolv.conf'], shell=True, stdout=subprocess.PIPE)
+                      network_state_string = network_state_result.stdout.decode('utf-8')
+
                       # Do not save HostAP logs, as these may contain sensitive information.
                       # hostap_result = subprocess.run(['journalctl -u hostap_config.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
                       # hohostap_string = hostap_result.stdout.decode('utf-8')
 
                       system_device._try_write("System", "error", "dmesg logs: \n" + dmesg_string +
                                                                   "\n simpleaq logs: \n" + simpleaq_string +
-                                                                  "\n networkmanager logs: \n" + networkmanager_string)
+                                                                  "\n networkmanager logs: \n" + networkmanager_string +
+                                                                  "\n wifi-watchdog logs: \n" + watchdog_string +
+                                                                  "\n network state: \n" + network_state_string)
 
                     except Exception:
                       logging.error("Failed to write error logs: {}".format(str(err)))
