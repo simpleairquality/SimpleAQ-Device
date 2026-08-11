@@ -21,6 +21,10 @@ class LocalStorage(ABC):
     pass
 
   @abstractmethod
+  def getbatch(self, num):
+    pass
+
+  @abstractmethod
   def deleteall(self):
     pass
 

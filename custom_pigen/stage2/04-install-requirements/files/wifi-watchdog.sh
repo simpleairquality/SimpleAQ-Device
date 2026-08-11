@@ -1,95 +1,47 @@
 #!/bin/bash
 # wifi-watchdog.sh
-# Detects WiFi driver hangs and performs escalating recovery.
+# Restores WiFi connectivity with escalating recovery, up to a reboot.
 #
-# The Broadcom brcmf driver can get stuck in a
-# brcmf_netdev_wait_pend8021x timeout state, leaving WiFi unusable
-# even though NetworkManager believes it is connected.
+# Lessons from the Aug 2026 field outages (multi-day silences ended only
+# by a power cycle):
 #
-# This script only intervenes when NetworkManager reports wlan0 as
-# "connected" but traffic cannot actually flow (i.e., the driver is
-# wedged). Normal disconnects (out of range, AP rebooted, etc.) are
-# left to NetworkManager's autoconnect, which handles them fine.
+# - Act on connectivity *outcome*, never on NetworkManager's view of the
+#   device.  NM reported wlan0 "disconnected" throughout a 3-day outage
+#   while autoconnect silently never recovered.
+# - Weak-signal outdoor links blip constantly.  A single failed check
+#   must do nothing; only a streak of failures may trigger recovery.
+# - Never `nmcli connection down`: it marks the profile manually
+#   deactivated, and if the following `up` fails, autoconnect stays
+#   blocked forever.  `nmcli connection up` alone is always safe.
+# - An `ip link` bounce does not clear brcmfmac firmware wedges
+#   ("Scanning suppressed: status (4)" in dmesg); reloading the module
+#   re-downloads the chip firmware and does.
+# - A reboot is the software stand-in for the field power cycle.  It is
+#   rate-limited, and health is judged by the *local* link only, so a
+#   server-side outage can never cause fleet-wide reboot storms.
 
 WIFI_CONN="Wifi"
 AP_CONN="SimpleAQ-AP"
 IFACE="wlan0"
 AP_IFACE="ap0"
-STATE_FILE="/tmp/wifi-watchdog-failures"
+
+RUN_DIR="/run/wifi-watchdog"            # cleared on boot
+FAIL_FILE="$RUN_DIR/consecutive_failures"
+PERSIST_DIR="/var/lib/wifi-watchdog"    # survives reboots
+REBOOT_STAMP="$PERSIST_DIR/last_reboot"
+MIN_REBOOT_INTERVAL_SEC=21600           # at most one watchdog reboot per 6h
+
+mkdir -p "$RUN_DIR" "$PERSIST_DIR"
 
 # Only run if WiFi is configured with a real SSID.
 SSID=$(nmcli -t -f 802-11-wireless.ssid connection show "$WIFI_CONN" 2>/dev/null | cut -d: -f2)
 if [ -z "$SSID" ] || [ "$SSID" = "your_wifi_name" ]; then
+    echo 0 > "$FAIL_FILE"
     exit 0
 fi
 
-# Check NetworkManager's view of the device state.
-# We only care about the case where NM thinks wlan0 is connected
-# but it actually isn't working. If NM knows it's disconnected,
-# autoconnect will handle reconnection — no intervention needed.
-NM_STATE=$(nmcli -t -f GENERAL.STATE device show "$IFACE" 2>/dev/null | cut -d: -f2 | xargs)
-case "$NM_STATE" in
-    100*)
-        # "100 (connected)" — NM thinks we're connected.
-        # Verify by pinging the gateway.
-        ;;
-    *)
-        # NM knows it's disconnected/connecting/unavailable/etc.
-        # Let autoconnect handle it.
-        rm -f "$STATE_FILE"
-        exit 0
-        ;;
-esac
-
-# NM says connected. Check if traffic actually flows.
-GATEWAY=$(ip route show dev "$IFACE" 2>/dev/null | awk '/default/ {print $3; exit}')
-
-if [ -n "$GATEWAY" ]; then
-    if ping -c 2 -W 5 -I "$IFACE" "$GATEWAY" &>/dev/null; then
-        # Everything is actually fine.
-        rm -f "$STATE_FILE"
-        exit 0
-    fi
-fi
-
-# NM says connected, but we can't reach the gateway (or have none).
-# The driver is likely wedged. Track consecutive failures.
-FAILURES=0
-if [ -f "$STATE_FILE" ]; then
-    FAILURES=$(cat "$STATE_FILE" 2>/dev/null)
-    if ! [[ "$FAILURES" =~ ^[0-9]+$ ]]; then
-        FAILURES=0
-    fi
-fi
-FAILURES=$((FAILURES + 1))
-echo "$FAILURES" > "$STATE_FILE"
-
-logger -t wifi-watchdog "NM reports connected but gateway unreachable (consecutive failure #$FAILURES)"
-
-if [ "$FAILURES" -le 1 ]; then
-    # Soft: ask NetworkManager to cycle the connection.
-    logger -t wifi-watchdog "Soft recovery: reconnecting $WIFI_CONN"
-    nmcli connection down "$WIFI_CONN" 2>/dev/null || true
-    sleep 1
-    nmcli connection up "$WIFI_CONN" 2>/dev/null || true
-
-elif [ "$FAILURES" -le 2 ]; then
-    # Medium: disconnect and reconnect the device entirely.
-    logger -t wifi-watchdog "Medium recovery: device disconnect/connect $IFACE"
-    nmcli device disconnect "$IFACE" 2>/dev/null || true
-    sleep 2
-    nmcli device connect "$IFACE" 2>/dev/null || true
-
-else
-    # Hard: bounce the interface to reset driver state.
-    # This is the fix for brcmf_netdev_wait_pend8021x hangs.
-    logger -t wifi-watchdog "Hard recovery: bouncing $IFACE"
-    ip link set "$IFACE" down
-    sleep 2
-    ip link set "$IFACE" up
-    sleep 5
-
-    # Bouncing wlan0 destroys the virtual ap0 interface.
+recreate_ap_if_missing() {
+    # Bouncing or reloading wlan0 destroys the virtual ap0 interface.
     # Recreate it so the configuration AP keeps working.
     if ! ip link show "$AP_IFACE" &>/dev/null; then
         logger -t wifi-watchdog "Recreating $AP_IFACE"
@@ -98,9 +50,94 @@ else
         nmcli device set "$AP_IFACE" managed yes 2>/dev/null || true
         nmcli connection up "$AP_CONN" 2>/dev/null || true
     fi
+}
 
-    nmcli connection up "$WIFI_CONN" 2>/dev/null || true
+link_is_healthy() {
+    GATEWAY=$(ip route show dev "$IFACE" 2>/dev/null | awk '/default/ {print $3; exit}')
+    [ -z "$GATEWAY" ] && return 1
+    if ping -c 2 -W 5 -I "$IFACE" "$GATEWAY" &>/dev/null; then
+        return 0
+    fi
+    # Some networks drop ICMP to the gateway; accept any external reply.
+    if ping -c 2 -W 5 -I "$IFACE" 1.1.1.1 &>/dev/null; then
+        return 0
+    fi
+    return 1
+}
 
-    # Reset counter to cycle through escalation again.
-    echo "0" > "$STATE_FILE"
+if link_is_healthy; then
+    echo 0 > "$FAIL_FILE"
+    exit 0
+fi
+
+FAILURES=0
+if [ -f "$FAIL_FILE" ]; then
+    FAILURES=$(cat "$FAIL_FILE" 2>/dev/null)
+    [[ "$FAILURES" =~ ^[0-9]+$ ]] || FAILURES=0
+fi
+FAILURES=$((FAILURES + 1))
+echo "$FAILURES" > "$FAIL_FILE"
+
+logger -t wifi-watchdog "No connectivity on $IFACE (consecutive failure #$FAILURES)"
+
+if [ "$FAILURES" -lt 3 ]; then
+    # Could be a blip or an in-progress reconnect; give autoconnect time.
+    exit 0
+fi
+
+if [ "$FAILURES" -ge 10 ]; then
+    NOW=$(date +%s)
+    LAST_REBOOT=0
+    if [ -f "$REBOOT_STAMP" ]; then
+        LAST_REBOOT=$(cat "$REBOOT_STAMP" 2>/dev/null)
+        [[ "$LAST_REBOOT" =~ ^[0-9]+$ ]] || LAST_REBOOT=0
+    fi
+    if [ "$LAST_REBOOT" -gt "$NOW" ]; then
+        # Clock moved backwards (stale boot clock); treat as recent and re-stamp.
+        echo "$NOW" > "$REBOOT_STAMP"
+        logger -t wifi-watchdog "Reboot stamp was in the future; re-stamped"
+    elif [ $((NOW - LAST_REBOOT)) -ge "$MIN_REBOOT_INTERVAL_SEC" ]; then
+        logger -t wifi-watchdog "Recovery exhausted after $FAILURES failures; rebooting"
+        echo "$NOW" > "$REBOOT_STAMP"
+        sync
+        systemctl reboot
+        exit 0
+    else
+        logger -t wifi-watchdog "Reboot suppressed (last one $((NOW - LAST_REBOOT))s ago)"
+    fi
+fi
+
+if [ "$FAILURES" -lt 5 ]; then
+    # Re-activation is safe whether or not NM thinks it is connected, and
+    # also clears any lingering manual-deactivation autoconnect block.
+    logger -t wifi-watchdog "Recovery: nmcli connection up $WIFI_CONN"
+    nmcli --wait 30 connection up "$WIFI_CONN" 2>/dev/null || true
+
+elif [ "$FAILURES" -lt 7 ]; then
+    logger -t wifi-watchdog "Recovery: bouncing $IFACE"
+    ip link set "$IFACE" down
+    sleep 2
+    ip link set "$IFACE" up
+    sleep 5
+    recreate_ap_if_missing
+    nmcli --wait 30 connection up "$WIFI_CONN" 2>/dev/null || true
+
+elif [ "$FAILURES" -lt 10 ] || [ $((FAILURES % 5)) -eq 0 ]; then
+    # Reload the driver to re-download chip firmware.  This is what
+    # actually clears a wedged brcmfmac ("Scanning suppressed" state).
+    logger -t wifi-watchdog "Recovery: reloading brcmfmac"
+    if timeout 60 modprobe -r brcmfmac 2>/dev/null; then
+        sleep 2
+        modprobe brcmfmac 2>/dev/null || true
+        # Wait for the interface to come back.
+        for _ in $(seq 1 15); do
+            ip link show "$IFACE" &>/dev/null && break
+            sleep 2
+        done
+        sleep 3
+        recreate_ap_if_missing
+        nmcli --wait 30 connection up "$WIFI_CONN" 2>/dev/null || true
+    else
+        logger -t wifi-watchdog "brcmfmac unload failed or hung; driver likely wedged beyond reload"
+    fi
 fi

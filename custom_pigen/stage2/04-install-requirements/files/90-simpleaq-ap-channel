@@ -1,0 +1,34 @@
+#!/bin/bash
+# NetworkManager dispatcher: keep SimpleAQ-AP on the same channel as the
+# wlan0 uplink.
+#
+# The BCM43430 has a single radio.  With SimpleAQ-AP pinned to one
+# channel and the uplink connected on another, the chip cannot service
+# both: the STA link gets torn down on every beacon/scan cycle (observed
+# as exact 30-second disconnect loops in the Aug 2026 field failures,
+# eventually wedging the firmware).  AP+STA on the SAME channel is fully
+# supported, so follow the uplink wherever it lands.
+
+IFACE="$1"
+ACTION="$2"
+AP_CONN="SimpleAQ-AP"
+
+[ "$IFACE" = "wlan0" ] || exit 0
+[ "$ACTION" = "up" ] || exit 0
+
+CHANNEL=$(iw dev wlan0 info | awk '/channel/ {print $2; exit}')
+[[ "$CHANNEL" =~ ^[0-9]+$ ]] || exit 0
+
+# The AP profile is band=bg and the BCM43430 is 2.4 GHz-only.
+[ "$CHANNEL" -le 14 ] || exit 0
+
+CURRENT=$(nmcli -t -f 802-11-wireless.channel connection show "$AP_CONN" 2>/dev/null | cut -d: -f2)
+[ "$CURRENT" = "$CHANNEL" ] && exit 0
+
+logger -t simpleaq-ap-channel "Moving $AP_CONN from channel ${CURRENT:-unset} to $CHANNEL to match $IFACE"
+nmcli connection modify "$AP_CONN" 802-11-wireless.channel "$CHANNEL" || exit 0
+
+# Restart the AP on the new channel if it is currently active.
+if nmcli -t -f NAME connection show --active | grep -qx "$AP_CONN"; then
+    nmcli --wait 20 connection up "$AP_CONN" 2>/dev/null || true
+fi
