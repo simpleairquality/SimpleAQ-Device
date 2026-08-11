@@ -222,7 +222,7 @@ def main(args):
 
             # All data is written exclusively from local storage.
             logging.info("Getting rows from local storage")
-            publish_rows = local_storage.getrecent(int(os.getenv("max_backlog_writes")))
+            publish_rows = local_storage.getbatch(int(os.getenv("max_backlog_writes")))
             data_json = [row[1] for row in publish_rows]
 
             logging.info("Attempting to write {} data points to remote.".format(len(data_json)))
