@@ -6,3 +6,4 @@ Wants=NetworkManager.service
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/wifi-watchdog.sh
+TimeoutStartSec=240
