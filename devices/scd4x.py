@@ -16,7 +16,7 @@ class Scd4x(Sensor):
     self.i2c_transceiver = i2c_transceiver
     self.has_reported_serial = False
 
-    if not self._probe_device:
+    if not self._probe_device():
       raise Exception("No device at SCD4X's I2C address, 0x62")
 
     self.serial_number = "".join(f"{word:04X}" for word in self.sensor.serial_number)
