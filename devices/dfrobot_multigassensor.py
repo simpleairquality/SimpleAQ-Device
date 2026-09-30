@@ -665,7 +665,7 @@ class DFRobotMultiGas(Sensor):
         except Exception as err:
           self._try_write_error('DFRobotMultiGas{}'.format(self.sensor.gastype), 'temperature_C'.format(self.sensor.gastype, self.sensor.gasunits), str(err))
           result = self.name
-          logging.err("DFRobot Multi Gas {} failed to get temperature!".format(self.sensor.gastype))
+          logging.error("DFRobot Multi Gas {} failed to get temperature!".format(self.sensor.gastype))
       else:
         logging.error("Unable to determine gas type or units on DFRobotMultiGas{} sensor on {}".format(self.dip, self.address))
         result = self.name 

@@ -15,7 +15,7 @@ class Lps28(Sensor):
     self.name = "Lps28"
     self.i2c_transceiver = i2c_transceiver
 
-    if not self._probe_device:
+    if not self._probe_device():
       raise Exception("No device at LPS28's I2C address, 0x5C")
 
   def _probe_device(self):
