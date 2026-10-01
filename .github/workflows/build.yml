@@ -24,14 +24,14 @@ jobs:
         sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg
 
     - name: Checkout SimpleAQ-Device
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: SimpleAQ-Device
 
     # We will periodically have to update PiGen to a newer version.
     # Because we've been broken by them in the past, we pin the version to prevent us from being broken by them.
     - name: Checkout PiGen
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
@@ -113,14 +113,14 @@ jobs:
         sudo apt install -y coreutils quilt parted qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc qemu-utils kpartx gpg pigz
 
     - name: Checkout SimpleAQ-Device
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: SimpleAQ-Device
 
     # We will periodically have to update PiGen to a newer version.
     # Because we've been broken by them in the past, we pin the version to prevent us from being broken by them.
     - name: Checkout PiGen
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: 'RPi-Distro/pi-gen'
         path: PiGen
