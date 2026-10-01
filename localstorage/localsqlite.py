@@ -42,6 +42,26 @@ class LocalSqlite(LocalStorage):
 
       return rows
 
+  # Get a batch of up to num records for upload: mostly the newest, so fresh
+  # data lands promptly after an outage, with some of the oldest mixed in, so
+  # a large backlog cannot starve old rows indefinitely (rows over 100 days
+  # old were observed draining in Aug 2026).
+  def getbatch(self, num):
+    oldest_share = num // 5
+    with contextlib.closing(self.db_conn.cursor()) as cursor:
+      cursor.execute("SELECT * FROM data ORDER BY id DESC LIMIT ?", (num - oldest_share,))
+      newest = cursor.fetchall()
+      cursor.execute("SELECT * FROM data ORDER BY id ASC LIMIT ?", (oldest_share,))
+      oldest = cursor.fetchall()
+
+    seen = set()
+    rows = []
+    for row in newest + oldest:
+      if row[0] not in seen:
+        seen.add(row[0])
+        rows.append(row)
+    return rows
+
   def writejson(self, json_message):
     with contextlib.closing(self.db_conn.cursor()) as cursor:
       cursor.execute("INSERT INTO data (json) VALUES(?)", (json.dumps(json_message),))

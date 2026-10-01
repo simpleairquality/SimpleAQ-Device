@@ -30,6 +30,8 @@ cp files/ap0-setup.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/wifi-watchdog.sh "${ROOTFS_DIR}/usr/local/bin/wifi-watchdog.sh"
 cp files/wifi-watchdog.service "${ROOTFS_DIR}/etc/systemd/system"
 cp files/wifi-watchdog.timer "${ROOTFS_DIR}/etc/systemd/system"
+mkdir -p "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d"
+cp files/90-simpleaq-ap-channel "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
@@ -59,6 +61,9 @@ on_chroot << EOF
         chown root:root /etc/systemd/system/wifi-watchdog.timer
         chmod 644 /etc/systemd/system/wifi-watchdog.timer
         systemctl enable wifi-watchdog.timer
+
+        chown root:root /etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel
+        chmod 755 /etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel
 
         chown root:root /etc/NetworkManager/system-connections/wifi.nmconnection
         chmod 600 /etc/NetworkManager/system-connections/wifi.nmconnection

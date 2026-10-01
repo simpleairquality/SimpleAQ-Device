@@ -16,6 +16,9 @@ class LocalDummy(LocalStorage):
   def getrecent(self, num):
     raise NotImplementedError("No data can be returned because the storage dummy is not a databaase.")
 
+  def getbatch(self, num):
+    raise NotImplementedError("No data can be returned because the storage dummy is not a databaase.")
+
   def deleteall(self):
     pass
 
