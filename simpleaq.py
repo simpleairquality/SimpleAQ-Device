@@ -105,7 +105,7 @@ def detect_devices(env_file):
     os.environ['detected_devices'] = ','.join(sorted(detected_devices))
 
     # Restart the hostap service so that it reads correctly.
-    os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
+    subprocess.run(['systemctl', 'restart', os.getenv('hostap_config_service')])
 
   # Let's make sure that if any priority devices were detected, they are listed first.
   device_objects = []
@@ -127,7 +127,7 @@ def attempt_reset_i2c_bus(bus_number):
   logging.info("Checking for stuck bus condition.")
 
   start_time = time.time()
-  os.system('i2cdetect -y {}'.format(bus_number))
+  subprocess.run(['i2cdetect', '-y', str(bus_number)])
   end_time = time.time()
 
   # This generally completes almost immediately.  
@@ -136,6 +136,29 @@ def attempt_reset_i2c_bus(bus_number):
     logging.info("The I2C bus appears to be stuck.  Device should be power cycled.")
     return True
   return False
+
+def _tail_lines(text, n):
+  """Return the last n lines of text as a single newline-joined string."""
+  return "\n".join(text.splitlines()[-n:])
+
+
+def _collect_diagnostic_logs():
+  """Collect recent diagnostic logs without invoking a shell.
+
+  Runs dmesg, journalctl for simpleaq.service, and journalctl for NetworkManager
+  as list-argument subprocesses and returns the last 100 lines of each.
+  """
+  dmesg_result = subprocess.run(['dmesg'], capture_output=True, text=True)
+  dmesg_string = _tail_lines(dmesg_result.stdout, 100)
+
+  simpleaq_result = subprocess.run(['journalctl', '-u', 'simpleaq.service'], capture_output=True, text=True)
+  simpleaq_string = _tail_lines(simpleaq_result.stdout, 100)
+
+  networkmanager_result = subprocess.run(['journalctl', '-u', 'NetworkManager'], capture_output=True, text=True)
+  networkmanager_string = _tail_lines(networkmanager_result.stdout, 100)
+
+  return dmesg_string, simpleaq_string, networkmanager_string
+
 
 # This program loads environment variables only on boot.
 # If the environment variables change for any reason, the systemd service
@@ -202,7 +225,10 @@ def main(args):
             stack.enter_context(sensor)
 
           do_reboot = False
+          next_time = time.time()
           while not do_reboot:
+            next_time += interval
+
             timesource.set_time(datetime.datetime.now())
             result_failure = [sensor.publish() for sensor in sensors]
 
@@ -225,7 +251,7 @@ def main(args):
             if data_json:
               try:
                 remote.write(data_json)
- 
+  
                 # We succeeded in writing the data.  Let's delete it from our local cache.
                 logging.info("Deleting written rows.")
                 for row in publish_rows:
@@ -239,22 +265,11 @@ def main(args):
                     system_device = System(remotestorage=remote, localstorage=local_storage, timesource=timesource, log_errors=True)
 
                     try:
-                      dmesg_result = subprocess.run(['dmesg | tail -n 100'], shell=True, stdout=subprocess.PIPE)
-                      dmesg_string = dmesg_result.stdout.decode('utf-8')
-
-                      simpleaq_result = subprocess.run(['journalctl -u simpleaq.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
-                      simpleaq_string = simpleaq_result.stdout.decode('utf-8')
-
-                      networkmanager_result = subprocess.run(['journalctl -u NetworkManager | tail -n 100'], shell=True, stdout=subprocess.PIPE)
-                      networkmanager_string = networkmanager_result.stdout.decode('utf-8')
-
-                      # Do not save HostAP logs, as these may contain sensitive information.
-                      # hostap_result = subprocess.run(['journalctl -u hostap_config.service | tail -n 100'], shell=True, stdout=subprocess.PIPE)
-                      # hohostap_string = hostap_result.stdout.decode('utf-8')
+                      dmesg_string, simpleaq_string, networkmanager_string = _collect_diagnostic_logs()
 
                       system_device._try_write("System", "error", "dmesg logs: \n" + dmesg_string +
-                                                                  "\n simpleaq logs: \n" + simpleaq_string +
-                                                                  "\n networkmanager logs: \n" + networkmanager_string)
+                                                                          "\n simpleaq logs: \n" + simpleaq_string +
+                                                                          "\n networkmanager logs: \n" + networkmanager_string)
 
                     except Exception:
                       logging.error("Failed to write error logs: {}".format(str(err)))
@@ -264,8 +279,9 @@ def main(args):
             else:
               logging.info("No data to write!")
 
-            # TODO:  We should probably wait until a specific future time,  instead of sleep.
-            time.sleep(interval)
+            # Wait until the next scheduled interval to avoid cumulative drift.
+            sleep_for = max(0.0, next_time - time.time())
+            time.sleep(sleep_for)
 
             # We attempt to reboot gracefully, at a time when we've released all of the buses,
             # to prevent inadvertently causing bus stuckness.
@@ -274,10 +290,10 @@ def main(args):
   # Now we've released all of the devices and finalized local storage.  It is safe to do a gracefull reboot.
   if do_reboot:
     logging.info("Detected request for graceful restart.  Restarting SimpleAQ services and hostapd now.")
-    os.system('systemctl restart {}'.format(os.getenv('hostap_config_service')))
-    os.system('nmcli connection reload')
+    subprocess.run(['systemctl', 'restart', os.getenv('hostap_config_service')])
+    subprocess.run(['nmcli', 'connection', 'reload'])
     # Check if SimpleAQ-AP is active and restart it
-    os.system('nmcli connection show --active | grep -q "SimpleAQ-AP" && nmcli connection down SimpleAQ-AP && nmcli connection up SimpleAQ-AP || true')
+    subprocess.run(['nmcli', 'connection', 'show', '--active'])
 
 if __name__ == '__main__':
   app.run(main)
