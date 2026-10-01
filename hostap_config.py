@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, make_response, Response, redirect
 import dotenv
-import getmac
 import os
-import json
 import re
 import shlex
 import subprocess

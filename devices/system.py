@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import psutil
 import time
 
@@ -27,7 +28,7 @@ class System(Sensor):
       self._try_write_error('System', 'device_uptime_sec', str(err))
 
     try:
-      result = self._try_write('System', 'service_uptime_sec', time.time() - psutil.boot_time()) or result
+      result = self._try_write('System', 'service_uptime_sec', time.time() - self.start_time) or result
     except Exception as err:
       self._try_write_error('System', 'service_uptime_sec', str(err))
 
