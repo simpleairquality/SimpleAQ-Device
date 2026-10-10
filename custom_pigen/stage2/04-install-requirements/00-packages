@@ -13,3 +13,4 @@ userconf-pi
 gpsd
 gpsd-clients
 chrony
+bluetooth bluez pi-bluetooth
