@@ -24,3 +24,4 @@ RPi.GPIO
 smbus
 gpsd-py3
 bleak
+bluezero
