@@ -33,6 +33,10 @@ cp files/wifi-watchdog.timer "${ROOTFS_DIR}/etc/systemd/system"
 mkdir -p "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d"
 cp files/90-simpleaq-ap-channel "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel"
 
+# --- ADDED: Copy BLE scripts and services ---
+cp files/simpleaq-ble.service "${ROOTFS_DIR}/etc/systemd/system/"
+cp files/ble_setup.py "${ROOTFS_DIR}/usr/local/bin/"
+
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
 on_chroot << EOF
@@ -48,11 +52,13 @@ on_chroot << EOF
 
         chown root:root /etc/systemd/system/ap0-setup.service
         chmod 644 /etc/systemd/system/ap0-setup.service
-        systemctl enable ap0-setup
+        # Disabled to prioritize BLE setup
+        # systemctl enable ap0-setup
 
         chown root:root /etc/systemd/system/hostap_config.service
         chmod 644 /etc/systemd/system/hostap_config.service
-        systemctl enable hostap_config
+        # Disabled to prioritize BLE setup
+        # systemctl enable hostap_config
 
         chown root:root /usr/local/bin/wifi-watchdog.sh
         chmod 755 /usr/local/bin/wifi-watchdog.sh
@@ -60,7 +66,16 @@ on_chroot << EOF
         chmod 644 /etc/systemd/system/wifi-watchdog.service
         chown root:root /etc/systemd/system/wifi-watchdog.timer
         chmod 644 /etc/systemd/system/wifi-watchdog.timer
-        systemctl enable wifi-watchdog.timer
+        # Disabled to prioritize BLE setup
+        # systemctl enable wifi-watchdog.timer
+
+        # --- ADDED: Set permissions and enable BLE service ---
+        chown root:root /etc/systemd/system/simpleaq-ble.service
+        chmod 644 /etc/systemd/system/simpleaq-ble.service
+        systemctl enable simpleaq-ble.service
+        
+        chown root:root /usr/local/bin/ble_setup.py
+        chmod 755 /usr/local/bin/ble_setup.py
 
         chown root:root /etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel
         chmod 755 /etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel
@@ -121,5 +136,3 @@ on_chroot << EOF
         chown root:root /etc/rc.local
         chmod a+x /etc/rc.local
 EOF
-
-
