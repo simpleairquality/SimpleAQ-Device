@@ -1,11 +1,7 @@
 name: Build Image
 
 on:
-  repository_dispatch:
   workflow_dispatch:
-  push:
-  schedule: 
-    - cron: '0 0 1 * *'
 
 # TODO:  These jobs are so similar except for just ssh.
 #        I'd love to find a way to not have so much repetition between these configurations.
@@ -188,4 +184,3 @@ jobs:
       with:
         name: ${{ steps.debugconfig.outputs.image }}
         path: PiGen/deploy/${{ steps.debugimagefile.outputs.imagefile }}
-
