@@ -1,0 +1,14 @@
+[Unit]
+Description=SimpleAQ BLE Provisioning Server
+After=bluetooth.target network.target
+Requires=bluetooth.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /usr/local/bin/ble_setup.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
