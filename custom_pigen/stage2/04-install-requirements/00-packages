@@ -14,3 +14,9 @@ gpsd
 gpsd-clients
 chrony
 bluetooth bluez pi-bluetooth
+python3-bluez
+python3-dbus
+python3-gi
+gir1.2-glib-2.0
+network-manager
+python3-flask
