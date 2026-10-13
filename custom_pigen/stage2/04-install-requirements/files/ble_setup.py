@@ -1,7 +1,9 @@
 import subprocess
 import time
 import sys
+import os
 import logging
+import dotenv
 from bluezero import peripheral
 from bluezero import adapter
 
@@ -36,6 +38,8 @@ def apply_wifi_credentials():
         time.sleep(5)
         
         if check_internet():
+            # Restart simpleaq.service so it immediately loads the new token from /etc/environment
+            subprocess.run(["systemctl", "restart", "simpleaq.service"])
             # Gracefully terminate BLE advertising and systemd service
             subprocess.Popen(["systemctl", "stop", "simpleaq-ble.service"])
             sys.exit(0)
@@ -52,8 +56,18 @@ def write_pass(value, options):
 
 def write_token(value, options):
     token = bytes(value).decode('utf-8')
-    with open("/etc/simpleaq/device_token.env", "w") as f:
-        f.write(f"SIMPLEAQ_TOKEN={token}\n")
+    try:
+        dotenv.set_key("/etc/environment", "influx_token", token)
+    except Exception as e:
+        logging.error(f"Failed to update /etc/environment: {e}")
+
+    try:
+        os.makedirs("/etc/simpleaq", exist_ok=True)
+        with open("/etc/simpleaq/device_token.env", "w") as f:
+            f.write(f"SIMPLEAQ_TOKEN={token}\n")
+    except Exception as e:
+        logging.error(f"Failed to update /etc/simpleaq/device_token.env: {e}")
+
     # Token is always sent last from the app, so we trigger WiFi connect here
     apply_wifi_credentials()
 
