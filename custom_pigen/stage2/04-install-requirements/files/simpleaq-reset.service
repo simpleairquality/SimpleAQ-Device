@@ -1,0 +1,13 @@
+[Unit]
+Description=SimpleAQ Local Reset Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /usr/local/bin/reset_server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
