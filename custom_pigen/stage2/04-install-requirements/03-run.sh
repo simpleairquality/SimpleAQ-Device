@@ -33,9 +33,11 @@ cp files/wifi-watchdog.timer "${ROOTFS_DIR}/etc/systemd/system"
 mkdir -p "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d"
 cp files/90-simpleaq-ap-channel "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel"
 
-# --- ADDED: Copy BLE scripts and services ---
+# --- Copy BLE and Reset scripts and services ---
 cp files/simpleaq-ble.service "${ROOTFS_DIR}/etc/systemd/system/"
 cp files/ble_setup.py "${ROOTFS_DIR}/usr/local/bin/"
+cp files/simpleaq-reset.service "${ROOTFS_DIR}/etc/systemd/system/"
+cp files/reset_server.py "${ROOTFS_DIR}/usr/local/bin/"
 
 # SimpleAQ uses python-dotenv.
 # We will set the environment variables for SimpleAQ at the system level.
@@ -44,7 +46,7 @@ on_chroot << EOF
         echo image_name=${IMG_NAME} >> /etc/environment
 EOF
 
-# Make sure our service has the right permissions and that it starts on boot.
+# Make sure our services have the right permissions and start on boot.
 on_chroot << EOF
         chown root:root /etc/systemd/system/simpleaq.service
         chmod 644 /etc/systemd/system/simpleaq.service
@@ -69,13 +71,24 @@ on_chroot << EOF
         # Disabled to prioritize BLE setup
         # systemctl enable wifi-watchdog.timer
 
-        # --- ADDED: Set permissions and enable BLE service ---
+        # Ensure bluetooth radio is not soft-blocked on first boot
+        rfkill unblock bluetooth || true
+
+        # BLE Provisioning Service
         chown root:root /etc/systemd/system/simpleaq-ble.service
         chmod 644 /etc/systemd/system/simpleaq-ble.service
         systemctl enable simpleaq-ble.service
         
         chown root:root /usr/local/bin/ble_setup.py
         chmod 755 /usr/local/bin/ble_setup.py
+
+        # Local Reset Web Server
+        chown root:root /etc/systemd/system/simpleaq-reset.service
+        chmod 644 /etc/systemd/system/simpleaq-reset.service
+        systemctl enable simpleaq-reset.service
+
+        chown root:root /usr/local/bin/reset_server.py
+        chmod 755 /usr/local/bin/reset_server.py
 
         chown root:root /etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel
         chmod 755 /etc/NetworkManager/dispatcher.d/90-simpleaq-ap-channel
@@ -91,7 +104,6 @@ EOF
 on_chroot << EOF
         rm -rf /simpleaq/custom_pigen
 EOF
-
 
 cp files/gpsd "${ROOTFS_DIR}/etc/default/gpsd"
 
