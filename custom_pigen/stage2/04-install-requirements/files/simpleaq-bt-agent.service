@@ -1,0 +1,13 @@
+[Unit]
+Description=SimpleAQ Bluetooth Agent (NoInputNoOutput)
+Requires=bluetooth.service
+After=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bt-agent -c NoInputNoOutput
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
