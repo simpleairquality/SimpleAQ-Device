@@ -148,3 +148,8 @@ on_chroot << EOF
         chown root:root /etc/rc.local
         chmod a+x /etc/rc.local
 EOF
+# Force BLE-only mode and enable PIN-less "Just Works" pairing
+on_chroot << EOF
+    # Insert configurations directly under the [General] header in main.conf
+    sed -i '/^\[General\]/a ControllerMode = le\nJustWorksRepairing = always\nFastConnectable = true' /etc/bluetooth/main.conf
+EOF
