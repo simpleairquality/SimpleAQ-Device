@@ -12,6 +12,7 @@ SERVICE_UUID = 'b4250400-fb4b-4746-b2b0-93f0e61122c6'
 SSID_UUID = 'b4250401-fb4b-4746-b2b0-93f0e61122c6'
 PASS_UUID = 'b4250402-fb4b-4746-b2b0-93f0e61122c6'
 TOKEN_UUID = 'b4250403-fb4b-4746-b2b0-93f0e61122c6'
+DEVICE_ID_UUID = 'b4250404-fb4b-4746-b2b0-93f0e61122c6'
 
 received_ssid = ""
 received_password = ""
@@ -45,6 +46,31 @@ def apply_wifi_credentials():
             sys.exit(0)
     except subprocess.CalledProcessError:
         pass
+
+def read_device_id():
+    try:
+        env_dict = dotenv.dotenv_values("/etc/environment")
+        bucket = env_dict.get("influx_bucket", "")
+        if bucket and bucket != "YOUR_BUCKET_HERE":
+            return [ord(c) for c in bucket]
+    except Exception:
+        pass
+    try:
+        with open('/proc/cpuinfo', 'r') as f:
+            for line in f:
+                if line.startswith('Serial'):
+                    serial = line.split(':')[1].strip()
+                    return [ord(c) for c in f"SimpleAQ_Pi_{serial}"]
+    except Exception:
+        pass
+    return [ord(c) for c in "SimpleAQ_Pi"]
+
+def write_device_id(value, options):
+    device_id = bytes(value).decode('utf-8')
+    try:
+        dotenv.set_key("/etc/environment", "influx_bucket", device_id)
+    except Exception as e:
+        logging.error(f"Failed to update /etc/environment influx_bucket: {e}")
 
 def write_ssid(value, options):
     global received_ssid
@@ -89,6 +115,9 @@ def main():
     
     # Token Characteristic
     ble_peripheral.add_characteristic(srv_id=1, chr_id=3, uuid=TOKEN_UUID, value=[], notifying=False, flags=['write'], read_callback=None, write_callback=write_token, notify_callback=None)
+
+    # Device ID Characteristic
+    ble_peripheral.add_characteristic(srv_id=1, chr_id=4, uuid=DEVICE_ID_UUID, value=[], notifying=False, flags=['read', 'write'], read_callback=read_device_id, write_callback=write_device_id, notify_callback=None)
 
     ble_peripheral.publish()
 
