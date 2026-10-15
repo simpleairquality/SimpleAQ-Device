@@ -148,8 +148,11 @@ on_chroot << EOF
         chmod a+x /etc/rc.local
 EOF
 
-# Force BLE-only mode and enable PIN-less "Just Works" pairing
+# Force BLE-only mode and enable PIN-less "Just Works" pairing.
+# DiscoverableTimeout = 0 keeps the adapter discoverable; with the default
+# 180 s timeout bluetoothd strips the General Discoverable flag from our
+# advertisement three minutes after the provisioning service starts.
 on_chroot << EOF
     # Insert configurations directly under the [General] header in main.conf
-    sed -i '/^\[General\]/a ControllerMode = le\nJustWorksRepairing = always\nReverseServiceDiscovery = false' /etc/bluetooth/main.conf
+    sed -i '/^\[General\]/a ControllerMode = le\nJustWorksRepairing = always\nReverseServiceDiscovery = false\nDiscoverableTimeout = 0' /etc/bluetooth/main.conf
 EOF

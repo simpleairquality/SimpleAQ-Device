@@ -150,6 +150,37 @@ If you connect to the HostAP network with any device, navigate to [http://192.16
 On this page, you will be able to change relevant settings.
 When the device is reporting data to a backend server expected, this HostAP network will not appear.
 
+#### Using the SimpleAQ app over Bluetooth
+
+A device that has not been provisioned yet advertises a Bluetooth Low Energy service named `SimpleAQ_Setup`.
+The SimpleAQ app uses it to hand the device its WiFi credentials, device id and API token.
+"Provisioned" means `influx_token` in `/etc/environment` holds a real token; a provisioned device never advertises, whatever its network state.
+To provision a device again, call the reset endpoint at [http://192.168.4.1/reset](http://192.168.4.1/reset) from the HostAP network.
+It clears the token and WiFi credentials and restarts the Bluetooth service.
+
+| Characteristic | UUID | Access | Contents |
+| --- | --- | --- | --- |
+| Service | `b4250400-fb4b-4746-b2b0-93f0e61122c6` | | Primary service, included in the advertisement |
+| SSID | `b4250401-fb4b-4746-b2b0-93f0e61122c6` | write | WiFi network name, UTF-8 |
+| Password | `b4250402-fb4b-4746-b2b0-93f0e61122c6` | write | WiFi password, UTF-8. Write an empty value for an open network |
+| Token | `b4250403-fb4b-4746-b2b0-93f0e61122c6` | write | SimpleAQ API token, UTF-8 |
+| Device ID | `b4250404-fb4b-4746-b2b0-93f0e61122c6` | read, write | Bucket or device id. Reading returns the current value or a serial-number default |
+| Status | `b4250405-fb4b-4746-b2b0-93f0e61122c6` | read, notify | Provisioning state, ASCII |
+
+Writes are accepted in any order; the WiFi join starts once the SSID, password and token have all been written.
+The join runs in the background and each write is acknowledged immediately, so watch the Status characteristic:
+
+| Status | Meaning |
+| --- | --- |
+| `IDLE` | Waiting for SSID, password and token |
+| `CONNECTING` | Joining the WiFi network |
+| `CONNECTED` | Online and token saved. Provisioning is complete |
+| `WIFI_FAILED` | Could not join the network. Re-send the credentials |
+| `NO_INTERNET` | Joined WiFi and saved the token, but www.simpleaq.org is unreachable. Re-send credentials for another network, or leave it; uploads start once the network allows |
+
+After `CONNECTED` the device keeps advertising until the app disconnects, then for one more minute in case the app reconnects to verify, and then stops.
+Credentials are stored in the `Wifi` NetworkManager profile, the same one the HostAP configuration page edits.
+
 #### Manually
 
 In order to connect the device to the backend, you will need a valid org, bucket and token.
