@@ -37,6 +37,7 @@ cp files/simpleaq-ble.service "${ROOTFS_DIR}/etc/systemd/system/"
 cp files/ble_setup.py "${ROOTFS_DIR}/usr/local/bin/"
 cp files/simpleaq-reset.service "${ROOTFS_DIR}/etc/systemd/system/"
 cp files/reset_server.py "${ROOTFS_DIR}/usr/local/bin/"
+cp files/bt_agent.py "${ROOTFS_DIR}/usr/local/bin/"
 cp files/simpleaq-bt-agent.service "${ROOTFS_DIR}/etc/systemd/system/"
 
 # SimpleAQ uses python-dotenv.
@@ -84,6 +85,8 @@ on_chroot << EOF
         chmod 755 /usr/local/bin/reset_server.py
 
         # Enable the BT Agent Service
+        chown root:root /usr/local/bin/bt_agent.py
+        chmod 755 /usr/local/bin/bt_agent.py
         chown root:root /etc/systemd/system/simpleaq-bt-agent.service
         chmod 644 /etc/systemd/system/simpleaq-bt-agent.service
         systemctl enable simpleaq-bt-agent.service
@@ -148,5 +151,5 @@ EOF
 # Force BLE-only mode and enable PIN-less "Just Works" pairing
 on_chroot << EOF
     # Insert configurations directly under the [General] header in main.conf
-    sed -i '/^\[General\]/a ControllerMode = le\nJustWorksRepairing = always\nFastConnectable = true' /etc/bluetooth/main.conf
+    sed -i '/^\[General\]/a ControllerMode = le\nJustWorksRepairing = always\nFastConnectable = true\nReverseServiceDiscovery = false' /etc/bluetooth/main.conf
 EOF

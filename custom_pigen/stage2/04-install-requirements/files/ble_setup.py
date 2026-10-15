@@ -108,17 +108,21 @@ def main():
     ble_peripheral.add_service(srv_id=1, uuid=SERVICE_UUID, primary=True)
     
     # SSID Characteristic
-    ble_peripheral.add_characteristic(srv_id=1, chr_id=1, uuid=SSID_UUID, value=[], notifying=False, flags=['write'], read_callback=None, write_callback=write_ssid, notify_callback=None)
+    ble_peripheral.add_characteristic(srv_id=1, chr_id=1, uuid=SSID_UUID, value=[], notifying=False, flags=['write', 'write-without-response'], read_callback=None, write_callback=write_ssid, notify_callback=None)
     
     # Password Characteristic
-    ble_peripheral.add_characteristic(srv_id=1, chr_id=2, uuid=PASS_UUID, value=[], notifying=False, flags=['write'], read_callback=None, write_callback=write_pass, notify_callback=None)
+    ble_peripheral.add_characteristic(srv_id=1, chr_id=2, uuid=PASS_UUID, value=[], notifying=False, flags=['write', 'write-without-response'], read_callback=None, write_callback=write_pass, notify_callback=None)
     
     # Token Characteristic
-    ble_peripheral.add_characteristic(srv_id=1, chr_id=3, uuid=TOKEN_UUID, value=[], notifying=False, flags=['write'], read_callback=None, write_callback=write_token, notify_callback=None)
+    ble_peripheral.add_characteristic(srv_id=1, chr_id=3, uuid=TOKEN_UUID, value=[], notifying=False, flags=['write', 'write-without-response'], read_callback=None, write_callback=write_token, notify_callback=None)
 
     # Device ID Characteristic
-    ble_peripheral.add_characteristic(srv_id=1, chr_id=4, uuid=DEVICE_ID_UUID, value=[], notifying=False, flags=['read', 'write'], read_callback=read_device_id, write_callback=write_device_id, notify_callback=None)
+    ble_peripheral.add_characteristic(srv_id=1, chr_id=4, uuid=DEVICE_ID_UUID, value=[], notifying=False, flags=['read', 'write', 'write-without-response'], read_callback=read_device_id, write_callback=write_device_id, notify_callback=None)
 
+    def on_disconnect(adapter_address, device_address):
+        logging.info(f"Client {device_address} disconnected from adapter {adapter_address}")
+
+    ble_peripheral.on_disconnect = on_disconnect
     ble_peripheral.publish()
 
 if __name__ == '__main__':
