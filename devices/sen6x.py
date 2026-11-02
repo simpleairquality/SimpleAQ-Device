@@ -8,6 +8,10 @@ import board
 
 from . import Sensor
 
+# Stop asking for raw signals after this many failures in a row, so a missing
+# feature can't spam the log.
+RAW_SIGNAL_MAX_FAILURES = 3
+
 # Based on the SEN5X driver and adafruit-circuitpython-sen6x library
 class Sen6x(Sensor):
   def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
@@ -17,6 +21,7 @@ class Sen6x(Sensor):
     # Note: You may need to specify SEN60, SEN63, SEN65, or SEN66 depending on your hardware
     self.device = adafruit_sen6x.SEN66(board.I2C())
     self.has_transmitted_device_info = False
+    self.raw_signal_failures = 0
 
     # Get device information
     try:
@@ -42,6 +47,33 @@ class Sen6x(Sensor):
     data = self.device.all_measurements()
 
     return data
+
+  def publish_raw_gas_signals(self):
+    # The VOC and NOx indices are relative to each sensor's own recent average,
+    # so they can't say how much VOC is in the air.  The raw signals behind
+    # them aren't re-centred, which is what an absolute estimate needs
+    # (SimpleAQ-Frontend issue #374).  This is extra data: a failure here is
+    # logged but doesn't mark the sensor as failed.
+    if self.raw_signal_failures >= RAW_SIGNAL_MAX_FAILURES:
+      return False
+
+    result = False
+    try:
+      raw = self.device.raw_values()
+      self.raw_signal_failures = 0
+    except Exception as err:
+      self.raw_signal_failures += 1
+      logging.warning("Could not read SEN6X raw VOC/NOx signals ({} of {}): {}".format(
+          self.raw_signal_failures, RAW_SIGNAL_MAX_FAILURES, err))
+      if self.raw_signal_failures >= RAW_SIGNAL_MAX_FAILURES:
+        logging.warning("Giving up on SEN6X raw VOC/NOx signals until the next restart.")
+      return False
+
+    if raw.get('raw_voc') is not None:
+      result = self._try_write('SEN6X', 'voc_raw_ticks', raw['raw_voc']) or result
+    if raw.get('raw_nox') is not None:
+      result = self._try_write('SEN6X', 'nox_raw_ticks', raw['raw_nox']) or result
+    return result
 
   def publish(self):
     logging.info('Publishing SEN6X data')
@@ -179,6 +211,8 @@ class Sen6x(Sensor):
             self._try_write_error('SEN6X', 'nox_index', str(err))
             raise err
             
+        result = self.publish_raw_gas_signals() or result
+
         # SEN6X specific measurements (CO2) - SEN66 only
         if 'co2' in data and data['co2'] is not None and not math.isnan(data['co2']):
           try:
