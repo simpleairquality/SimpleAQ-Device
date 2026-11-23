@@ -11,7 +11,8 @@ on:
 #        I'd love to find a way to not have so much repetition between these configurations.
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which has no qemu-user-static package.
+    runs-on: ubuntu-24.04
     steps:
     - name: List Available Space
       run: |
@@ -100,7 +101,8 @@ jobs:
         path: PiGen/deploy/${{ steps.imagefile.outputs.imagefile }}
 
   build_debug:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which has no qemu-user-static package.
+    runs-on: ubuntu-24.04
     steps:
     - name: List Available Space
       run: |
