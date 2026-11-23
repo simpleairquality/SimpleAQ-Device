@@ -48,6 +48,6 @@ class Pm25(Sensor):
 
     except Exception as err:
       logging.error("Error getting data from PM25.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = device.name 
+      result = self.name
 
     return result
